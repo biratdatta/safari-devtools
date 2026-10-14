@@ -1,6 +1,29 @@
 # Safari DevTools
 
+<p align="center">
+  <a href="docs/safari-devtools-demo.mp4"><img src="docs/demo.gif" width="320" alt="Safari DevTools demo: console errors mapped to TypeScript, then live CSS editing with token suggestions"></a>
+  <br>
+  <b><a href="docs/safari-devtools-demo.mp4">▶ Watch the 40-second demo (with sound)</a></b>
+</p>
+
 A Chrome-style DevTools panel that runs **inside the page**, for Safari on Mac, iPhone and iPad. It's one dependency-free JavaScript file, and it comes with an optional Safari extension that adds it to every website.
+
+## Screenshots
+
+<table>
+  <tr>
+    <td align="center"><img src="docs/screenshots/console.png" width="240" alt="Console"><br><b>Console</b><br>Errors link to the original file</td>
+    <td align="center"><img src="docs/screenshots/sources.png" width="240" alt="Sources"><br><b>Sources</b><br>Source maps open the exact line</td>
+    <td align="center"><img src="docs/screenshots/autocomplete.png" width="240" alt="Styles autocomplete"><br><b>Styles</b><br>Suggestions for <code>var(--tokens)</code></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/screenshots/live-css.png" width="240" alt="Live CSS"><br><b>Live CSS</b><br>Edits apply instantly</td>
+    <td align="center"><img src="docs/screenshots/network.png" width="240" alt="Network"><br><b>Network</b><br>Requests with a waterfall</td>
+    <td align="center"><img src="docs/screenshots/storage.png" width="240" alt="Storage"><br><b>Storage</b><br>Edit local storage and cookies</td>
+  </tr>
+</table>
+
+## Features
 
 | Panel | Highlights |
 |---|---|
@@ -30,7 +53,7 @@ Temporary extensions are removed when Safari quits. To install it permanently, b
 Add this as the first thing in `<head>`, in development builds only:
 
 ```html
-<script src="https://cdn.jsdelivr.net/gh/YOUR-USERNAME/safari-devtools@main/standalone/safari-devtools.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/biratdatta/safari-devtools@main/standalone/safari-devtools.js"></script>
 ```
 
 ### Option 3: Try the demo
@@ -42,6 +65,7 @@ Open [`standalone/demo.html`](standalone/demo.html) in Safari.
 ```
 standalone/   safari-devtools.js (the tool), demo.html, docs
 extension/    Safari Web Extension (manifest, content script, icons, Xcode build script)
+docs/         demo video, GIF and screenshots used in this README
 sync.sh       copies standalone/safari-devtools.js into extension/
 ```
 
