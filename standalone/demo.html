@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Safari DevTools — Demo</title>
+  <!-- Load first so every log and request is captured. data-open="true" opens the panel on load. -->
+  <script src="safari-devtools.js" data-open="true"></script>
+  <style>
+    :root { --brand: #3d5afe; }
+    body { font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 0; background: #f6f7fb; color: #1d2433; }
+    header { background: var(--brand); color: #fff; padding: 20px 24px; }
+    header h1 { margin: 0; font-size: 22px; }
+    main { max-width: 860px; margin: 0 auto; padding: 20px 16px 420px; display: grid; gap: 16px; }
+    .card { background: #fff; border-radius: 10px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+    .card h2 { margin: 0 0 10px; font-size: 16px; }
+    .row { display: flex; flex-wrap: wrap; gap: 8px; }
+    button.demo { border: 1px solid #c9cfe0; background: #fff; border-radius: 6px; padding: 6px 12px; font: inherit; font-size: 13px; cursor: pointer; }
+    button.demo:hover { border-color: var(--brand); color: var(--brand); }
+    .primary { background: var(--brand) !important; color: #fff !important; border-color: var(--brand) !important; }
+    @media (min-width: 600px) { .card.wide { grid-column: span 1; } }
+  </style>
+</head>
+<body>
+  <header><h1 id="title">Safari DevTools demo</h1><p style="margin:4px 0 0;opacity:.85">Press <b>Ctrl+Shift+D</b> to toggle the panel and <b>Ctrl+Shift+C</b> to pick an element.</p></header>
+  <main>
+    <section class="card">
+      <h2>Console</h2>
+      <div class="row">
+        <button class="demo" onclick="console.log('Hello from the page', {user: 'Birat', roles: ['admin','dev'], nested: {a: 1, b: [1,2,3]}}, 42, true)">console.log</button>
+        <button class="demo" onclick="console.warn('Deprecated API used:', 'oldMethod()')">console.warn</button>
+        <button class="demo" onclick="console.error(new Error('Something broke'))">console.error</button>
+        <button class="demo" onclick="console.log('%cStyled%c message', 'color:#fff;background:#3d5afe;padding:2px 6px;border-radius:3px', 'color:inherit')">%c styles</button>
+        <button class="demo" onclick="console.table([{a:1,b:2},{a:3,b:4}])">console.table</button>
+        <button class="demo" onclick="for (let i = 0; i < 5; i++) console.log('repeated message')">repeat ×5</button>
+        <button class="demo" onclick="undefinedFunction()">throw uncaught</button>
+        <button class="demo" onclick="Promise.reject(new Error('rejected promise'))">reject promise</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Network</h2>
+      <div class="row">
+        <button class="demo primary" onclick="fetch('https://jsonplaceholder.typicode.com/todos/1').then(r => r.json()).then(d => console.log('fetch result', d))">GET (fetch)</button>
+        <button class="demo" onclick="fetch('https://jsonplaceholder.typicode.com/posts', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({title:'hi', body:'from devtools demo', userId: 1})})">POST JSON</button>
+        <button class="demo" onclick="var x = new XMLHttpRequest(); x.open('GET', 'https://jsonplaceholder.typicode.com/users?_limit=3'); x.send()">XHR</button>
+        <button class="demo" onclick="fetch('https://jsonplaceholder.typicode.com/does-not-exist')">404</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Storage</h2>
+      <div class="row">
+        <button class="demo" onclick="localStorage.setItem('settings', JSON.stringify({theme:'dark', fontSize: 14, beta: true}))">set localStorage JSON</button>
+        <button class="demo" onclick="sessionStorage.setItem('token', 'abc123')">set sessionStorage</button>
+        <button class="demo" onclick="document.cookie = 'visited=' + Date.now() + '; path=/'">set cookie</button>
+      </div>
+    </section>
+
+    <section class="card wide" id="profile">
+      <h2>Elements &amp; CSS</h2>
+      <p class="note">Inspect this card, then edit its styles in the <b>Styles</b> pane. Click any value to edit it, or untick the checkbox to disable a property.</p>
+      <user-badge name="Birat"></user-badge>
+    </section>
+  </main>
+
+  <script>
+    // A small web component with an open shadow root, to show shadow DOM inspection.
+    customElements.define('user-badge', class extends HTMLElement {
+      connectedCallback() {
+        const root = this.attachShadow({ mode: 'open' });
+        root.innerHTML = '<style>.chip{display:inline-flex;gap:6px;align-items:center;background:#eef1ff;color:#3d5afe;border-radius:999px;padding:4px 10px;font-size:13px}</style>' +
+          '<span class="chip">&#9679; ' + (this.getAttribute('name') || 'user') + '</span>';
+      }
+    });
+    console.info('Demo page loaded at', new Date().toLocaleTimeString());
+    localStorage.setItem('demo:visits', String(Number(localStorage.getItem('demo:visits') || 0) + 1));
+  </script>
+</body>
+</html>

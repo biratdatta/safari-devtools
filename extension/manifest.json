@@ -1,0 +1,44 @@
+{
+  "manifest_version": 3,
+  "name": "Safari DevTools",
+  "version": "1.0.0",
+  "description": "A Chrome-style DevTools panel (Console, Elements/CSS, Network, Storage) on every page.",
+  "icons": {
+    "16": "images/icon-16.png",
+    "32": "images/icon-32.png",
+    "48": "images/icon-48.png",
+    "96": "images/icon-96.png",
+    "128": "images/icon-128.png",
+    "256": "images/icon-256.png",
+    "512": "images/icon-512.png"
+  },
+  "action": {
+    "default_title": "Toggle DevTools (Ctrl+Shift+D)",
+    "default_icon": {
+      "16": "images/toolbar-16.png",
+      "19": "images/toolbar-19.png",
+      "32": "images/toolbar-32.png",
+      "38": "images/toolbar-38.png",
+      "48": "images/toolbar-48.png"
+    }
+  },
+  "background": {
+    "scripts": ["background.js"],
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_start",
+      "all_frames": false
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["safari-devtools.js"],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "permissions": ["activeTab"]
+}

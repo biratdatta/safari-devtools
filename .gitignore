@@ -1,0 +1,7 @@
+.DS_Store
+*.zip
+SafariDevTools-Xcode/
+xcuserdata/
+DerivedData/
+build/
+node_modules/
