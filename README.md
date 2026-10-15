@@ -27,12 +27,19 @@ A Chrome-style DevTools panel that runs **inside the page**, for Safari on Mac, 
 
 | Panel | Highlights |
 |---|---|
-| **Console** | Logs, errors and unhandled rejections. Objects open as expandable trees, and repeated messages collapse into a counter. Includes a REPL with `$0`, `$()`, `$$()`, `copy()` and `clear()`. |
-| **Elements** | Live DOM tree including shadow roots, a box-model hover highlight, an element picker (Ctrl+Shift+C), and attribute and text editing. |
-| **Styles** | Matched, `:host`, user-agent and inherited rules, with overridden properties struck through. Values are editable inline, with auto-suggestions for properties, keywords and your `var(--tokens)`. Also has a Computed tab and a box model. |
-| **Sources** | Original files from source maps, with clickable `file.ts:line` links in the Console and error stacks. |
-| **Network** | `fetch`/XHR with headers, payload, JSON preview, timing and Copy as cURL. |
-| **Storage** | Local storage, session storage and cookies, with add, edit, delete and a JSON preview. |
+| **Console** | Logs, errors and rejections. Source-mapped stack traces show original names, like `UserService.loadUser (user.service.ts:42)`. The REPL has autocomplete, history, `$0`, `$()`, `$$()` and `copy()`. |
+| **Elements** | DOM tree including shadow roots, a picker, and find by text, selector or XPath. Copy a node's selector, JS path, XPath or HTML. DOM breakpoints log the call stack. |
+| **Styles · Listeners · Component** | Live CSS with token autocomplete, plus inherited, `:host` and user-agent rules. See every event listener and where it was added. For web components: properties, slots, `::part()` and the CSS variables they read, with Lit and Angular details. |
+| **Sources** | Original files from source maps, with search across all files. |
+| **Network** | fetch, XHR, WebSocket and SSE. **Mock, block or delay** requests, throttle to 3G or offline, copy as fetch or cURL, replay requests, and export a HAR file. |
+| **Storage** | Local storage, session storage and cookies, with editing. |
+| **Performance** | Web Vitals where Safari supports them, live FPS and DOM-size graphs, long tasks and a memory-leak check. |
+| **Tokens** | Every `--css-variable` on the page, grouped, with live overrides you can copy as CSS. |
+| **Audit** | Safari and iPhone pitfalls, plus accessibility checks that reach into shadow DOM. |
+| **Device** | Safe-area and viewport overlay, `100vh`/`dvh`/`svh` values, a touch visualiser and outline-all-elements. |
+| **Remote mode** | Debug an iPhone from your Mac over Wi-Fi: `node standalone/remote/relay.js`. |
+
+Extras: light and dark themes, docking to the bottom or right, a debug-report export, and settings remembered per site.
 
 Shortcuts: **Ctrl+Shift+D** shows or hides the panel, and **Ctrl+Shift+C** picks an element.
 
@@ -63,7 +70,7 @@ Open [`standalone/demo.html`](standalone/demo.html) in Safari.
 ## Repo layout
 
 ```
-standalone/   safari-devtools.js (the tool), demo.html, docs
+standalone/   safari-devtools.js (the tool), demo.html, docs, remote/ (relay + viewer for iPhone debugging)
 extension/    Safari Web Extension (manifest, content script, icons, Xcode build script)
 docs/         demo video, GIF and screenshots used in this README
 sync.sh       copies standalone/safari-devtools.js into extension/

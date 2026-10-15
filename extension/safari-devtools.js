@@ -39,13 +39,25 @@
   } catch (e) { /* storage unavailable */ }
   if (cfg.open === 'true') state.open = true;
 
+  // Per-site preferences (localStorage is per origin, so each site keeps its own).
+  var PREFS_KEY = '__sdt_prefs';
+  var prefs = { theme: 'auto', dock: 'bottom', width: 560, throttle: 'none', netRules: [] };
+  try { Object.assign(prefs, JSON.parse(localStorage.getItem(PREFS_KEY) || '{}')); } catch (e) {}
+  ['tab', 'height', 'conLevels', 'netType', 'sideTab'].forEach(function (k) { if (prefs[k] != null) state[k] = prefs[k]; });
+  if (!Array.isArray(prefs.netRules)) prefs.netRules = [];
+  function savePrefs() {
+    prefs.tab = state.tab; prefs.height = state.height; prefs.conLevels = state.conLevels; prefs.netType = state.netType; prefs.sideTab = state.sideTab;
+    try { localStorage.setItem(PREFS_KEY, JSON.stringify(prefs)); } catch (e) {}
+  }
   function saveUI() {
     try { sessionStorage.setItem(UI_KEY, JSON.stringify({ open: state.open, tab: state.tab, height: state.height })); } catch (e) {}
+    savePrefs();
   }
 
   /* ------------------------------------------------------------------ utils */
   function h(tag, props) {
     var el = document.createElement(tag);
+    el.__sdt = 1;
     if (props) for (var k in props) {
       var v = props[k];
       if (v == null || v === false) continue;
@@ -109,7 +121,24 @@
     try { return target === host || target === shadow || (target && target.getRootNode && shadow && target.getRootNode() === shadow); } catch (e) { return false; }
   }
   function captureFlag(o) { return typeof o === 'boolean' ? o : !!(o && o.capture); }
+  // Registry of listeners the page adds, for the Elements > Listeners pane.
+  var listenerReg = new WeakMap();
+  function trackListener(target, type, listener, options) {
+    if (!listener || (target && target.__sdt)) return; // skip DevTools' own UI
+    var list = listenerReg.get(target);
+    if (!list) { list = []; listenerReg.set(target, list); }
+    var cap = captureFlag(options);
+    for (var i = 0; i < list.length; i++) if (list[i].type === type && list[i].listener === listener && list[i].capture === cap) return;
+    var st = ''; try { st = new Error().stack || ''; } catch (e) {}
+    list.push({ type: type, listener: listener, capture: cap, once: !!(options && options.once), passive: !!(options && options.passive), stack: st });
+  }
+  function untrackListener(target, type, listener, options) {
+    var list = listenerReg.get(target); if (!list) return;
+    var cap = captureFlag(options);
+    for (var i = list.length - 1; i >= 0; i--) if (list[i].type === type && list[i].listener === listener && list[i].capture === cap) list.splice(i, 1);
+  }
   ET.addEventListener = function (type, listener, options) {
+    trackListener(this, type, listener, options);
     if (!listener || !ISOLATE[type]) return origAdd.call(this, type, listener, options);
     var map = wrapped.get(listener);
     if (!map) { map = {}; wrapped.set(listener, map); }
@@ -124,6 +153,7 @@
     return origAdd.call(this, type, w, options);
   };
   ET.removeEventListener = function (type, listener, options) {
+    untrackListener(this, type, listener, options);
     var map = listener && wrapped.get(listener), w = map && map[type + '|' + captureFlag(options)];
     origRemove.call(this, type, w || listener, options);
     if (w) origRemove.call(this, type, listener, options);
@@ -163,6 +193,7 @@
     if (level === 'error') state.errors++;
     if (level === 'warn') state.warns++;
     if (ui.ready) { appendLogRow(entry); updateBadges(); }
+    if (typeof remote !== 'undefined' && remote && remote.on && !remote.silent && entry.kind !== 'input') remoteSend({ type: 'log', level: level, kind: entry.kind, text: logText(entry), site: entry.site ? shortName(entry.site.url) + ':' + entry.site.line : '' });
     return entry;
   }
 
@@ -212,7 +243,7 @@
     };
   });
 
-  window.addEventListener('error', function (e) {
+  origAdd.call(window, 'error', function (e) {
     if (e.target && e.target !== window && e.target.nodeType === 1) {
       var t = e.target, src = t.src || t.href || t.currentSrc || '';
       addLog('error', ['Failed to load resource: ' + (t.tagName || '').toLowerCase() + ' ' + src], { site: null });
@@ -221,7 +252,7 @@
     var site = e.filename ? { url: e.filename, line: e.lineno, col: e.colno } : null;
     addLog('error', [e.error != null ? e.error : (e.message || 'Script error.')], { site: site, kind: 'uncaught' });
   }, true);
-  window.addEventListener('unhandledrejection', function (e) {
+  origAdd.call(window, 'unhandledrejection', function (e) {
     addLog('error', ['Uncaught (in promise)', e.reason], { site: null, kind: 'uncaught' });
   });
 
@@ -236,7 +267,10 @@
     if (state.net.length > MAX_NET) state.net.shift();
     if (ui.ready) scheduleNetRender();
   }
-  function updateNet() { if (ui.ready) scheduleNetRender(); }
+  function updateNet(e) {
+    if (ui.ready) scheduleNetRender();
+    if (e && e.done && !e.sentRemote && typeof remote !== 'undefined' && remote && remote.on) { e.sentRemote = true; remoteSend(netMsg(e)); }
+  }
   function headersToObj(hd) {
     var o = {};
     try { if (hd && typeof hd.forEach === 'function') hd.forEach(function (v, k) { o[k] = v; }); else if (hd) Object.keys(hd).forEach(function (k) { o[k] = String(hd[k]); }); } catch (e) {}
@@ -422,10 +456,101 @@
     wrap.append((err.name || 'Error') + ': ' + (err.message || ''));
     var frames = parseStack(stack);
     frames.slice(0, 40).forEach(function (f) {
-      wrap.append('\n    at ' + f.fn + ' (', srcLink(f), ')');
+      var fnEl = h('span', null, f.fn);
+      wrap.append('\n    at ', fnEl, ' (', srcLink(f), ')');
+      mapLocation(f.url, f.line, f.col).then(function (r) {
+        if (!r) return;
+        r.file.content().then(function (text) { var n = enclosingFn(text, r.line); if (n && n !== f.fn) { fnEl.textContent = n; fnEl.title = 'minified: ' + f.fn; } }, function () {});
+      });
     });
     if (!frames.length && stack && stack.indexOf(err.message) === -1) wrap.append('\n' + stack);
     return wrap;
+  }
+
+  /* ------------------------------------------- request rules & throttling */
+  var THROTTLE = {
+    none: { label: 'No throttling', latency: 0, kbps: 0 },
+    fast4g: { label: 'Fast 4G', latency: 60, kbps: 9000 },
+    fast3g: { label: 'Fast 3G', latency: 150, kbps: 1500 },
+    slow3g: { label: 'Slow 3G', latency: 600, kbps: 400 },
+    offline: { label: 'Offline', offline: true }
+  };
+  function throttleCfg() { return THROTTLE[prefs.throttle] || THROTTLE.none; }
+  function wait(ms) { return new Promise(function (r) { ms > 0 ? setTimeout(r, ms) : r(); }); }
+  function ruleMatches(rule, url, method) {
+    if (!rule || rule.on === false || !rule.match) return false;
+    if (rule.method && rule.method !== 'ANY' && rule.method !== method) return false;
+    var m = String(rule.match).trim();
+    try {
+      if (/^\/.+\/[gimsuy]*$/.test(m)) {
+        var last = m.lastIndexOf('/');
+        return new RegExp(m.slice(1, last), m.slice(last + 1)).test(url);
+      }
+      if (m.indexOf('*') !== -1) return new RegExp(m.split('*').map(function (x) { return x.replace(/[.+?^${}()|[\]\\]/g, '\\$&'); }).join('.*'), 'i').test(url);
+    } catch (e) { return false; }
+    return url.toLowerCase().indexOf(m.toLowerCase()) !== -1;
+  }
+  function findRule(url, method) {
+    for (var i = 0; i < prefs.netRules.length; i++) if (ruleMatches(prefs.netRules[i], url, method)) return prefs.netRules[i];
+    return null;
+  }
+  function bandwidthDelay(bytes) { var t = throttleCfg(); return t.kbps ? (bytes * 8) / (t.kbps * 1000) * 1000 : 0; }
+
+  /* ----------------------------------------------- WebSocket & EventSource */
+  var MAX_MSGS = 500;
+  function msgPreview(d) {
+    if (typeof d === 'string') return d.length > 20000 ? d.slice(0, 20000) + '\u2026' : d;
+    try { if (d instanceof Blob) return '[Blob ' + d.size + ' bytes]'; } catch (e) {}
+    try { if (d instanceof ArrayBuffer || ArrayBuffer.isView(d)) return '[Binary ' + d.byteLength + ' bytes]'; } catch (e) {}
+    return String(d);
+  }
+  function pushMsg(e, dir, data, type) {
+    if (!e.messages) e.messages = [];
+    e.messages.push({ dir: dir, t: performance.now(), data: msgPreview(data), type: type || 'message' });
+    if (e.messages.length > MAX_MSGS) e.messages.shift();
+    e.size = (e.size || 0) + (typeof data === 'string' ? data.length : (data && (data.byteLength || data.size)) || 0);
+    updateNet(e);
+  }
+  if (window.WebSocket) {
+    var OWS = window.WebSocket;
+    var PWS = function (url, protocols) {
+      var ws = protocols === undefined ? new OWS(url) : new OWS(url, protocols);
+      var e = newNet('ws'); e.method = 'WS'; e.url = ws.url || absUrl(url); e.messages = []; e.size = 0;
+      pushNet(e);
+      var oSendWs = ws.send;
+      ws.send = function (data) { pushMsg(e, 'out', data); return oSendWs.apply(ws, arguments); };
+      origAdd.call(ws, 'open', function () { e.status = 101; e.statusText = 'Switching Protocols'; updateNet(e); });
+      origAdd.call(ws, 'message', function (m) { pushMsg(e, 'in', m.data); });
+      origAdd.call(ws, 'error', function () { e.error = 'WebSocket error'; updateNet(e); });
+      origAdd.call(ws, 'close', function (c) { e.end = performance.now(); e.done = true; e.closeInfo = 'Closed (' + c.code + (c.reason ? ', ' + c.reason : '') + ')'; updateNet(e); });
+      return ws;
+    };
+    PWS.prototype = OWS.prototype;
+    try { Object.setPrototypeOf(PWS, OWS); } catch (err) {}
+    ['CONNECTING', 'OPEN', 'CLOSING', 'CLOSED'].forEach(function (k) { try { Object.defineProperty(PWS, k, { value: OWS[k] }); } catch (err) {} });
+    window.WebSocket = PWS;
+  }
+  if (window.EventSource) {
+    var OES = window.EventSource;
+    var PES = function (url, init) {
+      var es = new OES(url, init);
+      var e = newNet('sse'); e.method = 'SSE'; e.url = es.url || absUrl(url); e.messages = []; e.size = 0;
+      pushNet(e);
+      origAdd.call(es, 'open', function () { e.status = 200; updateNet(e); });
+      origAdd.call(es, 'message', function (m) { pushMsg(e, 'in', m.data, 'message'); });
+      origAdd.call(es, 'error', function () { if (es.readyState === 2) { e.end = performance.now(); e.done = true; } e.error = es.readyState === 2 ? 'Closed' : null; updateNet(e); });
+      var seen = { message: 1, open: 1, error: 1 };
+      var oAdd = es.addEventListener;
+      es.addEventListener = function (type) {
+        if (!seen[type]) { seen[type] = 1; origAdd.call(es, type, function (m) { pushMsg(e, 'in', m.data, type); }); }
+        return oAdd.apply(es, arguments);
+      };
+      return es;
+    };
+    PES.prototype = OES.prototype;
+    try { Object.setPrototypeOf(PES, OES); } catch (err) {}
+    ['CONNECTING', 'OPEN', 'CLOSED'].forEach(function (k) { try { Object.defineProperty(PES, k, { value: OES[k] }); } catch (err) {} });
+    window.EventSource = PES;
   }
 
   if (window.fetch) {
@@ -440,7 +565,30 @@
         e.reqBody = bodyToString(init && init.body);
       } catch (err) {}
       pushNet(e);
-      return origFetch.apply(this, arguments).then(function (res) {
+      var self = this, args = arguments, rule = findRule(e.url, e.method), thr = throttleCfg();
+      if (thr.offline || (rule && rule.action === 'block')) {
+        e.blocked = true;
+        return wait(thr.offline ? 30 : 5).then(function () {
+          e.status = 0; e.error = thr.offline ? 'Offline (throttling)' : 'Blocked by rule'; e.end = performance.now(); e.done = true; updateNet(e);
+          throw new TypeError(thr.offline ? 'Load failed' : 'Failed to fetch (blocked by Safari DevTools rule)');
+        });
+      }
+      if (rule && rule.action === 'mock') {
+        e.mocked = true;
+        var body = rule.body || '', st = +rule.status || 200, ct = rule.type || 'application/json';
+        return wait((+rule.delay || 0) + thr.latency + bandwidthDelay(body.length)).then(function () {
+          var res = new Response(st === 204 || st === 304 ? null : body, { status: st, statusText: 'Mocked', headers: { 'content-type': ct, 'x-safari-devtools': 'mocked' } });
+          e.status = st; e.statusText = 'Mocked'; e.resHeaders = { 'content-type': ct, 'x-safari-devtools': 'mocked' }; e.mime = ct;
+          e.resBody = body; e.size = body.length; e.end = performance.now(); e.done = true; updateNet(e);
+          return res;
+        });
+      }
+      var pre = thr.latency + (rule && rule.action === 'delay' ? +rule.delay || 0 : 0);
+      if (rule && rule.action === 'delay') e.delayed = true;
+      return wait(pre).then(function () { return origFetch.apply(self, args); }).then(function (res) {
+        if (!throttleCfg().kbps) return res;
+        return res.clone().arrayBuffer().then(function (b) { return wait(bandwidthDelay(b.byteLength)).then(function () { return res; }); }, function () { return res; });
+      }).then(function (res) {
         e.status = res.status; e.statusText = res.statusText;
         e.resHeaders = headersToObj(res.headers);
         e.mime = res.headers.get('content-type') || '';
@@ -491,12 +639,34 @@
           e.done = true; updateNet(e);
         });
       }
+      var xrule = info ? findRule(info.url, info.method) : null, xthr = throttleCfg(), sargs = arguments;
+      if (info && (xthr.offline || (xrule && (xrule.action === 'block' || xrule.action === 'mock')))) {
+        var mock = xrule && xrule.action === 'mock' && !xthr.offline;
+        var st = mock ? (+xrule.status || 200) : 0, txt = mock ? (xrule.body || '') : '', ct = mock ? (xrule.type || 'application/json') : '';
+        if (e) { e.mocked = mock; e.blocked = !mock; }
+        setTimeout(function () {
+          var resp = txt;
+          if (mock && xhr.responseType === 'json') { try { resp = JSON.parse(txt); } catch (er) { resp = null; } }
+          var props = { readyState: 4, status: st, statusText: mock ? 'Mocked' : '', responseText: txt, response: resp, responseURL: info.url };
+          Object.keys(props).forEach(function (k) { try { Object.defineProperty(xhr, k, { configurable: true, get: function () { return props[k]; } }); } catch (er) {} });
+          xhr.getAllResponseHeaders = function () { return mock ? 'content-type: ' + ct + '\r\nx-safari-devtools: mocked\r\n' : ''; };
+          xhr.getResponseHeader = function (n) { return mock && /^content-type$/i.test(n) ? ct : null; };
+          ['readystatechange', mock ? 'load' : 'error', 'loadend'].forEach(function (t) {
+            try { xhr.dispatchEvent(typeof ProgressEvent === 'function' ? new ProgressEvent(t) : new Event(t)); } catch (er) {}
+          });
+          if (e && !mock) { e.error = xthr.offline ? 'Offline (throttling)' : 'Blocked by rule'; updateNet(e); }
+        }, (mock ? (+xrule.delay || 0) : 0) + xthr.latency + 5);
+        return;
+      }
+      var xpre = xthr.latency + (xrule && xrule.action === 'delay' ? +xrule.delay || 0 : 0);
+      if (xpre > 0) { setTimeout(function () { oSend.apply(xhr, sargs); }, xpre); return; }
       return oSend.apply(this, arguments);
     };
   }
 
   function resourceType(e) {
     if (e.kind === 'fetch' || e.kind === 'xhr') return 'Fetch/XHR';
+    if (e.kind === 'ws' || e.kind === 'sse') return 'WS';
     if (e.kind === 'navigation') return 'Doc';
     var u = (e.url || '').split(/[?#]/)[0].toLowerCase();
     if (e.kind === 'script' || /\.m?js$/.test(u)) return 'JS';
@@ -532,11 +702,16 @@
 --tag:#881280;--attr:#994500;--aval:#1a1aa6;--str:#c41a16;--num:#1c00cf;--kw:#aa0d91;--null:#80868b;--prop:#881391;--fn:#0d22aa;\
 --warnbg:#fffbe5;--warnfg:#5c3c00;--warnline:#fff5c2;--errbg:#fff0f0;--errfg:#e40000;--errline:#ffd6d6;--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;\
 font:12px/1.4 -apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;color:var(--fg)}\n\
-@media (prefers-color-scheme:dark){.root{--bg:#202124;--bg2:#292a2d;--bg3:#35363a;--fg:#e8eaed;--fg2:#9aa0a6;--line:#494c50;--sel:#073655;--selfg:#e8eaed;--hover:#2c3440;--accent:#8ab4f8;\
+@media (prefers-color-scheme:dark){.root[data-theme=auto]{--bg:#202124;--bg2:#292a2d;--bg3:#35363a;--fg:#e8eaed;--fg2:#9aa0a6;--line:#494c50;--sel:#073655;--selfg:#e8eaed;--hover:#2c3440;--accent:#8ab4f8;\
 --tag:#5db0d7;--attr:#9bbbdc;--aval:#f29766;--str:#f28b54;--num:#9980ff;--kw:#c792ea;--null:#9aa0a6;--prop:#7cacf8;--fn:#9bbbdc;\
 --warnbg:#413c26;--warnfg:#fdd663;--warnline:#5c5432;--errbg:#4e3534;--errfg:#f28b81;--errline:#6b3d3a}}\n\
+.root[data-theme=dark]{--bg:#202124;--bg2:#292a2d;--bg3:#35363a;--fg:#e8eaed;--fg2:#9aa0a6;--line:#494c50;--sel:#073655;--selfg:#e8eaed;--hover:#2c3440;--accent:#8ab4f8;\
+--tag:#5db0d7;--attr:#9bbbdc;--aval:#f29766;--str:#f28b54;--num:#9980ff;--kw:#c792ea;--null:#9aa0a6;--prop:#7cacf8;--fn:#9bbbdc;\
+--warnbg:#413c26;--warnfg:#fdd663;--warnline:#5c5432;--errbg:#4e3534;--errfg:#f28b81;--errline:#6b3d3a}\n\
 .panel{position:fixed;left:0;right:0;bottom:0;background:var(--bg);border-top:1px solid var(--line);display:flex;flex-direction:column;z-index:2147483646;box-shadow:0 -2px 8px rgba(0,0,0,.12)}\n\
 .panel[hidden]{display:none}\n\
+.panel.right{left:auto;top:0;right:0;bottom:0;height:auto!important;border-top:0;border-left:1px solid var(--line);box-shadow:-2px 0 8px rgba(0,0,0,.12)}\n\
+.panel.right .resizer{top:0;bottom:0;left:-4px;right:auto;width:8px;height:auto;cursor:ew-resize}\n\
 .resizer{position:absolute;top:-4px;left:0;right:0;height:8px;cursor:ns-resize;touch-action:none}\n\
 .tabs{display:flex;align-items:stretch;background:var(--bg2);border-bottom:1px solid var(--line);height:30px;flex:none;overflow-x:auto;scrollbar-width:none}\n\
 .tabs::-webkit-scrollbar{display:none}\n\
@@ -649,7 +824,65 @@ td.edit{cursor:text}\n.del{border:0;background:none;color:var(--fg2);cursor:poin
 .fab{position:fixed;right:16px;bottom:16px;width:42px;height:42px;border-radius:50%;background:#1f1f1f;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:2147483646;box-shadow:0 2px 8px rgba(0,0,0,.3);touch-action:none;user-select:none;-webkit-user-select:none}\n\
 .fab svg{width:20px;height:20px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}\n\
 .fab .dot{position:absolute;top:-2px;right:-2px;min-width:16px;height:16px;border-radius:8px;background:#d93025;color:#fff;font:10px/16px -apple-system,sans-serif;text-align:center;padding:0 4px;display:none}\n\
-.fab[hidden]{display:none}\n";
+.fab[hidden]{display:none}\n\
+.sel{border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:3px;font:inherit;padding:1px 4px;max-width:150px}\n\
+.sel.warn{border-color:#e8a600;background:var(--warnbg);color:var(--warnfg)}\n\
+.rules{flex:none;max-height:45%;overflow:auto;border-bottom:1px solid var(--line);background:var(--bg2);padding:4px 8px 8px}\n\
+.rules[hidden]{display:none}\n\
+.rules-head{display:flex;align-items:center;gap:6px;padding:4px 0}\n\
+.rule-row{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:6px;margin-top:6px;display:flex;flex-direction:column;gap:5px}\n\
+.rule-line{display:flex;align-items:center;gap:6px;flex-wrap:wrap}\n\
+.rule-body{width:100%;font-family:var(--mono);font-size:11.5px;border:1px solid var(--line);border-radius:4px;background:var(--bg);color:var(--fg);padding:4px 6px;resize:vertical;outline:none}\n\
+.cmenu{position:fixed;z-index:2147483647;min-width:200px;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:6px;box-shadow:0 6px 20px rgba(0,0,0,.22);padding:4px 0;font-size:12px}\n\
+.cm-item{padding:5px 14px;cursor:default;white-space:nowrap}\n\
+.cm-item:hover{background:var(--accent);color:#fff}\n\
+.cm-item.dis{opacity:.45}.cm-item.dis:hover{background:none;color:inherit}\n\
+.cm-sep{height:1px;background:var(--line);margin:4px 0}\n\
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1f1f1f;color:#fff;padding:6px 14px;border-radius:14px;z-index:2147483647;font-size:12px;box-shadow:0 2px 8px rgba(0,0,0,.3)}\n\
+.nbadge{display:inline-block;font-size:10px;padding:0 5px;border-radius:7px;margin-right:5px;color:#fff;vertical-align:1px}\n\
+.nbadge.mock{background:#8e44ad}.nbadge.block{background:#d93025}.nbadge.delay{background:#e8a600}\n\
+.msg-row{display:flex;gap:8px;padding:3px 10px;border-bottom:1px solid var(--bg3);align-items:flex-start}\n\
+.msg-row.out{background:rgba(26,115,232,.06)}\n\
+.msg-dir{width:12px;flex:none;font-weight:700}.msg-row.out .msg-dir{color:var(--accent)}.msg-row.in .msg-dir{color:#1e8e3e}\n\
+.msg-data{flex:1;min-width:0;white-space:pre-wrap;word-break:break-all}\n\
+.remote-badge{display:flex;align-items:center;color:#1e8e3e;font-weight:600;padding:0 8px;white-space:nowrap}\n\
+.remote-badge[hidden]{display:none}\n\
+.row.has-bp{box-shadow:inset 3px 0 0 #1a73e8}\n\
+.ls-row{padding:4px 0 6px 10px;border-top:1px solid var(--bg3)}\n\
+.ls-top{display:flex;align-items:center;gap:6px}\n\
+.ls-fn{color:var(--fg2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-left:2px}\n\
+.perf{padding:8px}\n\
+.metrics{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-bottom:8px}\n\
+.metric{border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--bg)}\n\
+.metric-v{font-size:18px;font-weight:600}.metric-l{color:var(--fg2);font-size:11px;margin-top:2px}\n\
+.metric.good .metric-v{color:#1e8e3e}.metric.ni .metric-v{color:#e8a600}.metric.poor .metric-v{color:#d93025}\n\
+.graphs{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:6px}\n\
+.graph{border:1px solid var(--line);border-radius:8px;padding:6px 10px;max-width:420px}\n\
+.d-val.ovr{background:var(--warnbg);border-radius:3px;padding:0 3px}\n\
+.decl.tok{align-items:center;gap:4px;padding-right:6px}\n\
+.tok-meta{font-family:var(--mono);font-size:10.5px;white-space:nowrap}\n\
+.audit-item{border-bottom:1px solid var(--line);padding:6px 10px}\n\
+.audit-head{display:flex;align-items:center;gap:8px;cursor:pointer}\n\
+.audit-why{color:var(--fg2);margin:3px 0 0 26px}\n\
+.audit-nodes{margin:4px 0 0 26px;font-family:var(--mono);font-size:11.5px}\n\
+.audit-nodes[hidden]{display:none}\n\
+.sev{width:18px;height:18px;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;color:#fff;flex:none}\n\
+.sev.error{background:#d93025}.sev.warn{background:#e8a600}.sev.info{background:#1a73e8;font-style:italic;font-weight:700}\n\
+.count{background:var(--bg3);border-radius:8px;padding:0 6px;font-size:11px}\n\
+.vp-overlay{position:fixed;inset:0;pointer-events:none;z-index:2147483640}\n\
+.vp-band{position:fixed;background:rgba(234,67,53,.25);color:#b3261e;font:10px var(--mono);display:flex;align-items:flex-end;justify-content:center}\n\
+.vp-line{position:fixed;left:0;right:0;height:0;border-top:2px dashed}\n\
+.vp-line span{position:absolute;top:-18px;color:#fff;font:10px/16px var(--mono);padding:0 5px;border-radius:3px}\n\
+.vp-size{position:fixed;right:8px;top:50%;background:rgba(0,0,0,.7);color:#fff;font:11px var(--mono);padding:3px 8px;border-radius:4px}\n\
+.touch-layer{position:fixed;inset:0;pointer-events:none;z-index:2147483641}\n\
+.touch-dot{position:fixed;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;background:rgba(26,115,232,.35);border:2px solid rgba(26,115,232,.9)}\n\
+.touch-trail{position:fixed;width:10px;height:10px;margin:-5px 0 0 -5px;border-radius:50%;background:rgba(26,115,232,.5);animation:sdtfade .45s forwards}\n\
+.touch-label{position:fixed;transform:translate(-50%,-48px);background:#1f1f1f;color:#fff;font:11px var(--mono);padding:3px 8px;border-radius:10px;white-space:nowrap}\n\
+@keyframes sdtfade{to{opacity:0;transform:scale(.3)}}\n\
+.src-hit{display:flex;gap:8px;padding:2px 10px;cursor:pointer;white-space:pre;overflow:hidden}\n\
+.src-hit:hover{background:var(--hover)}\n\
+mark{background:#fff4c2;color:#1f1f1f;border-radius:2px}\n\
+.view .split>.src-left{min-height:0}\n";
 
   var ICON = {
     pick: '<svg viewBox="0 0 16 16"><path d="M7 13H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v4"/><path d="M8 8l6 2.5-2.5 1-1 2.5z"/></svg>',
@@ -657,6 +890,8 @@ td.edit{cursor:text}\n.del{border:0;background:none;color:var(--fg2);cursor:poin
     clear: '<svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.5"/><path d="M4.2 11.8l7.6-7.6"/></svg>',
     refresh: '<svg viewBox="0 0 16 16"><path d="M13 8a5 5 0 1 1-1.5-3.5M13 2.5V5h-2.5"/></svg>',
     dock: '<svg viewBox="0 0 16 16"><rect x="2" y="2.5" width="12" height="11" rx="1"/><path d="M2 9.5h12"/></svg>',
+    more: '<svg viewBox="0 0 16 16"><circle cx="8" cy="3.5" r="1.1"/><circle cx="8" cy="8" r="1.1"/><circle cx="8" cy="12.5" r="1.1"/></svg>',
+    search: '<svg viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5L14 14"/></svg>',
     fab: '<svg viewBox="0 0 24 24"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5M13.5 5l-3 14"/></svg>'
   };
   function icon(name) { var s = h('span', { style: { display: 'flex' } }); s.innerHTML = ICON[name]; return s; }
@@ -669,6 +904,7 @@ td.edit{cursor:text}\n.del{border:0;background:none;color:var(--fg2);cursor:poin
     shadow = host.attachShadow({ mode: 'open' });
     shadow.appendChild(h('style', { text: CSS }));
     root = h('div', { class: 'root' });
+    root.setAttribute('data-theme', prefs.theme || 'auto');
     shadow.appendChild(root);
 
     // highlight overlay
@@ -685,19 +921,22 @@ td.edit{cursor:text}\n.del{border:0;background:none;color:var(--fg2);cursor:poin
     // panel
     panel = h('div', { class: 'panel' });
     panel.style.height = state.height + 'px';
+    applyDock();
     var resizer = h('div', { class: 'resizer' });
     setupResizer(resizer);
 
     var pickBtn = h('button', { class: 'ibtn', title: 'Select an element in the page to inspect it (Ctrl+Shift+C)', onclick: function () { setPicking(!state.picking); } }, icon('pick'));
     ui.pickBtn = pickBtn;
     var tabs = h('div', { class: 'tabs' }, pickBtn, h('div', { class: 'sep' }));
-    ['Elements', 'Console', 'Sources', 'Network', 'Storage'].forEach(function (name) {
+    ['Elements', 'Console', 'Sources', 'Network', 'Storage', 'Performance', 'Tokens', 'Audit', 'Device'].forEach(function (name) {
       var id = name.toLowerCase();
       tabEls[id] = h('div', { class: 'tab', onclick: function () { switchTab(id); } }, name);
       tabs.append(tabEls[id]);
     });
     ui.badges = h('div', { class: 'badges', title: 'Open Console', onclick: function () { switchTab('console'); } });
-    tabs.append(h('div', { class: 'grow' }), ui.badges,
+    ui.remoteBadge = h('span', { class: 'remote-badge', hidden: true, title: 'Remote mode is streaming to your Mac' }, '\u25cf Remote');
+    tabs.append(h('div', { class: 'grow' }), ui.remoteBadge, ui.badges,
+      h('button', { class: 'ibtn', title: 'Settings & tools', onclick: function (ev) { var r = ev.currentTarget.getBoundingClientRect(); showMenu(r.left - 180, r.bottom + 4, settingsMenu()); } }, icon('more')),
       h('button', { class: 'ibtn', title: 'Close (Ctrl+Shift+D)', onclick: function () { hide(); } }, icon('close')));
 
     var viewWrap = h('div', { class: 'views' });
@@ -706,6 +945,10 @@ td.edit{cursor:text}\n.del{border:0;background:none;color:var(--fg2);cursor:poin
     views.network = buildNetwork();
     views.sources = buildSources();
     views.storage = buildStorage();
+    views.performance = buildPerf();
+    views.tokens = buildTokens();
+    views.audit = buildAudit();
+    views.device = buildDevice();
     Object.keys(views).forEach(function (k) { viewWrap.append(views[k]); });
 
     panel.append(resizer, tabs, viewWrap);
@@ -718,6 +961,9 @@ td.edit{cursor:text}\n.del{border:0;background:none;color:var(--fg2);cursor:poin
     switchTab(state.tab, true);
     if (state.open) show(); else { panel.hidden = true; }
     setupShortcuts();
+    var rq = null; try { rq = new URL(location.href).searchParams.get('sdt-remote'); } catch (e) {}
+    var rurl = rq || cfg.remote || prefs.remoteUrl;
+    if (rurl) startRemote(rurl);
   }
 
   function setupFab() {
@@ -744,12 +990,32 @@ td.edit{cursor:text}\n.del{border:0;background:none;color:var(--fg2);cursor:poin
     });
   }
 
+  function applyDock() {
+    var right = prefs.dock === 'right';
+    panel.classList.toggle('right', right);
+    panel.style.width = right ? Math.min(window.innerWidth - 40, prefs.width || 560) + 'px' : '';
+    panel.style.height = right ? '' : state.height + 'px';
+  }
+  function settingsMenu() {
+    function th(t, label) { return { label: (prefs.theme === t ? '\u2713 ' : '\u2003') + label, action: function () { prefs.theme = t; root.setAttribute('data-theme', t); savePrefs(); } }; }
+    function dk(d, label) { return { label: (prefs.dock === d ? '\u2713 ' : '\u2003') + label, action: function () { prefs.dock = d; savePrefs(); applyDock(); } }; }
+    return [th('auto', 'Theme: match system'), th('light', 'Theme: light'), th('dark', 'Theme: dark'), '-',
+      dk('bottom', 'Dock to bottom'), dk('right', 'Dock to right'), '-',
+      { label: 'Export debug report (.json)', action: exportReport },
+      { label: 'Export network as HAR', action: exportHar }, '-',
+      { label: remote.on ? 'Stop remote mode' : 'Remote mode (stream to your Mac)\u2026', action: function () { remote.on ? stopRemote() : promptRemote(); } },
+      { label: 'Reset settings for this site', action: function () { try { localStorage.removeItem(PREFS_KEY); } catch (e) {} flash('Settings reset \u2014 reload the page'); } }];
+  }
+
   function setupResizer(el) {
-    var startY, startH;
+    var startY, startH, startX, startW;
     el.addEventListener('pointerdown', function (e) {
-      startY = e.clientY; startH = panel.offsetHeight; e.preventDefault();
+      startY = e.clientY; startH = panel.offsetHeight; startX = e.clientX; startW = panel.offsetWidth; e.preventDefault();
       try { el.setPointerCapture(e.pointerId); } catch (err) {}
-      function move(ev) { var nh = Math.max(120, Math.min(window.innerHeight - 40, startH + (startY - ev.clientY))); panel.style.height = nh + 'px'; state.height = nh; }
+      function move(ev) {
+        if (prefs.dock === 'right') { var nw = Math.max(280, Math.min(window.innerWidth - 40, startW + (startX - ev.clientX))); panel.style.width = nw + 'px'; prefs.width = nw; return; }
+        var nh = Math.max(120, Math.min(window.innerHeight - 40, startH + (startY - ev.clientY))); panel.style.height = nh + 'px'; state.height = nh;
+      }
       function up() { el.removeEventListener('pointermove', move); el.removeEventListener('pointerup', up); saveUI(); }
       el.addEventListener('pointermove', move); el.addEventListener('pointerup', up);
     });
@@ -780,6 +1046,10 @@ td.edit{cursor:text}\n.del{border:0;background:none;color:var(--fg2);cursor:poin
     if (id === 'network') renderNet();
     if (id === 'storage') renderStorage();
     if (id === 'sources') renderSourcesNav();
+    if (id === 'performance') startPerf(); else stopPerf();
+    if (id === 'tokens') renderTokens();
+    if (id === 'audit' && !ui.auditRan) runAudit();
+    if (id === 'device') renderDevice();
     if (id === 'console') { scrollConsole(true); setTimeout(function () { ui.input && ui.input.focus({ preventScroll: true }); }, 0); }
     if (id !== 'storage') stopStoragePoll(); else startStoragePoll();
   }
@@ -945,8 +1215,9 @@ td.edit{cursor:text}\n.del{border:0;background:none;color:var(--fg2);cursor:poin
     ui.conRows = h('div');
     var input = h('textarea', { rows: 1, spellcheck: 'false', autocapitalize: 'off', autocomplete: 'off', placeholder: '' });
     ui.input = input;
-    input.addEventListener('input', autoGrow);
+    input.addEventListener('input', function () { autoGrow(); updateConAc(); });
     input.addEventListener('keydown', onPromptKey);
+    input.addEventListener('blur', function () { setTimeout(closeConAc, 120); });
     var prompt = h('div', { class: 'prompt' }, h('span', { class: 'ico' }, '\u203a'), input);
     ui.conList.append(ui.conRows, prompt);
     ui.conList.addEventListener('click', function (e) {
@@ -1023,8 +1294,90 @@ td.edit{cursor:text}\n.del{border:0;background:none;color:var(--fg2);cursor:poin
     if (ui.ready) { clear(ui.conRows); updateBadges(); }
   }
 
+  /* Console autocomplete: globals, then properties along the prototype chain for a.b.c */
+  var JS_WORDS = ['await', 'async', 'break', 'case', 'catch', 'class', 'const', 'continue', 'debugger', 'default', 'delete', 'do', 'else', 'export', 'extends', 'false', 'finally', 'for', 'function', 'if', 'import', 'in', 'instanceof', 'let', 'new', 'null', 'return', 'super', 'switch', 'this', 'throw', 'true', 'try', 'typeof', 'undefined', 'var', 'void', 'while', 'yield',
+    '$0', '$', '$$', 'copy', 'clear', 'inspect'];
+  var conAc = { items: [], idx: 0, from: 0 };
+  function propNamesOf(obj) {
+    var set = {}, n = 0;
+    try {
+      for (var o = obj; o != null && n < 12; o = Object.getPrototypeOf(o), n++) {
+        Object.getOwnPropertyNames(o).forEach(function (k) { if (!/^\d+$/.test(k)) set[k] = 1; });
+      }
+    } catch (e) {}
+    return Object.keys(set);
+  }
+  function resolvePath(path) {
+    var segs = path.split(/\??\./), cur;
+    try {
+      cur = segs[0] === 'this' ? window : (segs[0] in window ? window[segs[0]] : (0, eval)(segs[0]));
+      for (var i = 1; i < segs.length; i++) { if (cur == null) return undefined; cur = cur[segs[i]]; }
+    } catch (e) { return undefined; }
+    return cur;
+  }
+  function updateConAc() {
+    var ta = ui.input, before = ta.value.slice(0, ta.selectionStart);
+    var m = before.match(/([A-Za-z_$][\w$]*(?:\??\.[A-Za-z_$][\w$]*)*)(\??\.)?([A-Za-z_$][\w$]*)?$/);
+    if (!m || /["'`]/.test(before.split('\n').pop().replace(/(["'`]).*?\1/g, '').slice(-1))) return closeConAc();
+    var whole = m[0], cands, prefix;
+    if (/\.([A-Za-z_$][\w$]*)?$/.test(whole)) {
+      var dot = Math.max(whole.lastIndexOf('.'));
+      var base = whole.slice(0, dot).replace(/\?$/, '');
+      prefix = whole.slice(dot + 1);
+      var obj = resolvePath(base);
+      if (obj == null) return closeConAc();
+      cands = propNamesOf(Object(obj));
+    } else {
+      prefix = whole;
+      if (!prefix) return closeConAc();
+      cands = propNamesOf(window).concat(JS_WORDS);
+    }
+    var lp = prefix.toLowerCase(), seen = {};
+    var list = cands.filter(function (c) { if (seen[c]) return false; seen[c] = 1; return c !== prefix && c.toLowerCase().indexOf(lp) === 0; });
+    list.sort(function (a, b) { return (a.indexOf(prefix) === 0 ? 0 : 1) - (b.indexOf(prefix) === 0 ? 0 : 1) || (a.charAt(0) === '_') - (b.charAt(0) === '_') || a.length - b.length || (a < b ? -1 : 1); });
+    list = list.slice(0, 60);
+    if (!list.length) return closeConAc();
+    conAc = { items: list, idx: 0, from: ta.selectionStart - prefix.length, prefix: prefix };
+    renderConAc();
+  }
+  function renderConAc() {
+    if (!ui.conAcEl) { ui.conAcEl = h('div', { class: 'ac' }); root.append(ui.conAcEl); }
+    var el = clear(ui.conAcEl);
+    conAc.items.forEach(function (it, i) {
+      var row = h('div', { class: 'ac-item' + (i === conAc.idx ? ' on' : '') }, h('span', { class: 'ac-label' }, highlightMatch(it, conAc.prefix)));
+      row.addEventListener('mousedown', function (e) { e.preventDefault(); conAc.idx = i; acceptConAc(); });
+      el.append(row);
+    });
+    el.style.display = 'block';
+    var ta = ui.input, r = ta.getBoundingClientRect();
+    var lines = ta.value.slice(0, ta.selectionStart).split('\n');
+    var x = r.left + Math.min(r.width - 60, lines[lines.length - 1].length * 6.9);
+    var y = r.top + (lines.length - 1) * 16;
+    var hgt = Math.min(el.scrollHeight, 220);
+    el.style.left = Math.max(4, Math.min(window.innerWidth - (el.offsetWidth || 200) - 4, x)) + 'px';
+    el.style.top = (y + 20 + hgt < window.innerHeight ? y + 20 : Math.max(4, y - hgt - 4)) + 'px';
+  }
+  function closeConAc() { conAc.items = []; if (ui.conAcEl) ui.conAcEl.style.display = 'none'; }
+  function acceptConAc() {
+    var ta = ui.input, it = conAc.items[conAc.idx]; if (!it) return;
+    var end = ta.selectionStart;
+    ta.value = ta.value.slice(0, conAc.from) + it + ta.value.slice(end);
+    var pos = conAc.from + it.length; ta.setSelectionRange(pos, pos);
+    closeConAc(); autoGrow(); ta.focus();
+  }
+
   function onPromptKey(e) {
     var ta = ui.input;
+    if (conAc.items.length) {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault(); conAc.idx = (conAc.idx + (e.key === 'ArrowDown' ? 1 : -1) + conAc.items.length) % conAc.items.length; renderConAc();
+        var on = ui.conAcEl.children[conAc.idx]; if (on && on.scrollIntoView) on.scrollIntoView({ block: 'nearest' });
+        return;
+      }
+      if (e.key === 'Tab' || (e.key === 'ArrowRight' && ta.selectionStart === ta.value.length)) { e.preventDefault(); acceptConAc(); return; }
+      if (e.key === 'Escape') { e.preventDefault(); closeConAc(); return; }
+      if (e.key === 'Enter') closeConAc();
+    }
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       var code = ta.value;
@@ -1073,10 +1426,23 @@ td.edit{cursor:text}\n.del{border:0;background:none;color:var(--fg2);cursor:poin
     ui.tree = h('div', { class: 'tree', tabindex: '0' });
     ui.tree.addEventListener('keydown', onTreeKey);
     ui.crumbs = h('div', { class: 'crumbs' });
-    var left = h('div', { class: 'left' }, ui.tree, ui.crumbs);
+    // Find bar: text, CSS selector (pierces shadow roots) or XPath
+    ui.findInput = h('input', { class: 'filter', placeholder: 'Find: text, CSS selector or XPath', type: 'search', style: { flex: '1', width: 'auto' } });
+    ui.findCount = h('span', { class: 'muted', style: { whiteSpace: 'nowrap' } });
+    var doFind = debounce(function () { runFind(); }, 200);
+    ui.findInput.addEventListener('input', doFind);
+    ui.findInput.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); stepFind(e.shiftKey ? -1 : 1); }
+      if (e.key === 'Escape') { ui.findInput.value = ''; runFind(); ui.tree.focus(); }
+    });
+    var findBar = h('div', { class: 'toolbar' }, icon('search'), ui.findInput, ui.findCount,
+      h('button', { class: 'chip', title: 'Previous (Shift+Enter)', onclick: function () { stepFind(-1); } }, '\u25b2'),
+      h('button', { class: 'chip', title: 'Next (Enter)', onclick: function () { stepFind(1); } }, '\u25bc'));
+    ui.tree.addEventListener('keydown', function (e) { if ((e.metaKey || e.ctrlKey) && (e.key || '').toLowerCase() === 'f') { e.preventDefault(); ui.findInput.focus(); ui.findInput.select(); } });
+    var left = h('div', { class: 'left' }, findBar, ui.tree, ui.crumbs);
 
     ui.sideTabs = h('div', { class: 'side-tabs' });
-    ['Styles', 'Computed'].forEach(function (n) {
+    ['Styles', 'Computed', 'Listeners', 'Component'].forEach(function (n) {
       var t = h('div', { class: 'tab' + (state.sideTab === n ? ' on' : '') }, n);
       t.addEventListener('click', function () { state.sideTab = n; Array.prototype.forEach.call(ui.sideTabs.children, function (c) { c.classList.toggle('on', c === t); }); renderSide(); });
       ui.sideTabs.append(t);
@@ -1181,6 +1547,8 @@ td.edit{cursor:text}\n.del{border:0;background:none;color:var(--fg2);cursor:poin
 
     tri.addEventListener('click', function (e) { e.stopPropagation(); toggleExpand(n); });
     row.addEventListener('click', function () { selectNode(n, false); ui.tree.focus({ preventScroll: true }); });
+    row.addEventListener('contextmenu', function (ev) { ev.preventDefault(); selectNode(n, false); showMenu(ev.clientX, ev.clientY, nodeMenu(n)); });
+    if (domBps.has(n)) row.classList.add('has-bp');
     row.addEventListener('mouseenter', function () { highlight(n.nodeType === 1 ? n : (n.host || n.parentElement)); });
     row.addEventListener('mouseleave', hideHighlight);
   }
@@ -1594,9 +1962,361 @@ td.edit{cursor:text}\n.del{border:0;background:none;color:var(--fg2);cursor:poin
     var st = ui.side.scrollTop;
     clear(ui.side);
     if (!el || el.nodeType !== 1) { ui.side.append(h('div', { class: 'note' }, el && el.nodeType === 3 ? 'Text node selected.' : 'Select an element.')); return; }
-    if (state.sideTab === 'Computed') renderComputed(el); else renderStyles(el);
+    if (state.sideTab === 'Computed') renderComputed(el);
+    else if (state.sideTab === 'Listeners') renderListeners(el);
+    else if (state.sideTab === 'Component') renderComponent(el);
+    else renderStyles(el);
     ui.side.scrollTop = st;
   }
+
+  /* ---------------------------------------------------- deep DOM traversal */
+  // Visits every node in the document, including inside open shadow roots.
+  function walkDeep(start, fn) {
+    var stack = [start];
+    while (stack.length) {
+      var n = stack.pop();
+      if (n === host) continue;
+      if (fn(n) === false) return;
+      if (n.nodeType === 1 && n.shadowRoot) stack.push(n.shadowRoot);
+      for (var c = n.lastChild; c; c = c.previousSibling) stack.push(c);
+    }
+  }
+  function deepQueryAll(sel) {
+    var out = [];
+    walkDeep(document, function (n) {
+      if (n.nodeType === 11 || n.nodeType === 9) {
+        try { Array.prototype.forEach.call(n.querySelectorAll(sel), function (x) { if (x !== host) out.push(x); }); } catch (e) {}
+      }
+    });
+    return out;
+  }
+
+  /* ---------------------------------------------------------- find in DOM */
+  var find = { hits: [], idx: -1 };
+  function runFind() {
+    var q = ui.findInput.value.trim();
+    find = { hits: [], idx: -1 };
+    if (!q) { ui.findCount.textContent = ''; return; }
+    var hits = [];
+    if (/^\.?\//.test(q)) {
+      try {
+        var r = document.evaluate(q, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
+        for (var i = 0; i < r.snapshotLength; i++) hits.push(r.snapshotItem(i));
+      } catch (e) {}
+    }
+    if (!hits.length) {
+      var validSel = false;
+      try { document.createDocumentFragment().querySelector(q); validSel = true; } catch (e) {}
+      if (validSel) hits = deepQueryAll(q);
+    }
+    if (!hits.length) {
+      var lq = q.toLowerCase();
+      walkDeep(document, function (n) {
+        if (hits.length > 2000) return false;
+        if (n.nodeType === 1) {
+          var tagLine = '<' + n.localName + Array.prototype.map.call(n.attributes, function (a) { return ' ' + a.name + '="' + a.value + '"'; }).join('') + '>';
+          if (tagLine.toLowerCase().indexOf(lq) !== -1) hits.push(n);
+        } else if (n.nodeType === 3 && n.data.toLowerCase().indexOf(lq) !== -1) hits.push(n);
+      });
+    }
+    find.hits = hits;
+    if (hits.length) stepFind(1); else ui.findCount.textContent = 'No matches';
+  }
+  function stepFind(d) {
+    if (!find.hits.length) return;
+    find.idx = (find.idx + d + find.hits.length) % find.hits.length;
+    ui.findCount.textContent = (find.idx + 1) + ' of ' + find.hits.length;
+    selectNode(find.hits[find.idx], true);
+  }
+
+  /* ------------------------------------------------ copy selector / XPath */
+  function cssEscape(s) { return window.CSS && window.CSS.escape ? window.CSS.escape(s) : String(s).replace(/([^\w-])/g, '\\$1'); }
+  function cssPath(el) {
+    var parts = [];
+    for (var n = el; n && n.nodeType === 1; n = n.parentNode) {
+      var rootN = n.getRootNode();
+      if (n.id && rootN.querySelectorAll && rootN.querySelectorAll('#' + cssEscape(n.id)).length === 1) { parts.unshift('#' + cssEscape(n.id)); break; }
+      var sel = n.localName, p = n.parentNode;
+      if (p && p.children) {
+        var same = Array.prototype.filter.call(p.children, function (c) { return c.localName === n.localName; });
+        if (same.length > 1) sel += ':nth-of-type(' + (same.indexOf(n) + 1) + ')';
+      }
+      parts.unshift(sel);
+      if (p && p.nodeType === 11) break;
+    }
+    return parts.join(' > ');
+  }
+  function jsPath(el) {
+    var chain = [], n = el;
+    while (n) {
+      var r = n.getRootNode();
+      chain.unshift('querySelector(' + JSON.stringify(cssPath(n)) + ')');
+      if (r && r.host) { chain.unshift('shadowRoot'); n = r.host; } else break;
+    }
+    return 'document.' + chain.join('.');
+  }
+  function xPath(el) {
+    if (el.getRootNode() !== document) return '(inside a shadow root \u2014 XPath can\u2019t reach it; use the JS path)';
+    var parts = [];
+    for (var n = el; n && n.nodeType === 1; n = n.parentNode) {
+      if (n.id) { parts.unshift('//*[@id=' + JSON.stringify(n.id) + ']'); return parts.join('/'); }
+      var i = 1;
+      for (var s2 = n.previousElementSibling; s2; s2 = s2.previousElementSibling) if (s2.localName === n.localName) i++;
+      parts.unshift(n.localName + '[' + i + ']');
+    }
+    return '/' + parts.join('/');
+  }
+  var globalVarSeq = 0;
+  function nodeMenu(n) {
+    var el = n.nodeType === 1 ? n : null, bp = domBps.get(n) || {};
+    function toggleBp(k) {
+      var b = domBps.get(n) || {};
+      b[k] = !b[k];
+      if (!b.subtree && !b.attrs && !b.removal) domBps.delete(n); else { domBps.set(n, b); patchDom(); }
+      renderTree();
+      flash(b[k] ? 'DOM breakpoint set' : 'DOM breakpoint removed');
+    }
+    return [
+      el ? { label: 'Copy selector', action: function () { copyAndFlash(cssPath(el), 'selector'); } } : null,
+      el ? { label: 'Copy JS path', action: function () { copyAndFlash(jsPath(el), 'JS path'); } } : null,
+      el ? { label: 'Copy XPath', action: function () { copyAndFlash(xPath(el), 'XPath'); } } : null,
+      el ? { label: 'Copy outerHTML', action: function () { copyAndFlash(el.outerHTML, 'outerHTML'); } } : { label: 'Copy text', action: function () { copyAndFlash(n.textContent, 'text'); } },
+      '-',
+      el ? { label: (bp.subtree ? '\u2713 ' : '') + 'Break on subtree modifications', action: function () { toggleBp('subtree'); } } : null,
+      el ? { label: (bp.attrs ? '\u2713 ' : '') + 'Break on attribute modifications', action: function () { toggleBp('attrs'); } } : null,
+      { label: (bp.removal ? '\u2713 ' : '') + 'Break on node removal', action: function () { toggleBp('removal'); } },
+      { label: (prefs.bpDebugger ? '\u2713 ' : '') + 'Also pause in Web Inspector (debugger)', action: function () { prefs.bpDebugger = !prefs.bpDebugger; savePrefs(); } },
+      '-',
+      el ? { label: 'Edit as HTML', action: function () { editOuterHTML(el); } } : null,
+      el ? { label: (el.style.visibility === 'hidden' ? 'Show' : 'Hide') + ' element', action: function () { el.style.visibility = el.style.visibility === 'hidden' ? '' : 'hidden'; renderTree(); } } : null,
+      el ? { label: 'Scroll into view', action: function () { el.scrollIntoView({ block: 'center', behavior: 'smooth' }); highlight(el); setTimeout(hideHighlight, 1200); } } : null,
+      { label: 'Store as global variable', action: function () { var name = 'temp' + (++globalVarSeq); window[name] = n; addLog('info', [name, n], { site: null }); flash('Stored as ' + name); } },
+      { label: 'Delete node', disabled: n === document.documentElement || n === document.body, action: function () { var p = n.parentNode; n.remove(); state.selected = p; renderTree(); renderSide(); } }
+    ];
+  }
+  function editOuterHTML(el) {
+    var ta = h('textarea', { class: 'rule-body', spellcheck: 'false', style: { width: '100%', minHeight: '160px' } });
+    ta.value = el.outerHTML;
+    var box = h('div', { class: 'dsec' }, h('div', { class: 'muted' }, 'Edit as HTML \u2014 \u2318/Ctrl+Enter to apply, Esc to cancel'), ta);
+    clear(ui.side).append(box);
+    ta.focus();
+    ta.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') renderSide();
+      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+        var t = document.createElement('template');
+        t.innerHTML = ta.value;
+        var nodes = Array.prototype.slice.call(t.content.childNodes);
+        if (nodes.length) {
+          el.replaceWith.apply(el, nodes);
+          var first = nodes.filter(function (x) { return x.nodeType === 1; })[0];
+          selectNode(first || nodes[0], true);
+        }
+      }
+    });
+  }
+
+  /* ------------------------------------------------------- DOM breakpoints */
+  var domBps = new Map(), domPatched = false, bpHitAt = 0, tokenOwner = new WeakMap();
+  function bpNodeIn(node, key) {
+    for (var x = node; x; x = x.parentNode || x.host) {
+      if (x === host || x === shadow) return null;
+      var b = domBps.get(x);
+      if (b && b[key]) return x;
+    }
+    return null;
+  }
+  function domHit(kind, bpNode, desc) {
+    if (Date.now() - bpHitAt < 30) return;
+    bpHitAt = Date.now();
+    var err = new Error(desc);
+    err.name = 'DOM breakpoint (' + kind + ')';
+    addLog('warn', [err, bpNode], { site: null });
+    if (prefs.bpDebugger) { debugger; } // pauses only while Safari's Web Inspector is open
+  }
+  function subtreeCheck(parent, what) { var b = bpNodeIn(parent, 'subtree'); if (b) domHit('subtree modified', b, what + ' in ' + nodeLabel(parent)); }
+  function removalCheck(node) { var b = node && domBps.get(node); if (b && b.removal && node.isConnected) domHit('node removed', node, nodeLabel(node) + ' was removed'); }
+  function attrCheck(el, name) { var b = domBps.get(el); if (b && b.attrs) domHit('attribute modified', el, 'attribute "' + name + '" on ' + nodeLabel(el)); }
+  function patchDom() {
+    if (domPatched) return;
+    domPatched = true;
+    function wrap(proto, name, before) {
+      var o = proto && proto[name];
+      if (typeof o !== 'function') return;
+      proto[name] = function () { if (domBps.size) { try { before.apply(this, arguments); } catch (e) {} } return o.apply(this, arguments); };
+    }
+    function wrapSet(proto, prop, before) {
+      var d = proto && Object.getOwnPropertyDescriptor(proto, prop);
+      if (!d || !d.set) return;
+      Object.defineProperty(proto, prop, { configurable: true, enumerable: d.enumerable, get: d.get,
+        set: function (v) { if (domBps.size) { try { before.call(this, v); } catch (e) {} } d.set.call(this, v); } });
+    }
+    var NP = Node.prototype, EP = Element.prototype;
+    wrap(NP, 'appendChild', function () { subtreeCheck(this, 'child added'); });
+    wrap(NP, 'insertBefore', function () { subtreeCheck(this, 'child inserted'); });
+    wrap(NP, 'removeChild', function (c) { removalCheck(c); subtreeCheck(this, 'child removed'); });
+    wrap(NP, 'replaceChild', function (nw, old) { removalCheck(old); subtreeCheck(this, 'child replaced'); });
+    ['append', 'prepend', 'replaceChildren'].forEach(function (m) { wrap(EP, m, function () { subtreeCheck(this, m + '()'); }); });
+    ['before', 'after'].forEach(function (m) { wrap(EP, m, function () { if (this.parentNode) subtreeCheck(this.parentNode, m + '()'); }); });
+    wrap(EP, 'replaceWith', function () { removalCheck(this); if (this.parentNode) subtreeCheck(this.parentNode, 'replaceWith()'); });
+    wrap(EP, 'remove', function () { removalCheck(this); if (this.parentNode) subtreeCheck(this.parentNode, 'child removed'); });
+    ['insertAdjacentHTML', 'insertAdjacentElement', 'insertAdjacentText'].forEach(function (m) {
+      wrap(EP, m, function (pos) { var t = /^(before|after)/i.test(pos) ? this.parentNode : this; if (t) subtreeCheck(t, m + '()'); });
+    });
+    ['setAttribute', 'removeAttribute', 'toggleAttribute'].forEach(function (m) { wrap(EP, m, function (a) { attrCheck(this, a); }); });
+    ['setAttributeNS', 'removeAttributeNS'].forEach(function (m) { wrap(EP, m, function (ns, a) { attrCheck(this, a); }); });
+    wrapSet(EP, 'innerHTML', function () { subtreeCheck(this, 'innerHTML set'); });
+    wrapSet(EP, 'outerHTML', function () { removalCheck(this); if (this.parentNode) subtreeCheck(this.parentNode, 'outerHTML set'); });
+    wrapSet(NP, 'textContent', function () { if (this.nodeType === 1) subtreeCheck(this, 'textContent set'); });
+    wrapSet(EP, 'className', function () { attrCheck(this, 'class'); });
+    wrapSet(EP, 'id', function () { attrCheck(this, 'id'); });
+    if (window.HTMLElement) {
+      wrapSet(HTMLElement.prototype, 'innerText', function () { subtreeCheck(this, 'innerText set'); });
+      wrapSet(HTMLElement.prototype, 'hidden', function () { attrCheck(this, 'hidden'); });
+    }
+    // classList: DOMTokenList has no back-reference to its element, so remember it
+    var clDesc = Object.getOwnPropertyDescriptor(EP, 'classList');
+    if (clDesc && clDesc.get) {
+      Object.defineProperty(EP, 'classList', { configurable: true, enumerable: clDesc.enumerable, set: clDesc.set,
+        get: function () { var l = clDesc.get.call(this); if (domBps.size) tokenOwner.set(l, this); return l; } });
+    }
+    if (window.DOMTokenList) ['add', 'remove', 'toggle', 'replace'].forEach(function (m) {
+      wrap(DOMTokenList.prototype, m, function () { var el = tokenOwner.get(this); if (el) attrCheck(el, 'class'); });
+    });
+    // Anything not caught above (e.g. el.style.color = ...) still reports, without a call stack.
+    new MutationObserver(function (recs) {
+      if (!domBps.size || Date.now() - bpHitAt < 60) return;
+      for (var i = 0; i < recs.length; i++) {
+        var r = recs[i];
+        if (r.type === 'attributes') {
+          var b = domBps.get(r.target);
+          if (b && b.attrs) { addLog('warn', ['DOM breakpoint: attribute "' + r.attributeName + '" modified (call stack unavailable)', r.target], { site: null }); return; }
+        } else if (r.type === 'childList') {
+          var sb = bpNodeIn(r.target, 'subtree');
+          if (sb) { addLog('warn', ['DOM breakpoint: subtree modified (call stack unavailable)', sb], { site: null }); return; }
+        }
+      }
+    }).observe(document.documentElement, { attributes: true, childList: true, subtree: true });
+  }
+
+  /* -------------------------------------------------------- listeners pane */
+  function fnPreview(fn) {
+    try {
+      var src = Function.prototype.toString.call(fn).replace(/\s+/g, ' ');
+      return (fn.name ? fn.name + ': ' : '') + (src.length > 90 ? src.slice(0, 90) + '\u2026' : src);
+    } catch (e) { return String(fn); }
+  }
+  function renderListeners(el) {
+    var withAnc = state.lsAncestors !== false;
+    var cb = h('input', { type: 'checkbox' });
+    cb.checked = withAnc;
+    cb.addEventListener('change', function () { state.lsAncestors = cb.checked; renderSide(); });
+    ui.side.append(h('label', { class: 'src-opt' }, cb, ' Include ancestors, document and window'));
+    var targets = [el];
+    if (withAnc) { for (var a = inheritParent(el); a; a = inheritParent(a)) targets.push(a); targets.push(document, window); }
+    var byType = {};
+    function add(type, item) { (byType[type] = byType[type] || []).push(item); }
+    targets.forEach(function (t) {
+      (listenerReg.get(t) || []).forEach(function (l) { add(l.type, { t: t, l: l }); });
+      if (t.nodeType === 1) Array.prototype.forEach.call(t.attributes, function (at) {
+        if (/^on/.test(at.name) && typeof t[at.name] === 'function') add(at.name.slice(2), { t: t, l: { type: at.name.slice(2), listener: t[at.name], attr: true } });
+      });
+    });
+    var types = Object.keys(byType).sort();
+    if (!types.length) {
+      ui.side.append(h('div', { class: 'note' }, 'No event listeners found. Only listeners added after DevTools loaded are tracked \u2014 the extension loads it first, so reload the page with the extension on to see everything.'));
+      return;
+    }
+    types.forEach(function (type) {
+      var sec = h('div', { class: 'rule' }, h('div', { class: 'rule-head' }, h('b', { class: 'rule-sel' }, type), h('span', { class: 'muted' }, String(byType[type].length))));
+      byType[type].forEach(function (it) {
+        var l = it.l, frames = l.stack ? parseStack(l.stack) : [], fr = frames[0];
+        var flags = [l.capture ? 'capture' : '', l.once ? 'once' : '', l.passive ? 'passive' : '', l.attr ? 'on' + type + ' attribute' : ''].filter(Boolean).join(' \u00b7 ');
+        var rm = l.attr ? null : h('button', { class: 'del', title: 'Remove this listener', onclick: function () { try { it.t.removeEventListener(type, l.listener, { capture: l.capture }); } catch (e) {} renderSide(); } }, '\u2715');
+        sec.append(h('div', { class: 'ls-row' },
+          h('div', { class: 'ls-top' }, it.t === window ? h('span', { class: 'v-key' }, 'window') : nodeRef(it.t), flags ? h('span', { class: 'muted' }, ' ' + flags) : null, h('span', { class: 'grow' }), fr ? srcLink(fr) : null, rm),
+          h('div', { class: 'ls-fn mono' }, typeof l.listener === 'function' ? fnPreview(l.listener) : '{ handleEvent }')));
+      });
+      ui.side.append(sec);
+    });
+  }
+
+  /* ------------------------------------------------ web component inspector */
+  function renderComponent(el) {
+    var tag = el.localName, ctor = window.customElements && customElements.get ? customElements.get(tag) : null;
+    var isCustom = tag.indexOf('-') !== -1;
+    function sec(title) { var d = h('div', { class: 'rule' }, h('div', { class: 'rule-head' }, h('b', null, title))); ui.side.append(d); return d; }
+    function kv(box, k, v) { box.append(h('div', { class: 'kv' }, h('span', { class: 'k' }, k), h('span', { class: 'v' }, v))); }
+    var info = sec('<' + tag + '>');
+    kv(info, 'Custom element', isCustom ? (ctor ? 'defined' : 'not defined (yet)') : 'no');
+    if (ctor) kv(info, 'Class', renderValue(ctor));
+    if (ctor && ctor.observedAttributes && ctor.observedAttributes.length) kv(info, 'Observed attributes', h('span', { class: 'mono' }, ctor.observedAttributes.join(', ')));
+    kv(info, 'Shadow root', el.shadowRoot ? 'open' : (isCustom ? 'none or closed' : 'none'));
+    var lit = !!(ctor && ctor.elementProperties instanceof Map);
+    if (lit) kv(info, 'Library', 'Lit');
+
+    var names = [];
+    if (lit) ctor.elementProperties.forEach(function (o, k) { if (typeof k === 'string') names.push(k); });
+    else if (ctor) {
+      for (var p = ctor.prototype; p && p !== HTMLElement.prototype && p !== Element.prototype; p = Object.getPrototypeOf(p)) {
+        Object.getOwnPropertyNames(p).forEach(function (k) {
+          var d = Object.getOwnPropertyDescriptor(p, k);
+          if (k !== 'constructor' && d && (d.get || d.set) && k.charAt(0) !== '_' && names.indexOf(k) === -1) names.push(k);
+        });
+      }
+      Object.keys(el).forEach(function (k) { if (k.charAt(0) !== '_' && names.indexOf(k) === -1) names.push(k); });
+    }
+    if (names.length) {
+      var ps = sec('Properties');
+      names.sort().forEach(function (k) {
+        var v; try { v = el[k]; } catch (e) { v = e; }
+        var val = h('span', { class: 'd-val' }, renderValue(v));
+        if (isPrim(v)) val.addEventListener('click', function () {
+          inlineEdit(val, JSON.stringify(v === undefined ? null : v), function (txt) {
+            try { el[k] = JSON.parse(txt); } catch (e) { el[k] = txt; }
+            setTimeout(renderSide, 30);
+          });
+        });
+        ps.append(h('div', { class: 'decl' }, h('span', { class: 'd-name' }, k), ':\u00a0', val));
+      });
+      ps.append(h('div', { class: 'muted', style: { marginTop: '4px' } }, 'Click a text, number or boolean value to change it on the live element.'));
+    }
+    try {
+      if (window.ng && window.ng.getComponent) {
+        var comp = window.ng.getComponent(el);
+        if (comp) sec('Angular component').append(expandable(comp, preview(comp, true), true));
+      }
+    } catch (e) {}
+    if (el.shadowRoot) {
+      var slots = el.shadowRoot.querySelectorAll('slot');
+      if (slots.length) {
+        var ss = sec('Slots');
+        Array.prototype.forEach.call(slots, function (sl) {
+          var assigned = sl.assignedNodes({ flatten: true }).filter(function (n) { return n.nodeType === 1 || (n.nodeType === 3 && n.data.trim()); });
+          kv(ss, sl.name ? 'slot="' + sl.name + '"' : '(default)', assigned.length ? assigned.slice(0, 8).map(function (n) { return [nodeRef(n), ' ']; }) : h('span', { class: 'muted' }, 'empty'));
+        });
+      }
+      var parts = el.shadowRoot.querySelectorAll('[part]');
+      if (parts.length) {
+        var pp = sec('::part() styling hooks');
+        Array.prototype.forEach.call(parts, function (n) { kv(pp, h('span', { class: 'mono' }, tag + '::part(' + n.getAttribute('part') + ')'), nodeRef(n)); });
+      }
+      var used = {};
+      sheetsOf(el.shadowRoot).forEach(function (sh) {
+        try { Array.prototype.forEach.call(sh.cssRules, function (r) { (r.cssText.match(/var\(\s*(--[\w-]+)/g) || []).forEach(function (m) { used[m.replace(/var\(\s*/, '')] = 1; }); }); } catch (e) {}
+      });
+      var vars = Object.keys(used).sort();
+      if (vars.length) {
+        var vs = sec('CSS variables it reads (' + vars.length + ')');
+        var cs = getComputedStyle(el);
+        vars.slice(0, 200).forEach(function (n) {
+          var v = cs.getPropertyValue(n).trim();
+          vs.append(h('div', { class: 'decl' }, h('span', { class: 'd-name' }, n), ':\u00a0', looksColor(v) ? h('span', { class: 'swatch', style: { background: v } }) : null, h('span', { class: 'd-val' }, v || h('span', { class: 'muted' }, '(not set)'))));
+        });
+      }
+    }
+    if (!isCustom && !el.shadowRoot) ui.side.append(h('div', { class: 'note' }, 'Select a custom element (a tag with a dash, like <user-card>) to see its properties, slots, parts and CSS variables.'));
+  }
+
 
   function renderStyles(el) {
     var seen = new Set(), blockedAll = [];
@@ -1831,7 +2551,7 @@ td.edit{cursor:text}\n.del{border:0;background:none;color:var(--fg2);cursor:poin
   }
 
   /* ---------------------------------------------------------------- network */
-  var NET_TYPES = ['All', 'Fetch/XHR', 'Doc', 'CSS', 'JS', 'Img', 'Font', 'Media', 'Other'];
+  var NET_TYPES = ['All', 'Fetch/XHR', 'WS', 'Doc', 'CSS', 'JS', 'Img', 'Font', 'Media', 'Other'];
   function buildNetwork() {
     var v = h('div', { class: 'view' });
     var filter = h('input', { class: 'filter', placeholder: 'Filter URLs', type: 'search' });
@@ -1842,9 +2562,16 @@ td.edit{cursor:text}\n.del{border:0;background:none;color:var(--fg2);cursor:poin
       c.addEventListener('click', function () { state.netType = t; Array.prototype.forEach.call(chips.children, function (x) { x.classList.toggle('on', x === c); }); renderNet(); });
       chips.append(c);
     });
+    var thr = h('select', { class: 'sel', title: 'Network throttling' });
+    Object.keys(THROTTLE).forEach(function (k) { var o = h('option', { value: k }, THROTTLE[k].label); if (prefs.throttle === k) o.selected = true; thr.append(o); });
+    thr.addEventListener('change', function () { prefs.throttle = thr.value; savePrefs(); thr.classList.toggle('warn', thr.value !== 'none'); });
+    thr.classList.toggle('warn', prefs.throttle !== 'none');
+    ui.rulesBtn = h('button', { class: 'chip', title: 'Block, mock or delay requests', onclick: function () { ui.rulesOpen = !ui.rulesOpen; renderRules(); } });
     v.append(h('div', { class: 'toolbar' },
       h('button', { class: 'ibtn', title: 'Clear network log', onclick: function () { state.net.length = 0; state.netSel = null; renderNet(); } }, icon('clear')),
-      h('div', { class: 'sep' }), filter, h('div', { class: 'sep' }), chips));
+      h('div', { class: 'sep' }), filter, thr, ui.rulesBtn, h('div', { class: 'sep' }), chips));
+    ui.rules = h('div', { class: 'rules', hidden: true });
+    v.append(ui.rules);
 
     ui.netBody = h('tbody');
     var table = h('table', null,
@@ -1864,8 +2591,98 @@ td.edit{cursor:text}\n.del{border:0;background:none;color:var(--fg2);cursor:poin
     ui.netWrap = h('div', { class: 'net-wrap' }, ui.netTable, ui.netDetail);
     ui.netStatus = h('div', { class: 'statusbar' });
     v.append(ui.netWrap, ui.netStatus);
+    renderRules();
     return v;
   }
+
+  /* Request rules editor: block / mock / delay */
+  function renderRules() {
+    var n = prefs.netRules.filter(function (r) { return r.on !== false; }).length;
+    ui.rulesBtn.textContent = 'Rules' + (n ? ' (' + n + ')' : '');
+    ui.rulesBtn.classList.toggle('on', !!n);
+    ui.rules.hidden = !ui.rulesOpen;
+    if (!ui.rulesOpen) return;
+    clear(ui.rules);
+    function save() { savePrefs(); var c = prefs.netRules.filter(function (r) { return r.on !== false; }).length; ui.rulesBtn.textContent = 'Rules' + (c ? ' (' + c + ')' : ''); ui.rulesBtn.classList.toggle('on', !!c); }
+    var head = h('div', { class: 'rules-head' },
+      h('b', null, 'Request rules'), h('span', { class: 'muted' }, ' \u2014 match by text, * wildcards or /regex/. First matching rule wins.'),
+      h('div', { class: 'grow' }),
+      h('button', { class: 'btn', onclick: function () { prefs.netRules.push({ on: true, match: '', method: 'ANY', action: 'mock', status: 200, type: 'application/json', body: '{\n  "ok": true\n}', delay: 0 }); save(); renderRules(); } }, '+ Add rule'),
+      h('button', { class: 'ibtn', title: 'Close', onclick: function () { ui.rulesOpen = false; renderRules(); } }, icon('close')));
+    ui.rules.append(head);
+    if (!prefs.netRules.length) ui.rules.append(h('div', { class: 'note' }, 'No rules yet. Add one, or right-click a request \u2192 \u201cMock this request\u201d.'));
+    prefs.netRules.forEach(function (r, i) {
+      var on = h('input', { type: 'checkbox', title: 'Enabled' }); on.checked = r.on !== false;
+      on.addEventListener('change', function () { r.on = on.checked; save(); });
+      var match = h('input', { class: 'filter', placeholder: 'URL contains\u2026  e.g. /api/users or *.png or /\/v2\//', style: { flex: '1', width: 'auto' } }); match.value = r.match || '';
+      match.addEventListener('input', function () { r.match = match.value; save(); });
+      var method = h('select', { class: 'sel' }); ['ANY', 'GET', 'POST', 'PUT', 'PATCH', 'DELETE'].forEach(function (m) { var o = h('option', null, m); if ((r.method || 'ANY') === m) o.selected = true; method.append(o); });
+      method.addEventListener('change', function () { r.method = method.value; save(); });
+      var action = h('select', { class: 'sel' }); [['mock', 'Mock response'], ['block', 'Block'], ['delay', 'Delay']].forEach(function (a) { var o = h('option', { value: a[0] }, a[1]); if (r.action === a[0]) o.selected = true; action.append(o); });
+      action.addEventListener('change', function () { r.action = action.value; save(); renderRules(); });
+      var del = h('button', { class: 'del', title: 'Delete rule', onclick: function () { prefs.netRules.splice(i, 1); save(); renderRules(); } }, '\u2715');
+      var row = h('div', { class: 'rule-row' }, h('div', { class: 'rule-line' }, on, match, method, action, del));
+      if (r.action === 'mock' || r.action === 'delay') {
+        var delay = h('input', { class: 'filter', type: 'number', min: '0', step: '100', style: { width: '90px' } }); delay.value = r.delay || 0;
+        delay.addEventListener('input', function () { r.delay = +delay.value || 0; save(); });
+        var line2 = h('div', { class: 'rule-line' }, h('span', { class: 'muted' }, 'Delay ms'), delay);
+        if (r.action === 'mock') {
+          var status = h('input', { class: 'filter', type: 'number', style: { width: '80px' } }); status.value = r.status || 200;
+          status.addEventListener('input', function () { r.status = +status.value || 200; save(); });
+          var type = h('input', { class: 'filter', style: { width: '180px' } }); type.value = r.type || 'application/json';
+          type.addEventListener('input', function () { r.type = type.value; save(); });
+          line2.append(h('span', { class: 'muted' }, 'Status'), status, h('span', { class: 'muted' }, 'Content-Type'), type);
+        }
+        row.append(line2);
+        if (r.action === 'mock') {
+          var body = h('textarea', { class: 'rule-body', spellcheck: 'false', rows: '4' }); body.value = r.body || '';
+          body.addEventListener('input', function () { r.body = body.value; save(); });
+          row.append(body);
+        }
+      }
+      ui.rules.append(row);
+    });
+  }
+  function mockFromEntry(e) {
+    var path = e.url; try { var u = new URL(e.url); path = u.pathname + u.search; } catch (er) {}
+    prefs.netRules.unshift({ on: true, match: path, method: e.method || 'ANY', action: 'mock', status: e.status || 200, type: (e.mime || 'application/json').split(';')[0], body: typeof e.resBody === 'string' ? e.resBody : '', delay: 0 });
+    savePrefs(); ui.rulesOpen = true; renderRules();
+  }
+  function fetchFor(e) {
+    var opts = { method: e.method };
+    if (e.reqHeaders && Object.keys(e.reqHeaders).length) opts.headers = e.reqHeaders;
+    if (e.reqBody && e.reqBody.charAt(0) !== '[') opts.body = e.reqBody;
+    return 'fetch(' + JSON.stringify(e.url) + ', ' + JSON.stringify(opts, null, 2) + ');';
+  }
+
+  /* Generic context menu */
+  function showMenu(x, y, items) {
+    hideMenu();
+    var m = h('div', { class: 'cmenu' });
+    items.forEach(function (it) {
+      if (it === '-') { m.append(h('div', { class: 'cm-sep' })); return; }
+      if (!it) return;
+      var row = h('div', { class: 'cm-item' + (it.disabled ? ' dis' : '') }, it.label);
+      if (!it.disabled) row.addEventListener('click', function (ev) { ev.stopPropagation(); hideMenu(); it.action(); });
+      m.append(row);
+    });
+    root.append(m);
+    var w = m.offsetWidth || 220, hh = m.offsetHeight || 200;
+    m.style.left = Math.max(4, Math.min(window.innerWidth - w - 4, x)) + 'px';
+    m.style.top = Math.max(4, Math.min(window.innerHeight - hh - 4, y)) + 'px';
+    ui.menu = m;
+    setTimeout(function () { origAdd.call(document, 'mousedown', hideMenuOutside, true); origAdd.call(window, 'blur', hideMenu); }, 0);
+  }
+  function hideMenuOutside(e) { if (ui.menu && e.composedPath().indexOf(ui.menu) === -1) hideMenu(); }
+  function hideMenu() {
+    if (ui.menu) { ui.menu.remove(); ui.menu = null; }
+    origRemove.call(document, 'mousedown', hideMenuOutside, true); origRemove.call(window, 'blur', hideMenu);
+  }
+  function flash(msg) {
+    var t = h('div', { class: 'toast' }, msg); root.append(t);
+    setTimeout(function () { t.remove(); }, 1400);
+  }
+  function copyAndFlash(text, what) { copyText(text); flash('Copied ' + (what || '')); }
 
   var netRenderPending = false;
   function scheduleNetRender() {
@@ -1895,8 +2712,9 @@ td.edit{cursor:text}\n.del{border:0;background:none;color:var(--fg2);cursor:poin
       var fail = e.error || (e.status >= 400);
       var statusTxt = e.error ? '(failed)' : e.status == null ? (e.cached ? '(cache)' : e.fromPerf ? '\u2014' : '(pending)') : String(e.status);
       var bar = h('div', { class: 'wf' }, h('i', { style: { left: ((e.start - t0) / span * 100) + '%', width: (((e.end || performance.now()) - e.start) / span * 100) + '%' } }));
+      var badge = e.mocked ? h('span', { class: 'nbadge mock' }, 'mock') : e.blocked ? h('span', { class: 'nbadge block' }, 'blocked') : e.delayed ? h('span', { class: 'nbadge delay' }, 'delayed') : null;
       var tr = h('tr', { class: (fail ? 'fail' : '') + (state.netSel === e ? ' sel' : '') },
-        h('td', { title: e.url }, netName(e.url)),
+        h('td', { title: e.url }, badge, netName(e.url)),
         h('td', { class: 'c-x' }, e.method),
         h('td', { class: 'c-x' }, statusTxt),
         h('td', { class: 'c-x' }, resourceType(e) === 'Fetch/XHR' ? e.kind : resourceType(e).toLowerCase()),
@@ -1904,6 +2722,22 @@ td.edit{cursor:text}\n.del{border:0;background:none;color:var(--fg2);cursor:poin
         h('td', { class: 'c-x' }, e.end != null ? fmtMs(dur) : 'Pending'),
         h('td', { class: 'c-x' }, bar));
       tr.addEventListener('click', function () { state.netSel = state.netSel === e ? null : e; renderNet(); });
+      tr.addEventListener('contextmenu', function (ev) {
+        ev.preventDefault();
+        var http = e.kind === 'fetch' || e.kind === 'xhr' || e.fromPerf;
+        showMenu(ev.clientX, ev.clientY, [
+          { label: 'Copy URL', action: function () { copyAndFlash(e.url, 'URL'); } },
+          http ? { label: 'Copy as fetch', action: function () { copyAndFlash(fetchFor(e), 'fetch()'); } } : null,
+          http ? { label: 'Copy as cURL', action: function () { copyAndFlash(curlFor(e), 'cURL'); } } : null,
+          typeof e.resBody === 'string' ? { label: 'Copy response', action: function () { copyAndFlash(e.resBody, 'response'); } } : null,
+          '-',
+          http ? { label: 'Mock this request\u2026', action: function () { mockFromEntry(e); } } : null,
+          { label: 'Block this URL', action: function () { var p = e.url; try { p = new URL(e.url).pathname; } catch (er) {} prefs.netRules.unshift({ on: true, match: p, method: 'ANY', action: 'block' }); savePrefs(); ui.rulesOpen = true; renderRules(); } },
+          { label: 'Delay this URL by 2 s', action: function () { var p = e.url; try { p = new URL(e.url).pathname; } catch (er) {} prefs.netRules.unshift({ on: true, match: p, method: 'ANY', action: 'delay', delay: 2000 }); savePrefs(); ui.rulesOpen = true; renderRules(); } },
+          '-',
+          { label: 'Replay request', disabled: !(e.kind === 'fetch' || e.kind === 'xhr'), action: function () { try { (0, eval)(fetchFor(e)); flash('Replayed'); } catch (er) { flash('Replay failed'); } } }
+        ]);
+      });
       ui.netBody.append(tr);
     });
     ui.netTable.scrollTop = st;
@@ -1935,7 +2769,8 @@ td.edit{cursor:text}\n.del{border:0;background:none;color:var(--fg2);cursor:poin
     var d = ui.netDetail; clear(d);
     var tabs = h('div', { class: 'side-tabs' },
       h('button', { class: 'ibtn', title: 'Close', onclick: function () { state.netSel = null; renderNet(); } }, icon('close')));
-    ['Headers', 'Payload', 'Preview', 'Response', 'Timing'].forEach(function (n) {
+    var isWs = e.kind === 'ws' || e.kind === 'sse';
+    (isWs ? ['Messages', 'Headers'] : ['Headers', 'Payload', 'Preview', 'Response', 'Timing']).forEach(function (n) {
       if (n === 'Payload' && !e.reqBody && e.url.indexOf('?') === -1) return;
       if ((n === 'Preview' || n === 'Response') && e.fromPerf && resourceType(e) !== 'Img') return;
       var t = h('div', { class: 'tab' + (state.netDetailTab === n ? ' on' : '') }, n);
@@ -1946,7 +2781,21 @@ td.edit{cursor:text}\n.del{border:0;background:none;color:var(--fg2);cursor:poin
     var body = h('div', { class: 'scroll' });
     d.append(tabs, body);
     var tab = state.netDetailTab;
-    if (!Array.prototype.some.call(tabs.querySelectorAll('.tab'), function (x) { return x.textContent === tab; })) tab = 'Headers';
+    if (!Array.prototype.some.call(tabs.querySelectorAll('.tab'), function (x) { return x.textContent === tab; })) tab = isWs ? 'Messages' : 'Headers';
+
+    if (tab === 'Messages') {
+      var msgs = e.messages || [];
+      if (!msgs.length) body.append(h('div', { class: 'note' }, e.closeInfo || 'No messages yet.'));
+      msgs.slice().reverse().forEach(function (m) {
+        var j = tryJSON(m.data);
+        body.append(h('div', { class: 'msg-row ' + m.dir },
+          h('span', { class: 'msg-dir' }, m.dir === 'out' ? '\u2191' : '\u2193'),
+          h('span', { class: 'msg-data mono' }, j !== undefined && typeof j === 'object' && j ? expandable(j, preview(j, true)) : m.data),
+          h('span', { class: 'muted' }, (m.type && m.type !== 'message' ? m.type + ' \u00b7 ' : '') + fmtMs(m.t))));
+      });
+      if (e.closeInfo && msgs.length) body.append(h('div', { class: 'note' }, e.closeInfo));
+      return;
+    }
 
     if (tab === 'Headers') {
       var status = e.error ? 'Failed: ' + e.error : (e.status != null ? e.status + ' ' + (e.statusText || '') : e.cached ? '200 (from cache)' : '\u2014');
@@ -2010,8 +2859,11 @@ td.edit{cursor:text}\n.del{border:0;background:none;color:var(--fg2);cursor:poin
     ui.srcNav = h('div', { class: 'src-nav' });
     ui.srcTitle = h('div', { class: 'src-title' }, 'Select a file, or click a file:line link in the Console.');
     ui.srcCode = h('div', { class: 'src-code' });
+    var search = h('input', { class: 'filter', placeholder: 'Search in all files \u23ce', type: 'search' });
+    search.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); searchSources(search.value); } });
     var left = h('div', { class: 'src-left' },
       h('div', { class: 'toolbar' }, filter),
+      h('div', { class: 'toolbar' }, search),
       h('label', { class: 'src-opt' }, vendor, ' Show node_modules'),
       ui.srcNav);
     var right = h('div', { class: 'src-right' }, ui.srcTitle, ui.srcCode);
@@ -2116,6 +2968,715 @@ td.edit{cursor:text}\n.del{border:0;background:none;color:var(--fg2);cursor:poin
     if (hit) hit.scrollIntoView({ block: 'center' }); else ui.srcCode.scrollTop = 0;
   }
 
+
+  /* ============================================================ PERFORMANCE */
+  function metricCard(label, value, rating, hint) {
+    return h('div', { class: 'metric ' + (rating || '') , title: hint || '' },
+      h('div', { class: 'metric-v' }, value),
+      h('div', { class: 'metric-l' }, label));
+  }
+  function rate(v, good, poor) { return v == null ? '' : v <= good ? 'good' : v <= poor ? 'ni' : 'poor'; }
+  function sparkline(values, w, hgt, color) {
+    var c = h('canvas', { width: String(w * 2), height: String(hgt * 2), style: { width: w + 'px', height: hgt + 'px' } });
+    try {
+      var g = c.getContext('2d'); if (!g || !values.length) return c;
+      var max = Math.max.apply(null, values.concat([1])), min = Math.min.apply(null, values.concat([0]));
+      g.strokeStyle = color; g.lineWidth = 3; g.beginPath();
+      values.forEach(function (v, i) {
+        var x = (i / Math.max(1, values.length - 1)) * w * 2, y = hgt * 2 - ((v - min) / Math.max(1, max - min)) * (hgt * 2 - 6) - 3;
+        i ? g.lineTo(x, y) : g.moveTo(x, y);
+      });
+      g.stroke();
+    } catch (e) {}
+    return c;
+  }
+  function buildPerf() {
+    var v = h('div', { class: 'view' });
+    v.append(h('div', { class: 'toolbar' },
+      h('b', null, 'Performance'), h('span', { class: 'muted' }, '\u2014 live while this tab is open'),
+      h('div', { class: 'grow' }),
+      h('button', { class: 'chip', onclick: function () { checkDetached(true); renderPerf(); } }, 'Check for leaks'),
+      h('button', { class: 'chip', onclick: function () { perf.longtasks = []; perf.cls = 0; perf.shifts = []; renderPerf(); } }, 'Reset')));
+    ui.perfBody = h('div', { class: 'scroll perf' });
+    v.append(ui.perfBody);
+    return v;
+  }
+  var perfTimer = null, fpsRaf = null, fpsFrames = 0, fpsLast = 0;
+  function startPerf() {
+    if (perfTimer) return;
+    fpsLast = performance.now(); fpsFrames = 0;
+    (function loop(t) { fpsFrames++; fpsRaf = requestAnimationFrame(loop); })();
+    perfTimer = setInterval(function () {
+      var now = performance.now(), fps = Math.round(fpsFrames * 1000 / Math.max(1, now - fpsLast));
+      fpsFrames = 0; fpsLast = now;
+      perf.fps.push(fps); if (perf.fps.length > 60) perf.fps.shift();
+      var count = 0; walkDeep(document, function (n) { if (n.nodeType === 1) count++; if (count > 200000) return false; });
+      perf.nodes.push(count); if (perf.nodes.length > 60) perf.nodes.shift();
+      if (state.open && state.tab === 'performance') renderPerf();
+    }, 1000);
+    renderPerf();
+  }
+  function stopPerf() {
+    if (perfTimer) { clearInterval(perfTimer); perfTimer = null; }
+    if (fpsRaf) { cancelAnimationFrame(fpsRaf); fpsRaf = null; }
+  }
+  function checkDetached(force) {
+    var now = Date.now(), alive = [];
+    perf.removed = perf.removed.filter(function (r) {
+      var el = r.ref && r.ref.deref ? r.ref.deref() : null;
+      if (!el) return false;
+      if (el.isConnected) return false;
+      if (now - r.at > (force ? 2000 : 10000)) alive.push({ el: el, label: r.label, at: r.at });
+      return true;
+    });
+    perf.leaks = alive;
+  }
+  function renderPerf() {
+    if (!ui.perfBody) return;
+    var b = ui.perfBody, st = b.scrollTop;
+    clear(b);
+    var nav = null; try { nav = performance.getEntriesByType('navigation')[0]; } catch (e) {}
+    var ttfb = nav ? nav.responseStart - nav.requestStart : null;
+    var cards = h('div', { class: 'metrics' },
+      metricCard('First Contentful Paint', perf.fcp != null ? fmtMs(perf.fcp) : 'n/a', rate(perf.fcp, 1800, 3000), 'Good \u2264 1.8 s'),
+      metricCard('Largest Contentful Paint', perf.lcp != null ? fmtMs(perf.lcp) : (perf.supports.lcp ? 'waiting\u2026' : 'not in this browser'), rate(perf.lcp, 2500, 4000), 'Good \u2264 2.5 s'),
+      metricCard('Cumulative Layout Shift', perf.supports.cls ? perf.cls.toFixed(3) : 'not in this browser', perf.supports.cls ? rate(perf.cls, 0.1, 0.25) : '', 'Good \u2264 0.1'),
+      metricCard('Slowest interaction (INP)', perf.inp != null ? fmtMs(perf.inp) : (perf.supports.inp ? 'interact\u2026' : 'not in this browser'), rate(perf.inp, 200, 500), 'Good \u2264 200 ms'),
+      metricCard('Time to first byte', ttfb != null ? fmtMs(ttfb) : 'n/a', rate(ttfb, 800, 1800), 'Good \u2264 0.8 s'),
+      metricCard('FPS', perf.fps.length ? String(perf.fps[perf.fps.length - 1]) : '\u2026', perf.fps.length ? rate(60 - perf.fps[perf.fps.length - 1], 10, 30) : '', 'Frames per second right now'));
+    b.append(cards);
+    var graphs = h('div', { class: 'graphs' },
+      h('div', { class: 'graph' }, h('div', { class: 'muted' }, 'FPS (last 60 s)'), sparkline(perf.fps, 260, 50, '#1a73e8')),
+      h('div', { class: 'graph' }, h('div', { class: 'muted' }, 'DOM elements: ' + (perf.nodes[perf.nodes.length - 1] || '\u2026')), sparkline(perf.nodes, 260, 50, '#e8710a')));
+    var mem = performance.memory;
+    if (mem) graphs.append(h('div', { class: 'graph' }, h('div', { class: 'muted' }, 'JS heap'), h('div', { class: 'metric-v' }, fmtBytes(mem.usedJSHeapSize) + ' / ' + fmtBytes(mem.jsHeapSizeLimit))));
+    else graphs.append(h('div', { class: 'graph muted' }, 'JS heap size isn\u2019t exposed to pages in Safari. Watch the DOM count and the leak check instead.'));
+    b.append(graphs);
+    if (nav) {
+      var rows = [['DNS', nav.domainLookupEnd - nav.domainLookupStart], ['Connect (TCP + TLS)', nav.connectEnd - nav.connectStart], ['Request \u2192 first byte', nav.responseStart - nav.requestStart],
+        ['Download', nav.responseEnd - nav.responseStart], ['DOM ready (DOMContentLoaded)', nav.domContentLoadedEventEnd], ['Fully loaded (load)', nav.loadEventEnd]];
+      b.append(h('div', { class: 'dsec' }, h('h4', null, 'Page load'), rows.map(function (r) { return h('div', { class: 'kv' }, h('span', { class: 'k' }, r[0]), h('span', { class: 'v' }, r[1] > 0 ? fmtMs(r[1]) : '\u2014')); })));
+    }
+    var lt = h('div', { class: 'dsec' }, h('h4', null, 'Long tasks (main thread blocked > 50 ms)'));
+    if (!perf.supports.longtask) lt.append(h('div', { class: 'muted' }, 'Safari doesn\u2019t report long tasks to pages. Watch the FPS graph while you interact instead \u2014 drops below ~50 mean the main thread was busy.'));
+    else if (!perf.longtasks.length) lt.append(h('div', { class: 'muted' }, 'None so far. \ud83c\udf89'));
+    else perf.longtasks.slice().sort(function (a, c) { return c.duration - a.duration; }).slice(0, 20).forEach(function (t) {
+      lt.append(h('div', { class: 'kv' }, h('span', { class: 'k' }, fmtMs(t.duration)), h('span', { class: 'v' }, 'at ' + fmtMs(t.startTime) + (t.name && t.name !== 'self' ? ' \u00b7 ' + t.name : ''))));
+    });
+    b.append(lt);
+    if (perf.supports.cls && perf.shifts.length) {
+      var ls = h('div', { class: 'dsec' }, h('h4', null, 'Biggest layout shifts'));
+      perf.shifts.slice().sort(function (a, c) { return c.value - a.value; }).slice(0, 8).forEach(function (sh) {
+        ls.append(h('div', { class: 'kv' }, h('span', { class: 'k' }, sh.value.toFixed(3)), h('span', { class: 'v' }, sh.nodes.length ? sh.nodes.map(function (n) { return [nodeRef(n), ' ']; }) : 'at ' + fmtMs(sh.t))));
+      });
+      b.append(ls);
+    }
+    var lk = h('div', { class: 'dsec' }, h('h4', null, 'Possible memory leaks: removed elements still in memory'));
+    checkDetached(false);
+    if (!window.WeakRef) lk.append(h('div', { class: 'muted' }, 'Needs WeakRef (Safari 14.1+).'));
+    else if (!perf.leaks.length) lk.append(h('div', { class: 'muted' }, 'None detected. Elements removed from the page more than 10 s ago and still alive show up here (click \u201cCheck for leaks\u201d to use 2 s). Garbage collection timing varies, so treat these as hints.'));
+    else {
+      lk.append(h('div', { class: 'muted' }, perf.leaks.length + ' detached element(s) still referenced by JavaScript (event listeners, caches, closures):'));
+      perf.leaks.slice(0, 50).forEach(function (r) {
+        var ls2 = listenerReg.get(r.el);
+        lk.append(h('div', { class: 'kv' }, h('span', { class: 'k' }, nodeRef(r.el)), h('span', { class: 'v muted' }, 'removed ' + Math.round((Date.now() - r.at) / 1000) + ' s ago' + (ls2 && ls2.length ? ' \u00b7 still has ' + ls2.length + ' listener(s)' : ''))));
+      });
+    }
+    b.append(lk);
+    b.scrollTop = st;
+  }
+  // Collected from page load onward.
+  var perf = { fcp: null, lcp: null, cls: 0, inp: null, longtasks: [], shifts: [], fps: [], nodes: [], removed: [], leaks: [], supports: {} };
+  (function initPerfObservers() {
+    var types = (window.PerformanceObserver && PerformanceObserver.supportedEntryTypes) || [];
+    function obs(type, fn, extra) {
+      if (types.indexOf(type) === -1) return false;
+      try { new PerformanceObserver(function (l) { l.getEntries().forEach(fn); if (ui.ready && state.tab === 'performance') renderPerf(); }).observe(Object.assign({ type: type, buffered: true }, extra || {})); return true; } catch (e) { return false; }
+    }
+    obs('paint', function (e) { if (e.name === 'first-contentful-paint') perf.fcp = e.startTime; });
+    perf.supports.lcp = obs('largest-contentful-paint', function (e) { perf.lcp = e.startTime; });
+    perf.supports.cls = obs('layout-shift', function (e) {
+      if (e.hadRecentInput) return;
+      perf.cls += e.value;
+      perf.shifts.push({ value: e.value, t: e.startTime, nodes: (e.sources || []).map(function (s) { return s.node; }).filter(Boolean) });
+      if (perf.shifts.length > 200) perf.shifts.shift();
+    });
+    perf.supports.longtask = obs('longtask', function (e) { perf.longtasks.push({ duration: e.duration, startTime: e.startTime, name: e.name }); if (perf.longtasks.length > 500) perf.longtasks.shift(); });
+    perf.supports.inp = obs('event', function (e) { if (e.interactionId && (perf.inp == null || e.duration > perf.inp)) perf.inp = e.duration; }, { durationThreshold: 16 });
+    if (!perf.supports.inp) perf.supports.inp = obs('first-input', function (e) { perf.inp = e.processingStart - e.startTime; });
+    // Track removed elements for the leak check
+    if (window.WeakRef && window.MutationObserver) {
+      new MutationObserver(function (recs) {
+        for (var i = 0; i < recs.length; i++) for (var j = 0; j < recs[i].removedNodes.length; j++) {
+          var n = recs[i].removedNodes[j];
+          if (n.nodeType !== 1 || n === host || n.__sdt) continue;
+          perf.removed.push({ ref: new WeakRef(n), label: nodeLabel(n), at: Date.now() });
+          if (perf.removed.length > 3000) perf.removed.shift();
+        }
+      }).observe(document, { childList: true, subtree: true });
+    }
+  })();
+
+  /* ================================================================= TOKENS */
+  var tokState = { filter: '', overrides: {} };
+  function collectTokens() {
+    var map = {};
+    function addDecl(name, value, selector, source) {
+      var t = map[name] || (map[name] = { name: name, defs: [], uses: 0 });
+      t.defs.push({ value: value, selector: selector, source: source });
+    }
+    var roots = [document];
+    walkDeep(document, function (n) { if (n.nodeType === 11) roots.push(n); });
+    var allText = [];
+    roots.forEach(function (r) {
+      sheetsOf(r).forEach(function (sheet) {
+        var label = sheet.href ? shortName(sheet.href) : (r === document ? '<style>' : '<' + (r.host ? r.host.localName : 'shadow') + '> shadow');
+        var rules; try { rules = sheet.cssRules; } catch (e) { return; }
+        (function walk(list) {
+          for (var i = 0; i < list.length; i++) {
+            var rule = list[i];
+            if (rule.style) {
+              for (var k = 0; k < rule.style.length; k++) { var p = rule.style[k]; if (p.indexOf('--') === 0) addDecl(p, rule.style.getPropertyValue(p).trim(), rule.selectorText || '', label); }
+              allText.push(rule.style.cssText);
+            }
+            if (rule.cssRules) walk(rule.cssRules);
+          }
+        })(rules);
+      });
+    });
+    var joined = allText.join('\n');
+    var cs = getComputedStyle(document.documentElement);
+    return Object.keys(map).sort().map(function (n) {
+      var t = map[n];
+      t.uses = (joined.split('var(' + n).length - 1);
+      t.value = cs.getPropertyValue(n).trim();
+      return t;
+    });
+  }
+  function tokenGroup(name) { var p = name.slice(2).split('-'); return p.length > 2 ? p.slice(0, 2).join('-') : p[0]; }
+  function buildTokens() {
+    var v = h('div', { class: 'view' });
+    var f = h('input', { class: 'filter', placeholder: 'Filter tokens (name or value)', type: 'search' });
+    f.addEventListener('input', function () { tokState.filter = f.value.toLowerCase(); renderTokens(); });
+    v.append(h('div', { class: 'toolbar' }, f, h('div', { class: 'grow' }),
+      h('button', { class: 'chip', title: 'Copy your overrides as CSS', onclick: function () {
+        var css = ':root {\n' + Object.keys(tokState.overrides).map(function (k) { return '  ' + k + ': ' + tokState.overrides[k] + ';'; }).join('\n') + '\n}';
+        copyAndFlash(css, 'overrides as CSS');
+      } }, 'Copy overrides'),
+      h('button', { class: 'chip', onclick: function () { Object.keys(tokState.overrides).forEach(function (k) { document.documentElement.style.removeProperty(k); }); tokState.overrides = {}; renderTokens(); } }, 'Reset all'),
+      h('button', { class: 'ibtn', title: 'Rescan', onclick: function () { renderTokens(); } }, icon('refresh'))));
+    ui.tokBody = h('div', { class: 'scroll' });
+    v.append(ui.tokBody);
+    return v;
+  }
+  function renderTokens() {
+    if (!ui.tokBody) return;
+    var b = ui.tokBody, st = b.scrollTop;
+    clear(b);
+    var toks = collectTokens();
+    if (!toks.length) { b.append(h('div', { class: 'note' }, 'No CSS custom properties (--tokens) found on this page.')); return; }
+    var q = tokState.filter;
+    var shown = toks.filter(function (t) { return !q || t.name.toLowerCase().indexOf(q) !== -1 || (t.value || '').toLowerCase().indexOf(q) !== -1; });
+    b.append(h('div', { class: 'note' }, toks.length + ' design tokens \u00b7 click a value to override it across the page (applied on <html>; tokens a component redefines on :host keep their own value).'));
+    var groups = {};
+    shown.forEach(function (t) { (groups[tokenGroup(t.name)] = groups[tokenGroup(t.name)] || []).push(t); });
+    Object.keys(groups).sort().forEach(function (g) {
+      var sec = h('div', { class: 'rule' }, h('div', { class: 'rule-head' }, h('b', { class: 'rule-sel' }, '--' + g + '-*'), h('span', { class: 'muted' }, String(groups[g].length))));
+      groups[g].forEach(function (t) {
+        var ov = tokState.overrides[t.name] != null;
+        var val = h('span', { class: 'd-val' + (ov ? ' ovr' : '') }, t.value || h('span', { class: 'muted' }, '(only set inside components)'));
+        val.addEventListener('click', function () {
+          inlineEdit(val, t.value || '', function (nv) {
+            nv = nv.trim();
+            if (nv) { document.documentElement.style.setProperty(t.name, nv); tokState.overrides[t.name] = nv; }
+            setTimeout(renderTokens, 0);
+          }, { suggest: suggestPropValue(document.documentElement, function () { return t.name; }) });
+        });
+        var where = t.defs.slice(0, 6).map(function (d) { return d.selector + ' {' + d.value + '}  \u2014 ' + d.source; }).join('\n');
+        sec.append(h('div', { class: 'decl tok', title: where },
+          looksColor(t.value) ? h('span', { class: 'swatch', style: { background: t.value } }) : null,
+          h('span', { class: 'd-name' }, t.name), ':\u00a0', val,
+          h('span', { class: 'grow' }),
+          h('span', { class: 'muted tok-meta' }, t.defs.length + ' def \u00b7 ' + t.uses + ' use' + (t.uses === 1 ? '' : 's')),
+          ov ? h('button', { class: 'del', title: 'Remove override', onclick: function () { document.documentElement.style.removeProperty(t.name); delete tokState.overrides[t.name]; renderTokens(); } }, '\u21ba') : null));
+      });
+      b.append(sec);
+    });
+    b.scrollTop = st;
+  }
+
+  /* ================================================================== AUDIT */
+  function buildAudit() {
+    var v = h('div', { class: 'view' });
+    ui.auditSummary = h('span', { class: 'muted' });
+    v.append(h('div', { class: 'toolbar' },
+      h('button', { class: 'btn', onclick: function () { runAudit(); } }, 'Run audit'),
+      ui.auditSummary));
+    ui.auditBody = h('div', { class: 'scroll' });
+    v.append(ui.auditBody);
+    return v;
+  }
+  function luminance(rgb) {
+    var a = rgb.map(function (v) { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); });
+    return 0.2126 * a[0] + 0.7152 * a[1] + 0.0722 * a[2];
+  }
+  function parseRgb(c) { var m = String(c).match(/rgba?\(([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)(?:[,\s/]+([\d.]+%?))?/); if (!m) return null; var a = m[4] == null ? 1 : (/%$/.test(m[4]) ? parseFloat(m[4]) / 100 : +m[4]); return [+m[1], +m[2], +m[3], a]; }
+  function effectiveBg(el) {
+    for (var n = el; n && n.nodeType === 1; n = n.parentElement || (n.getRootNode() && n.getRootNode().host)) {
+      var cs = getComputedStyle(n);
+      if (cs.backgroundImage && cs.backgroundImage !== 'none') return null; // image/gradient: can't tell
+      var c = parseRgb(cs.backgroundColor);
+      if (c && c[3] > 0.95) return c;
+    }
+    return [255, 255, 255, 1];
+  }
+  function accessibleName(el) {
+    var t = (el.getAttribute('aria-label') || '').trim();
+    if (t) return t;
+    var lb = el.getAttribute('aria-labelledby');
+    if (lb) { var r = el.getRootNode(); var txt = lb.split(/\s+/).map(function (id) { var x = r.getElementById ? r.getElementById(id) : document.getElementById(id); return x ? x.textContent : ''; }).join(' ').trim(); if (txt) return txt; }
+    var text = (el.innerText || el.textContent || '').trim();
+    if (text) return text;
+    var img = el.querySelector && el.querySelector('img[alt]:not([alt=""]), svg title');
+    if (img) return img.getAttribute ? (img.getAttribute('alt') || img.textContent) : img.textContent;
+    return (el.getAttribute('title') || '').trim();
+  }
+  function isVisible(el) { var r = el.getBoundingClientRect(); if (!r.width || !r.height) return false; var cs = getComputedStyle(el); return cs.visibility !== 'hidden' && cs.display !== 'none' && +cs.opacity > 0.05; }
+  function runAudit() {
+    ui.auditRan = true;
+    var issues = [];
+    function issue(sev, group, title, why, nodes) { if (nodes && !nodes.length) return; issues.push({ sev: sev, group: group, title: title, why: why, nodes: nodes || [] }); }
+    var els = [];
+    walkDeep(document, function (n) { if (n.nodeType === 1 && n !== host) els.push(n); if (els.length > 30000) return false; });
+    var Q = 'Safari & iPhone', A = 'Accessibility';
+
+    // --- Safari / iOS quirks
+    var meta = document.querySelector('meta[name=viewport]'), mc = meta ? meta.content : '';
+    if (!meta) issue('warn', Q, 'No viewport meta tag', 'iPhone renders the page as a 980 px desktop page and zooms out. Add <meta name="viewport" content="width=device-width, initial-scale=1">.');
+    if (/user-scalable\s*=\s*(no|0)|maximum-scale\s*=\s*1(\.0)?\b/.test(mc)) issue('warn', A, 'Pinch-zoom is disabled', 'user-scalable=no / maximum-scale=1 stops people with low vision from zooming (iOS ignores it for accessibility, but it\u2019s still flagged).');
+    var allCss = '';
+    sheetsOf(document).forEach(function (sh) { try { Array.prototype.forEach.call(sh.cssRules, function (r) { allCss += r.cssText + '\n'; }); } catch (e) {} });
+    walkDeep(document, function (n) { if (n.nodeType === 11) sheetsOf(n).forEach(function (sh) { try { Array.prototype.forEach.call(sh.cssRules, function (r) { allCss += r.cssText + '\n'; }); } catch (e) {} }); });
+    if (/safe-area-inset/.test(allCss) && !/viewport-fit\s*=\s*cover/.test(mc)) issue('warn', Q, 'env(safe-area-inset-*) is used without viewport-fit=cover', 'Safe-area insets are 0 unless the viewport meta includes viewport-fit=cover, so content won\u2019t avoid the notch / home indicator.');
+    if (/(^|[^\w-])100vh/.test(allCss)) issue('info', Q, '100vh is used', 'On iPhone, 100vh is the height with the toolbar hidden, so content gets cut off under Safari\u2019s bottom bar. Use 100dvh (dynamic) or 100svh (small) instead.');
+    if (/backdrop-filter/.test(allCss) && !(window.CSS && window.CSS.supports && window.CSS.supports('backdrop-filter', 'blur(1px)'))) issue('warn', Q, 'backdrop-filter needs the -webkit- prefix here', 'This Safari version only supports -webkit-backdrop-filter. Add it alongside backdrop-filter.');
+    var smallInputs = [], stickyBroken = [], fixedTrapped = [], tapSmall = [], noDims = [], autoplay = [], dates = [];
+    els.forEach(function (el) {
+      var tag = el.localName, cs;
+      if (/^(input|select|textarea)$/.test(tag) && !/^(checkbox|radio|range|color|file|hidden|submit|button|image|reset)$/.test(el.type || '')) {
+        cs = getComputedStyle(el); if (parseFloat(cs.fontSize) < 16 && isVisible(el)) smallInputs.push(el);
+        if (/^(date|time|month|week|datetime-local)$/.test(el.type)) dates.push(el);
+      }
+      if (tag === 'img' && !el.hasAttribute('width') && !el.hasAttribute('height') && !(el.style.width && el.style.height)) noDims.push(el);
+      if ((tag === 'video') && el.autoplay && (!el.muted || !el.hasAttribute('playsinline'))) autoplay.push(el);
+      cs = cs || getComputedStyle(el);
+      if (cs.position === 'sticky') {
+        for (var a = el.parentElement; a && a !== document.body; a = a.parentElement) { var acs = getComputedStyle(a); if (/hidden|clip/.test(acs.overflow + acs.overflowX + acs.overflowY)) { stickyBroken.push(el); break; } if (/auto|scroll/.test(acs.overflow + acs.overflowY)) break; }
+      }
+      if (cs.position === 'fixed') {
+        for (var f = el.parentElement; f && f !== document.documentElement; f = f.parentElement) { var fcs = getComputedStyle(f); if (fcs.transform !== 'none' || fcs.filter !== 'none' || fcs.perspective !== 'none' || /paint|layout|strict|content/.test(fcs.contain || '')) { fixedTrapped.push(el); break; } }
+      }
+      if ((tag === 'a' && el.hasAttribute('href')) || tag === 'button' || el.getAttribute('role') === 'button') {
+        var r = el.getBoundingClientRect(); if (r.width && r.height && (r.width < 44 || r.height < 44) && r.width * r.height < 44 * 44) tapSmall.push(el);
+      }
+    });
+    issue('warn', Q, 'Form fields with text smaller than 16px', 'iOS Safari zooms the whole page when you focus a field under 16px. Use font-size: 16px (or larger) on inputs.', smallInputs);
+    issue('warn', Q, 'position: sticky inside overflow: hidden', 'Sticky stops working when an ancestor clips overflow. Move the sticky element out, or use overflow: clip only where it\u2019s safe.', stickyBroken);
+    issue('warn', Q, 'position: fixed inside a transformed ancestor', 'transform / filter / perspective / contain on an ancestor makes fixed elements scroll with that ancestor instead of the viewport.', fixedTrapped);
+    issue('info', Q, 'Native date/time inputs', 'Safari draws its own date/time pickers that ignore most styling. Check them on a real iPhone.', dates);
+    issue('warn', Q, 'Autoplay video without muted + playsinline', 'iPhone only autoplays inline video that is muted and has playsinline; otherwise it won\u2019t start or goes fullscreen.', autoplay);
+    issue('info', Q, 'Images without width/height', 'Without dimensions the layout jumps when the image loads (layout shift). Add width and height attributes.', noDims);
+    issue('info', Q, 'Tap targets smaller than 44 \u00d7 44 px', 'Apple\u2019s guideline minimum for comfortable tapping.', tapSmall.filter(isVisible));
+    var vw = document.documentElement.clientWidth;
+    if (document.documentElement.scrollWidth > vw + 1) {
+      var wide = els.filter(function (el) { var r = el.getBoundingClientRect(); return r.right > vw + 1 && r.width > 0 && getComputedStyle(el).position !== 'fixed'; }).slice(0, 15);
+      issue('warn', Q, 'Page scrolls sideways', 'Something is wider than the screen (often 100vw with a scrollbar, fixed widths or long words). Culprits:', wide);
+    }
+
+    // --- Accessibility
+    if (!document.documentElement.getAttribute('lang')) issue('warn', A, '<html> has no lang attribute', 'VoiceOver needs it to pick the right voice and pronunciation.');
+    if (!document.title.trim()) issue('warn', A, 'Page has no <title>', 'Screen readers announce the title first; tabs show it too.');
+    var noAlt = [], noName = [], noLabel = [], lowContrast = [], posTab = [], hiddenFocusable = [], clickDivs = [], idDup = [];
+    var ids = new Map();
+    var checkedContrast = 0;
+    els.forEach(function (el) {
+      var tag = el.localName, role = el.getAttribute('role');
+      if (el.id) { var key = el.getRootNode(); var m = ids.get(key) || {}; if (m[el.id]) idDup.push(el); m[el.id] = 1; ids.set(key, m); }
+      if (tag === 'img' && !el.hasAttribute('alt') && role !== 'presentation' && el.getAttribute('aria-hidden') !== 'true') noAlt.push(el);
+      if ((tag === 'button' || (tag === 'a' && el.hasAttribute('href')) || role === 'button' || role === 'link') && !accessibleName(el) && isVisible(el)) noName.push(el);
+      if (/^(input|select|textarea)$/.test(tag) && !/^(hidden|submit|button|reset|image)$/.test(el.type || '')) {
+        var labelled = el.getAttribute('aria-label') || el.getAttribute('aria-labelledby') || el.getAttribute('title') || el.closest('label') ||
+          (el.id && el.getRootNode().querySelector && el.getRootNode().querySelector('label[for="' + cssEscape(el.id) + '"]'));
+        if (!labelled && isVisible(el)) noLabel.push(el);
+      }
+      if (+el.getAttribute('tabindex') > 0) posTab.push(el);
+      if (el.getAttribute('aria-hidden') === 'true' && el.querySelector && el.querySelector('a[href],button,input,select,textarea,[tabindex]:not([tabindex="-1"])')) hiddenFocusable.push(el);
+      var ls = listenerReg.get(el);
+      if (ls && ls.some(function (l) { return l.type === 'click'; }) && !/^(a|button|input|select|textarea|summary|label|option)$/.test(tag) && !role && !el.hasAttribute('tabindex') && isVisible(el)) clickDivs.push(el);
+      if (checkedContrast < 2500) {
+        var hasText = false;
+        for (var c = el.firstChild; c; c = c.nextSibling) if (c.nodeType === 3 && c.data.trim()) { hasText = true; break; }
+        if (hasText && isVisible(el)) {
+          checkedContrast++;
+          var cs = getComputedStyle(el), fg = parseRgb(cs.color), bg = effectiveBg(el);
+          if (fg && bg && fg[3] > 0.5) {
+            var l1 = luminance(fg), l2 = luminance(bg), ratio = (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
+            var size = parseFloat(cs.fontSize), bold = +cs.fontWeight >= 700, large = size >= 24 || (bold && size >= 18.66);
+            if (ratio < (large ? 3 : 4.5)) { el.__sdtRatio = ratio; lowContrast.push(el); }
+          }
+        }
+      }
+    });
+    issue('error', A, 'Images without alt text', 'Add alt="" for decorative images or a short description for meaningful ones.', noAlt);
+    issue('error', A, 'Buttons and links without an accessible name', 'Icon-only controls need aria-label (VoiceOver otherwise says just \u201cbutton\u201d).', noName);
+    issue('error', A, 'Form fields without a label', 'Use <label for>, wrap the field in <label>, or add aria-label. Placeholder text isn\u2019t a label.', noLabel);
+    issue('warn', A, 'Low colour contrast', 'Text needs a contrast ratio of 4.5:1 (3:1 for large text) against its background.', lowContrast);
+    issue('warn', A, 'Clickable elements that aren\u2019t keyboard accessible', 'These have click listeners but aren\u2019t buttons/links and can\u2019t be focused. Use <button> or add role="button" + tabindex="0" + key handling.', clickDivs);
+    issue('warn', A, 'aria-hidden containers with focusable content', 'Keyboard users can tab into content screen readers can\u2019t see.', hiddenFocusable);
+    issue('info', A, 'Positive tabindex', 'tabindex > 0 changes the natural tab order and is easy to get wrong.', posTab);
+    issue('warn', A, 'Duplicate ids', 'Labels and aria references pick the wrong element when ids repeat.', idDup);
+    var heads = els.filter(function (el) { return /^h[1-6]$/.test(el.localName) && isVisible(el); });
+    var skipped = [];
+    heads.forEach(function (hd, i) { if (i && +hd.localName[1] > +heads[i - 1].localName[1] + 1) skipped.push(hd); });
+    issue('info', A, 'Skipped heading levels', 'Going from h2 to h4 makes the outline confusing for screen-reader users.', skipped);
+
+    // render
+    var b = clear(ui.auditBody);
+    var counts = { error: 0, warn: 0, info: 0 };
+    issues.forEach(function (i) { counts[i.sev]++; });
+    ui.auditSummary.textContent = issues.length ? counts.error + ' errors \u00b7 ' + counts.warn + ' warnings \u00b7 ' + counts.info + ' tips \u00b7 scanned ' + els.length + ' elements (incl. shadow DOM)' : '';
+    if (!issues.length) { b.append(h('div', { class: 'empty' }, 'No issues found. \ud83c\udf89')); return; }
+    [Q, A].forEach(function (g) {
+      var list = issues.filter(function (i) { return i.group === g; });
+      if (!list.length) return;
+      b.append(h('div', { class: 'inh-head' }, g));
+      list.sort(function (x, y) { return ['error', 'warn', 'info'].indexOf(x.sev) - ['error', 'warn', 'info'].indexOf(y.sev); }).forEach(function (i) {
+        var body = h('div', { class: 'audit-nodes', hidden: true });
+        i.nodes.slice(0, 100).forEach(function (n) { body.append(h('div', { class: 'kv' }, nodeRef(n), n.__sdtRatio ? h('span', { class: 'muted' }, ' contrast ' + n.__sdtRatio.toFixed(2) + ':1') : null)); });
+        if (i.nodes.length > 100) body.append(h('div', { class: 'muted' }, '\u2026 and ' + (i.nodes.length - 100) + ' more'));
+        var head = h('div', { class: 'audit-head' },
+          h('span', { class: 'sev ' + i.sev }, i.sev === 'error' ? '\u2716' : i.sev === 'warn' ? '\u26a0' : 'i'),
+          h('b', null, i.title), i.nodes.length ? h('span', { class: 'count' }, String(i.nodes.length)) : null);
+        head.addEventListener('click', function () { body.hidden = !body.hidden; });
+        b.append(h('div', { class: 'audit-item' }, head, h('div', { class: 'audit-why' }, i.why), body));
+      });
+    });
+  }
+
+  /* ================================================================= DEVICE */
+  var dev = { overlay: false, touches: false, outline: false };
+  function buildDevice() {
+    var v = h('div', { class: 'view' });
+    function tog(key, label, fn) {
+      var b = h('button', { class: 'chip' + (dev[key] ? ' on' : '') }, label);
+      b.addEventListener('click', function () { dev[key] = !dev[key]; b.classList.toggle('on', dev[key]); fn(dev[key]); });
+      return b;
+    }
+    v.append(h('div', { class: 'toolbar' },
+      tog('overlay', 'Safe-area & viewport overlay', setViewportOverlay),
+      tog('touches', 'Show touches', setTouchViz),
+      tog('outline', 'Outline all elements', setOutlineAll)));
+    ui.devBody = h('div', { class: 'scroll' });
+    v.append(ui.devBody);
+    origAdd.call(window, 'resize', function () { if (state.tab === 'device') renderDevice(); if (dev.overlay) drawViewportOverlay(); });
+    if (window.visualViewport) origAdd.call(window.visualViewport, 'resize', function () { if (dev.overlay) drawViewportOverlay(); if (state.tab === 'device') renderDevice(); });
+    return v;
+  }
+  function measureViewport() {
+    var probe = h('div', { style: { position: 'fixed', left: '0', top: '0', width: '1px', visibility: 'hidden', pointerEvents: 'none',
+      paddingTop: 'env(safe-area-inset-top)', paddingRight: 'env(safe-area-inset-right)', paddingBottom: 'env(safe-area-inset-bottom)', paddingLeft: 'env(safe-area-inset-left)' } });
+    var units = {};
+    root.append(probe);
+    var cs = getComputedStyle(probe);
+    var insets = { top: parseFloat(cs.paddingTop) || 0, right: parseFloat(cs.paddingRight) || 0, bottom: parseFloat(cs.paddingBottom) || 0, left: parseFloat(cs.paddingLeft) || 0 };
+    ['100vh', '100svh', '100lvh', '100dvh'].forEach(function (u) { probe.style.height = u; units[u] = window.CSS && window.CSS.supports && !window.CSS.supports('height', u) ? null : probe.getBoundingClientRect().height; });
+    probe.remove();
+    return { insets: insets, units: units };
+  }
+  function renderDevice() {
+    if (!ui.devBody) return;
+    var b = clear(ui.devBody), m = measureViewport(), vv = window.visualViewport;
+    function row(k, v2) { return h('div', { class: 'kv' }, h('span', { class: 'k' }, k), h('span', { class: 'v' }, v2)); }
+    var mq = function (q) { try { return matchMedia(q).matches; } catch (e) { return false; } };
+    b.append(h('div', { class: 'dsec' }, h('h4', null, 'Viewport'),
+      row('Layout viewport', window.innerWidth + ' \u00d7 ' + window.innerHeight),
+      row('Visual viewport', vv ? Math.round(vv.width) + ' \u00d7 ' + Math.round(vv.height) + ' \u00b7 zoom ' + vv.scale.toFixed(2) + (vv.offsetTop ? ' \u00b7 offset ' + Math.round(vv.offsetTop) : '') : 'n/a'),
+      row('Screen', screen.width + ' \u00d7 ' + screen.height + ' @' + window.devicePixelRatio + 'x'),
+      row('Orientation', (screen.orientation && screen.orientation.type) || (mq('(orientation: portrait)') ? 'portrait' : 'landscape')),
+      row('100vh / svh / lvh / dvh', ['100vh', '100svh', '100lvh', '100dvh'].map(function (u) { return m.units[u] == null ? 'n/a' : Math.round(m.units[u]); }).join(' / ') + ' px')));
+    b.append(h('div', { class: 'dsec' }, h('h4', null, 'Safe-area insets (env(safe-area-inset-*))'),
+      row('top / right / bottom / left', [m.insets.top, m.insets.right, m.insets.bottom, m.insets.left].join(' / ') + ' px'),
+      (m.insets.top + m.insets.bottom + m.insets.left + m.insets.right === 0) ? h('div', { class: 'muted' }, 'All 0. On iPhone that usually means the viewport meta is missing viewport-fit=cover, or you\u2019re on a device/browser without insets.') : null));
+    b.append(h('div', { class: 'dsec' }, h('h4', null, 'Device & preferences'),
+      row('Touch points', String(navigator.maxTouchPoints || 0)),
+      row('Pointer', mq('(pointer: coarse)') ? 'coarse (touch)' : 'fine (mouse/trackpad)'),
+      row('Home-screen app', navigator.standalone || mq('(display-mode: standalone)') ? 'yes (standalone)' : 'no'),
+      row('Colour scheme', mq('(prefers-color-scheme: dark)') ? 'dark' : 'light'),
+      row('Reduced motion', mq('(prefers-reduced-motion: reduce)') ? 'yes' : 'no'),
+      row('User agent', h('span', { class: 'mono' }, navigator.userAgent))));
+  }
+  function setViewportOverlay(on) {
+    if (!on) { if (ui.vpOverlay) { ui.vpOverlay.remove(); ui.vpOverlay = null; } return; }
+    drawViewportOverlay();
+  }
+  function drawViewportOverlay() {
+    if (ui.vpOverlay) ui.vpOverlay.remove();
+    var m = measureViewport(), W = window.innerWidth, H = window.innerHeight;
+    var o = h('div', { class: 'vp-overlay' });
+    var I = m.insets;
+    function band(style, label) { o.append(h('div', { class: 'vp-band', style: style }, label)); }
+    if (I.top) band({ left: '0', right: '0', top: '0', height: I.top + 'px' }, 'safe-area-top ' + I.top);
+    if (I.bottom) band({ left: '0', right: '0', bottom: '0', height: I.bottom + 'px' }, 'safe-area-bottom ' + I.bottom);
+    if (I.left) band({ top: '0', bottom: '0', left: '0', width: I.left + 'px' }, '');
+    if (I.right) band({ top: '0', bottom: '0', right: '0', width: I.right + 'px' }, '');
+    var colors = { '100svh': '#34a853', '100dvh': '#1a73e8', '100lvh': '#ea4335', '100vh': '#fbbc04' };
+    Object.keys(colors).forEach(function (u, i) {
+      var y = m.units[u]; if (y == null) return;
+      o.append(h('div', { class: 'vp-line', style: { top: Math.min(H - 2, y - 1) + 'px', borderColor: colors[u] } }, h('span', { style: { background: colors[u], left: (8 + i * 92) + 'px' } }, u + ' = ' + Math.round(y))));
+    });
+    o.append(h('div', { class: 'vp-size' }, W + ' \u00d7 ' + H));
+    root.append(o);
+    ui.vpOverlay = o;
+  }
+  var outlineStyles = [];
+  function setOutlineAll(on) {
+    outlineStyles.forEach(function (s) { s.remove(); }); outlineStyles = [];
+    if (!on) return;
+    var css = '*:not(safari-devtools){outline:1px solid rgba(255,0,80,.45)!important;outline-offset:-1px!important}';
+    function addTo(parent) { var st = document.createElement('style'); st.__sdt = 1; st.textContent = css; parent.appendChild(st); outlineStyles.push(st); }
+    addTo(document.head || document.documentElement);
+    walkDeep(document, function (n) { if (n.nodeType === 11) addTo(n); });
+  }
+  // Touch visualiser: dots, trails and gesture labels
+  var touch = { pts: {}, layer: null, last: null };
+  function setTouchViz(on) {
+    var evs = ['pointerdown', 'pointermove', 'pointerup', 'pointercancel'];
+    if (on) {
+      touch.layer = h('div', { class: 'touch-layer' }); root.append(touch.layer);
+      evs.forEach(function (t) { origAdd.call(document, t, onTouchViz, { capture: true, passive: true }); });
+    } else {
+      evs.forEach(function (t) { origRemove.call(document, t, onTouchViz, { capture: true }); });
+      if (touch.layer) touch.layer.remove(); touch.layer = null; touch.pts = {};
+    }
+  }
+  function onTouchViz(e) {
+    if (!touch.layer || fromPanel(e)) return;
+    var id = e.pointerId, p = touch.pts[id];
+    if (e.type === 'pointerdown') {
+      touch.pts[id] = p = { x0: e.clientX, y0: e.clientY, t0: performance.now(), dot: h('div', { class: 'touch-dot' }) };
+      touch.layer.append(p.dot);
+    }
+    if (!p) return;
+    p.dot.style.left = e.clientX + 'px'; p.dot.style.top = e.clientY + 'px';
+    if (e.type === 'pointermove' && (e.buttons || e.pointerType === 'touch')) {
+      var tr = h('div', { class: 'touch-trail', style: { left: e.clientX + 'px', top: e.clientY + 'px' } });
+      touch.layer.append(tr); setTimeout(function () { tr.remove(); }, 450);
+    }
+    if (e.type === 'pointerup' || e.type === 'pointercancel') {
+      var dx = e.clientX - p.x0, dy = e.clientY - p.y0, dt = performance.now() - p.t0, dist = Math.sqrt(dx * dx + dy * dy), label;
+      if (Object.keys(touch.pts).length > 1) label = 'multi-touch (' + Object.keys(touch.pts).length + ')';
+      else if (dist < 10) {
+        label = dt > 500 ? 'long press ' + Math.round(dt) + ' ms' : 'tap';
+        if (label === 'tap' && touch.last && performance.now() - touch.last.t < 300 && Math.abs(touch.last.x - e.clientX) < 25) label = 'double tap';
+        touch.last = { t: performance.now(), x: e.clientX };
+      } else label = 'swipe ' + (Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? '\u2192' : '\u2190') : (dy > 0 ? '\u2193' : '\u2191')) + ' ' + Math.round(dist) + ' px \u00b7 ' + Math.round(dt) + ' ms';
+      var lab = h('div', { class: 'touch-label', style: { left: e.clientX + 'px', top: e.clientY + 'px' } }, label);
+      touch.layer.append(lab); setTimeout(function () { lab.remove(); }, 1200);
+      p.dot.remove(); delete touch.pts[id];
+    }
+  }
+
+  /* ========================================================= SOURCES SEARCH */
+  function searchSources(q) {
+    q = (q || '').trim();
+    if (!q) return;
+    var lq = q.toLowerCase(), results = [], files = [];
+    SM.list.forEach(function (m) { m.files.forEach(function (f) { if (srcState.showVendor || !/node_modules/.test(f.url)) files.push({ label: f.display, get: f.content, target: function (ln) { return { file: f, line: ln }; } }); }); });
+    pageScripts().forEach(function (u) { files.push({ label: displayPath(u), get: function () { return fetchText(u).then(function (r) { return r.text; }); }, target: function (ln) { return { url: u, line: ln }; } }); });
+    srcState.open = null;
+    clear(ui.srcTitle).append(h('span', null, 'Searching ' + files.length + ' files for \u201c' + q + '\u201d\u2026'));
+    clear(ui.srcCode);
+    var pending = files.length;
+    if (!pending) { ui.srcTitle.textContent = 'No files loaded yet.'; return; }
+    files.forEach(function (f) {
+      f.get().then(function (text) {
+        var lines = String(text).split('\n');
+        for (var i = 0; i < lines.length && results.length < 500; i++) {
+          var idx = lines[i].toLowerCase().indexOf(lq);
+          if (idx !== -1) results.push({ f: f, ln: i + 1, text: lines[i], idx: idx });
+        }
+      }, function () {}).then(function () {
+        if (--pending) return;
+        clear(ui.srcTitle).append(h('span', null, results.length + (results.length >= 500 ? '+' : '') + ' matches for \u201c' + q + '\u201d'));
+        var byFile = {};
+        results.forEach(function (r) { (byFile[r.f.label] = byFile[r.f.label] || []).push(r); });
+        Object.keys(byFile).sort().forEach(function (label) {
+          ui.srcCode.append(h('div', { class: 'src-group' }, label + ' (' + byFile[label].length + ')'));
+          byFile[label].slice(0, 50).forEach(function (r) {
+            var start = Math.max(0, r.idx - 40), snippet = r.text.slice(start, r.idx + q.length + 80);
+            var hit = snippet.toLowerCase().indexOf(lq);
+            var row = h('div', { class: 'src-hit' }, h('span', { class: 'src-ln' }, String(r.ln)),
+              h('span', { class: 'mono' }, (start ? '\u2026' : '') + snippet.slice(0, hit), h('mark', null, snippet.slice(hit, hit + q.length)), snippet.slice(hit + q.length)));
+            row.addEventListener('click', function () { openSource(r.f.target(r.ln)); });
+            ui.srcCode.append(row);
+          });
+        });
+      });
+    });
+  }
+
+  /* Enclosing function name from the original source (minified names like "o" become "loadUser") */
+  function enclosingFn(text, line) {
+    var lines = String(text).split('\n'), fn = null, cls = null;
+    var reFn = /function\s*\*?\s*([A-Za-z_$][\w$]*)\s*\(/, reVar = /([A-Za-z_$][\w$]*)\s*[:=]\s*(?:async\s+)?(?:function\b|\([^)]*\)\s*(?::[^=]+)?=>|[A-Za-z_$][\w$]*\s*=>)/;
+    var reMethod = /^\s*(?:(?:public|private|protected|static|async|override|readonly|get|set)\s+)*\*?\s*([A-Za-z_$][\w$]*)\s*(?:<[^>]*>)?\s*\([^)]*\)\s*(?::\s*[^{=;]+)?\{\s*$/;
+    var reClass = /class\s+([A-Za-z_$][\w$]*)/;
+    var bad = /^(if|for|while|switch|catch|return|function|else|do|try|with|new|typeof|await)$/;
+    for (var i = Math.min(line, lines.length) - 1, n = 0; i >= 0 && n < 300; i--, n++) {
+      var l = lines[i], m;
+      if (!fn) {
+        if ((m = l.match(reFn)) || (m = l.match(reVar))) fn = m[1];
+        else if ((m = l.match(reMethod)) && !bad.test(m[1])) fn = m[1];
+        if (fn && bad.test(fn)) fn = null;
+      }
+      if (fn && (m = l.match(reClass))) { cls = m[1]; break; }
+      if (fn && /^\S/.test(l) && !/^\s*(export\s+)?(default\s+)?class/.test(l) && n > 0 && !reClass.test(l)) break;
+    }
+    return fn ? (cls ? cls + '.' + fn : fn) : null;
+  }
+
+  /* ================================================================ EXPORT */
+  function ser(v, depth, seen) {
+    depth = depth || 0; seen = seen || new WeakSet();
+    if (v === null || typeof v === 'number' || typeof v === 'boolean' || typeof v === 'string') return v;
+    if (v === undefined) return '[undefined]';
+    if (typeof v === 'bigint') return v + 'n';
+    if (typeof v === 'symbol') return v.toString();
+    if (typeof v === 'function') return '[function ' + (v.name || 'anonymous') + ']';
+    if (v && v.nodeType) return '[node ' + nodeLabel(v) + ']';
+    if (v instanceof Error) return { name: v.name, message: v.message, stack: String(v.stack || '') };
+    if (seen.has(v)) return '[circular]';
+    if (depth > 3) return '[' + ctorName(v) + ']';
+    seen.add(v);
+    if (Array.isArray(v)) return v.slice(0, 100).map(function (x) { return ser(x, depth + 1, seen); });
+    var o = {}, keys = []; try { keys = Object.keys(v).slice(0, 60); } catch (e) {}
+    keys.forEach(function (k) { try { o[k] = ser(v[k], depth + 1, seen); } catch (e) { o[k] = '[unreadable]'; } });
+    return o;
+  }
+  function logText(e) {
+    if (e.kind === 'input') return '> ' + e.code;
+    return e.args.map(function (a) {
+      if (a instanceof Error) return a.name + ': ' + a.message;
+      var s2 = ser(a); return typeof s2 === 'string' ? s2 : JSON.stringify(s2);
+    }).join(' ');
+  }
+  function download(name, text, type) {
+    var blob = new Blob([text], { type: type || 'application/json' });
+    var url = URL.createObjectURL(blob), a = h('a', { href: url, download: name });
+    root.append(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 5000);
+    flash('Saved ' + name);
+  }
+  function stamp() { return new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19); }
+  function harFor() {
+    function hdrs(o) { return Object.keys(o || {}).map(function (k) { return { name: k, value: String(o[k]) }; }); }
+    return {
+      log: {
+        version: '1.2', creator: { name: 'Safari DevTools', version: api.version },
+        pages: [{ startedDateTime: new Date(performance.timeOrigin || Date.now() - performance.now()).toISOString(), id: 'page_1', title: document.title, pageTimings: {} }],
+        entries: state.net.filter(function (e) { return e.url; }).map(function (e) {
+          var q = []; try { new URL(e.url).searchParams.forEach(function (v, k) { q.push({ name: k, value: v }); }); } catch (er) {}
+          var dur = e.end != null ? e.end - e.start : 0;
+          return {
+            pageref: 'page_1', startedDateTime: new Date((performance.timeOrigin || 0) + e.start).toISOString(), time: dur,
+            request: { method: e.method || 'GET', url: e.url, httpVersion: '', headers: hdrs(e.reqHeaders), queryString: q, cookies: [], headersSize: -1, bodySize: e.reqBody ? e.reqBody.length : 0,
+              postData: e.reqBody ? { mimeType: (e.reqHeaders && (e.reqHeaders['Content-Type'] || e.reqHeaders['content-type'])) || '', text: e.reqBody } : undefined },
+            response: { status: e.status || 0, statusText: e.statusText || (e.error || ''), httpVersion: '', headers: hdrs(e.resHeaders), cookies: [], redirectURL: '', headersSize: -1, bodySize: e.size || -1,
+              content: { size: e.size || 0, mimeType: e.mime || '', text: typeof e.resBody === 'string' ? e.resBody : undefined } },
+            cache: {}, timings: { send: 0, wait: dur, receive: 0 }, _kind: e.kind, _mocked: !!e.mocked, _blocked: !!e.blocked
+          };
+        })
+      }
+    };
+  }
+  function exportHar() { download('network-' + location.hostname + '-' + stamp() + '.har', JSON.stringify(harFor(), null, 2)); }
+  function exportReport() {
+    var storage = {};
+    ['local', 'session', 'cookies'].forEach(function (k) { var r = getStore(k); storage[k] = r.items || r.error; });
+    var m = measureViewport();
+    var report = {
+      generatedBy: 'Safari DevTools ' + api.version, generatedAt: new Date().toISOString(),
+      page: { url: location.href, title: document.title, userAgent: navigator.userAgent, viewport: window.innerWidth + 'x' + window.innerHeight, dpr: window.devicePixelRatio, safeArea: m.insets },
+      console: state.logs.map(function (e) { return { level: e.level, kind: e.kind, count: e.count, text: logText(e), site: e.site ? e.site.url + ':' + e.site.line : null }; }),
+      network: harFor().log.entries.map(function (x) { return { method: x.request.method, url: x.request.url, status: x.response.status, ms: Math.round(x.time), size: x.response.content.size, kind: x._kind }; }),
+      performance: { fcp: perf.fcp, lcp: perf.lcp, cls: perf.cls, inp: perf.inp, longTasks: perf.longtasks.length, fps: perf.fps.slice(-10) },
+      storage: storage,
+      rules: prefs.netRules, throttle: prefs.throttle
+    };
+    download('debug-report-' + location.hostname + '-' + stamp() + '.json', JSON.stringify(report, null, 2));
+  }
+
+  /* =========================================================== REMOTE MODE */
+  // Streams console, errors and network to a relay on your Mac (remote/relay.js),
+  // and runs code sent from the Mac viewer. Start with ?sdt-remote=http://<mac-ip>:9230,
+  // data-remote="..." on the script tag, or Settings > Remote mode.
+  var remote = { on: false, url: '', id: '', queue: [], timer: null, polling: false };
+  function remoteSend(msg) {
+    if (!remote.on) return;
+    remote.queue.push(msg);
+    if (remote.queue.length > 2000) remote.queue.splice(0, remote.queue.length - 2000);
+  }
+  function flushRemote() {
+    if (!remote.on || !remote.queue.length || !rawFetch) return;
+    var batch = remote.queue.splice(0, 200);
+    rawFetch(remote.url + '/push?client=' + remote.id, { method: 'POST', body: JSON.stringify(batch), headers: { 'content-type': 'text/plain' }, keepalive: true })
+      .catch(function () { remote.queue = batch.concat(remote.queue); });
+  }
+  function pollRemote() {
+    if (!remote.on || remote.polling || !rawFetch) return;
+    remote.polling = true;
+    rawFetch(remote.url + '/cmd?client=' + remote.id).then(function (r) { return r.json(); }).then(function (cmds) {
+      remote.polling = false;
+      (cmds || []).forEach(function (c) {
+        var res, ok = true;
+        try { res = (0, eval)(c.code); } catch (e) { ok = false; res = e; }
+        remote.silent = true;
+        addLog('info', [], { kind: 'input', code: '[remote] ' + c.code, site: null });
+        addLog(ok ? 'info' : 'error', [res], { kind: ok ? 'result' : 'uncaught', site: null });
+        remote.silent = false;
+        Promise.resolve(res).then(function (v) { remoteSend({ type: 'result', id: c.id, ok: ok, value: ser(v) }); }, function (er) { remoteSend({ type: 'result', id: c.id, ok: false, value: ser(er) }); });
+      });
+      if (remote.on) setTimeout(pollRemote, 50);
+    }, function () { remote.polling = false; if (remote.on) setTimeout(pollRemote, 3000); });
+  }
+  function startRemote(url) {
+    url = String(url || '').replace(/\/+$/, '');
+    if (!/^https?:\/\//.test(url)) { flash('Remote URL must start with http:// or https://'); return; }
+    remote.on = true; remote.url = url;
+    try { remote.id = sessionStorage.getItem('__sdt_rid') || Math.random().toString(36).slice(2, 10); sessionStorage.setItem('__sdt_rid', remote.id); } catch (e) { remote.id = Math.random().toString(36).slice(2, 10); }
+    prefs.remoteUrl = url; savePrefs();
+    remoteSend({ type: 'hello', url: location.href, title: document.title, ua: navigator.userAgent, viewport: window.innerWidth + 'x' + window.innerHeight, dpr: window.devicePixelRatio });
+    state.logs.slice(-200).forEach(function (e) { remoteSend({ type: 'log', level: e.level, kind: e.kind, text: logText(e), site: e.site ? shortName(e.site.url) + ':' + e.site.line : '' }); });
+    state.net.slice(-100).forEach(function (e) { if (e.done) remoteSend(netMsg(e)); });
+    remote.timer = setInterval(flushRemote, 500);
+    flushRemote(); pollRemote();
+    if (ui.remoteBadge) { ui.remoteBadge.hidden = false; ui.remoteBadge.title = 'Streaming to ' + url; }
+    flash('Remote mode on \u2192 ' + url);
+    if (location.protocol === 'https:' && /^http:/.test(url)) addLog('warn', ['Remote mode: this page is https but the relay is http \u2014 Safari blocks that (mixed content). Serve the page over http on your LAN, or put the relay behind https.'], { site: null });
+  }
+  function stopRemote() {
+    remote.on = false; clearInterval(remote.timer); remote.queue = [];
+    prefs.remoteUrl = ''; savePrefs();
+    if (ui.remoteBadge) ui.remoteBadge.hidden = true;
+    flash('Remote mode off');
+  }
+  function promptRemote() {
+    var def = prefs.remoteUrl || ('http://' + (location.hostname || 'localhost') + ':9230');
+    var u = window.prompt('Relay address on your Mac (run: node remote/relay.js)', def);
+    if (u) startRemote(u);
+  }
+  function netMsg(e) { return { type: 'net', kind: e.kind, method: e.method, url: e.url, status: e.error ? 'ERR' : e.status, ms: e.end != null ? Math.round(e.end - e.start) : null, size: e.size, mocked: !!e.mocked, error: e.error || null }; }
+
   /* ---------------------------------------------------------------- storage */
   function getStore(kind) {
     var items = [];
@@ -2182,7 +3743,7 @@ td.edit{cursor:text}\n.del{border:0;background:none;color:var(--fg2);cursor:poin
     var addRow = h('div', { class: 'addrow' }, k, val, h('button', { class: 'btn', onclick: addIt }, 'Add'));
     var main = h('div', { class: 'store-main' }, tb, ui.storeTable, ui.storeNote, ui.storePreview, addRow);
     v.append(h('div', { class: 'split' }, ui.storeNav, main));
-    window.addEventListener('storage', function () { if (state.open && state.tab === 'storage') renderStorage(); });
+    origAdd.call(window, 'storage', function () { if (state.open && state.tab === 'storage') renderStorage(); });
     return v;
   }
 
@@ -2237,7 +3798,7 @@ td.edit{cursor:text}\n.del{border:0;background:none;color:var(--fg2);cursor:poin
   window.SafariDevTools = api;
 
   // Commands from the Safari extension (content scripts share the DOM, not JS globals).
-  document.addEventListener('sdt:command', function (e) {
+  origAdd.call(document, 'sdt:command', function (e) {
     var cmd = e.detail;
     if (cmd === 'ping') document.dispatchEvent(new CustomEvent('sdt:pong'));
     else if (cmd === 'toggle') api.toggle();
@@ -2246,5 +3807,5 @@ td.edit{cursor:text}\n.del{border:0;background:none;color:var(--fg2);cursor:poin
   });
 
   if (document.body) build();
-  else document.addEventListener('DOMContentLoaded', build);
+  else origAdd.call(document, 'DOMContentLoaded', build);
 })();

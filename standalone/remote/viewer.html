@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Safari DevTools Remote</title>
+<style>
+  :root { --bg:#fff; --bg2:#f1f3f4; --fg:#1f1f1f; --fg2:#5f6368; --line:#dadce0; --accent:#1a73e8; --err:#d93025; --errbg:#fff0f0; --warn:#8a5a00; --warnbg:#fffbe5; --ok:#1e8e3e;
+    --mono: ui-monospace, Menlo, Consolas, monospace; color-scheme: light dark; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#202124; --bg2:#292a2d; --fg:#e8eaed; --fg2:#9aa0a6; --line:#3c4043; --accent:#8ab4f8; --err:#f28b82; --errbg:#3c2526; --warn:#fdd663; --warnbg:#3a3420; --ok:#81c995; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 13px/1.4 -apple-system, BlinkMacSystemFont, system-ui, sans-serif; height: 100vh; display: flex; flex-direction: column; }
+  header { display: flex; gap: 12px; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--line); background: var(--bg2); flex-wrap: wrap; }
+  header h1 { font-size: 15px; margin: 0; }
+  select, input, button { font: inherit; color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 4px 8px; }
+  button { cursor: pointer; }
+  .dot { width: 8px; height: 8px; border-radius: 4px; background: var(--fg2); display: inline-block; }
+  .dot.on { background: var(--ok); }
+  .info { color: var(--fg2); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 200px; }
+  main { flex: 1; display: grid; grid-template-columns: 1.4fr 1fr; min-height: 0; }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; grid-template-rows: 1.4fr 1fr; } }
+  section { display: flex; flex-direction: column; min-height: 0; border-right: 1px solid var(--line); }
+  section h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--fg2); margin: 0; padding: 8px 12px; border-bottom: 1px solid var(--line); display: flex; gap: 8px; align-items: center; }
+  .list { flex: 1; overflow: auto; font-family: var(--mono); font-size: 12px; }
+  .row { padding: 4px 12px; border-bottom: 1px solid var(--line); white-space: pre-wrap; word-break: break-word; display: flex; gap: 8px; }
+  .row .t { flex: 1; min-width: 0; }
+  .row .s { color: var(--fg2); flex: none; }
+  .row.warn { background: var(--warnbg); color: var(--warn); }
+  .row.error, .row.uncaught { background: var(--errbg); color: var(--err); }
+  .row.result { color: var(--accent); }
+  .row.input { color: var(--fg2); }
+  .row.verbose { color: var(--fg2); }
+  .prompt { display: flex; gap: 8px; padding: 8px 12px; border-top: 1px solid var(--line); }
+  .prompt input { flex: 1; font-family: var(--mono); }
+  table { width: 100%; border-collapse: collapse; }
+  td { padding: 4px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 0; }
+  td.u { width: 60%; }
+  tr.bad td { color: var(--err); }
+  .empty { color: var(--fg2); padding: 24px; text-align: center; font-family: -apple-system, system-ui, sans-serif; }
+  .tag { font-size: 10px; border-radius: 6px; padding: 0 5px; background: #8e44ad; color: #fff; margin-right: 4px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Safari DevTools Remote</h1>
+  <span class="dot" id="dot"></span>
+  <select id="clients"><option value="">Waiting for a device…</option></select>
+  <span class="info" id="info"></span>
+  <button id="clear">Clear</button>
+</header>
+<main>
+  <section>
+    <h2>Console <span style="flex:1"></span>
+      <label><input type="checkbox" id="lvVerbose"> verbose</label>
+      <input id="filter" placeholder="Filter" style="width:140px;text-transform:none;letter-spacing:0">
+    </h2>
+    <div class="list" id="console"><div class="empty">Open a page on your iPhone with remote mode on. Logs show up here.</div></div>
+    <form class="prompt" id="form">
+      <input id="code" placeholder="Run JavaScript on the device, e.g. document.title" autocomplete="off" spellcheck="false">
+      <button>Run</button>
+    </form>
+  </section>
+  <section>
+    <h2>Network</h2>
+    <div class="list"><table><tbody id="net"></tbody></table><div class="empty" id="netEmpty">No requests yet.</div></div>
+  </section>
+</main>
+<script>
+  const $ = (id) => document.getElementById(id);
+  let current = '', es = null, history = [], hi = 0;
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c])); }
+  function addLog(m) {
+    const empty = $('console').querySelector('.empty'); if (empty) empty.remove();
+    const cls = m.type === 'result' ? 'result' : (m.kind === 'uncaught' ? 'error' : (m.level || 'info'));
+    const text = m.type === 'result' ? '‹ ' + (typeof m.value === 'string' ? m.value : JSON.stringify(m.value, null, 1)) : m.text;
+    const row = document.createElement('div');
+    row.className = 'row ' + cls + (m.kind ? ' ' + m.kind : '');
+    row.innerHTML = '<span class="t">' + esc(text) + '</span><span class="s">' + esc(m.site || '') + '</span>';
+    row.dataset.text = String(text).toLowerCase();
+    applyFilter(row);
+    const box = $('console'), stick = box.scrollHeight - box.scrollTop - box.clientHeight < 40;
+    box.append(row);
+    if (stick) box.scrollTop = box.scrollHeight;
+  }
+  function applyFilter(row) {
+    const q = $('filter').value.toLowerCase();
+    const hideVerbose = !$('lvVerbose').checked && row.classList.contains('verbose');
+    row.style.display = (q && row.dataset.text.indexOf(q) === -1) || hideVerbose ? 'none' : '';
+  }
+  function addNet(m) {
+    $('netEmpty').style.display = 'none';
+    const tr = document.createElement('tr');
+    const bad = m.error || (+m.status >= 400) || m.status === 'ERR';
+    if (bad) tr.className = 'bad';
+    let name = m.url; try { const u = new URL(m.url); name = u.pathname + u.search; } catch (e) {}
+    tr.innerHTML = '<td>' + esc(m.method || '') + '</td><td>' + esc(m.status == null ? '—' : m.status) + '</td><td class="u" title="' + esc(m.url) + '">' + (m.mocked ? '<span class="tag">mock</span>' : '') + esc(name) + '</td><td>' + (m.ms != null ? m.ms + ' ms' : '') + '</td>';
+    $('net').prepend(tr);
+  }
+  function connect(id) {
+    if (es) es.close();
+    current = id;
+    $('console').innerHTML = ''; $('net').innerHTML = ''; $('netEmpty').style.display = '';
+    if (!id) return;
+    es = new EventSource('/events?client=' + encodeURIComponent(id));
+    es.onmessage = (ev) => {
+      const m = JSON.parse(ev.data);
+      if (m.type === 'hello') $('info').textContent = (m.title ? m.title + ' — ' : '') + m.url + ' · ' + m.viewport + ' @' + m.dpr + 'x';
+      else if (m.type === 'log' || m.type === 'result') addLog(m);
+      else if (m.type === 'net') addNet(m);
+    };
+  }
+  async function refreshClients() {
+    try {
+      const list = await (await fetch('/clients')).json();
+      const sel = $('clients'), prev = sel.value;
+      sel.innerHTML = list.length ? '' : '<option value="">Waiting for a device…</option>';
+      list.forEach((c) => {
+        const o = document.createElement('option');
+        let host = c.url || c.id; try { host = new URL(c.url).host + new URL(c.url).pathname; } catch (e) {}
+        const dev = /iPhone/.test(c.ua) ? 'iPhone' : /iPad/.test(c.ua) ? 'iPad' : /Macintosh/.test(c.ua) ? 'Mac' : 'Device';
+        o.value = c.id; o.textContent = (c.online ? '● ' : '○ ') + dev + ' — ' + host;
+        sel.append(o);
+      });
+      const pick = list.find((c) => c.id === prev) ? prev : (list[0] && list[0].id) || '';
+      sel.value = pick;
+      const me = list.find((c) => c.id === pick);
+      $('dot').className = 'dot' + (me && me.online ? ' on' : '');
+      if (pick !== current) connect(pick);
+    } catch (e) {}
+  }
+  $('clients').onchange = () => connect($('clients').value);
+  $('clear').onclick = () => { $('console').innerHTML = ''; $('net').innerHTML = ''; };
+  $('filter').oninput = $('lvVerbose').onchange = () => document.querySelectorAll('#console .row').forEach(applyFilter);
+  $('form').onsubmit = async (e) => {
+    e.preventDefault();
+    const code = $('code').value.trim(); if (!code || !current) return;
+    history.push(code); hi = history.length;
+    addLog({ type: 'log', kind: 'input', level: 'info', text: '› ' + code });
+    $('code').value = '';
+    await fetch('/eval?client=' + encodeURIComponent(current), { method: 'POST', body: JSON.stringify({ code }) });
+  };
+  $('code').onkeydown = (e) => {
+    if (e.key === 'ArrowUp' && history.length) { hi = Math.max(0, hi - 1); $('code').value = history[hi]; e.preventDefault(); }
+    if (e.key === 'ArrowDown' && history.length) { hi = Math.min(history.length, hi + 1); $('code').value = history[hi] || ''; e.preventDefault(); }
+  };
+  refreshClients(); setInterval(refreshClients, 2000);
+</script>
+</body>
+</html>

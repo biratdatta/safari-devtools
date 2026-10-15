@@ -6,12 +6,18 @@ A Chrome-style DevTools panel that runs inside the page, so it works in any Safa
 
 | Panel | What you get |
 |---|---|
-| **Console** | Captures `log`/`info`/`warn`/`error`/`debug`, `%c` styling, groups, `count`, `time`, uncaught errors and unhandled rejections. Repeated messages collapse into a counter. Objects open as expandable trees, and DOM nodes link to Elements. Has level filters and text filtering. The REPL keeps history (↑/↓) and provides `$0`, `$()`, `$$()`, `copy()`, `clear()` and `inspect()`. |
-| **Elements** | Live DOM tree, including open shadow roots. Hovering a node highlights its box model on the page, and the picker (Ctrl+Shift+C) selects an element by clicking it. Arrow keys move through the tree and Delete removes a node. Double-click to edit attributes or text. Breadcrumbs show the path to the selected node. |
-| **Styles / Computed** | Matched, `:host`, user-agent and inherited rules, sorted like Chrome, with overridden properties struck through. Click any name or value to edit it, with auto-suggestions for properties, keywords and `var(--tokens)`. Use the checkbox to toggle a property. Also has color swatches, a filterable computed list and a box model. |
-| **Sources** | Original files from source maps. Console and error-stack locations show `file.ts:line` and open the file at that line. |
-| **Network** | `fetch` and `XMLHttpRequest`, with method, status, type, size, time and a waterfall. Request details have Headers, Payload, Preview (a JSON tree or image), Response and Timing tabs, plus Copy as cURL. Images, scripts and CSS also appear, with timing only. |
-| **Storage** | Local storage, session storage and cookies. Add, edit (double-click), rename, delete, filter and clear entries. JSON values get a tree preview. |
+| **Console** | Logs, warnings, errors and unhandled rejections, with `%c` styling, groups, `count` and `time`. Repeated messages collapse into a counter, and objects open as expandable trees. Error stack traces are **source-mapped**, so minified names like `at o` become `UserService.loadUser (user.service.ts:42)`. The REPL has **autocomplete** for globals and object properties (Tab or → to accept), history on ↑/↓, and `$0`, `$()`, `$$()`, `copy()`, `clear()` and `inspect()`. |
+| **Elements** | Live DOM tree including shadow roots, a box-model highlight and an element picker (Ctrl+Shift+C). **Find** (⌘F) matches text, CSS selectors (piercing shadow roots) or XPath. Right-click a node to copy its selector, JS path, XPath or outerHTML, edit it as HTML, hide it, delete it or store it as a global. **DOM breakpoints** fire on subtree, attribute or removal changes and log the call stack, optionally pausing in Web Inspector. |
+| **Styles · Computed · Listeners · Component** | **Styles** shows matched, `:host`, user-agent and inherited rules with overrides struck through, and live editing with suggestions for properties, keywords and your `var(--tokens)`. **Computed** has the box model. **Listeners** lists every event listener on the element and its ancestors, with where it was added, and lets you remove one. **Component** is for web components: properties (editable), observed attributes, slots, `::part()` hooks and the CSS variables it reads, plus Lit and Angular component details. |
+| **Sources** | Original files from source maps, plus the scripts as served. Has **search across all files**, and opens at the exact line from any Console link. |
+| **Network** | `fetch`, XHR, **WebSocket** and **EventSource** traffic (with a Messages view), with a waterfall, headers, payload, JSON preview and timing. **Rules** let you block a URL, mock a response (status, headers, body) or add a delay, matching by text, `*` wildcards or `/regex/`. **Throttling** offers Fast 4G, Fast 3G, Slow 3G and Offline. Right-click a request to copy it as fetch or cURL, copy the response, mock it, block it or replay it. |
+| **Storage** | Local storage, session storage and cookies: add, edit, rename, delete and filter, with a JSON preview. |
+| **Performance** | FCP, LCP, CLS, INP and TTFB where Safari supports them, a live FPS graph, a DOM-size graph, long tasks, the biggest layout shifts, page-load timings, and a **memory leak check** for removed elements still held in memory. |
+| **Tokens** | Every CSS custom property on the page (including inside components), grouped by prefix with its current value, where it's defined and how often it's used. Click a value to override it live across the page, then copy your overrides as CSS. |
+| **Audit** | Scans the page, including shadow DOM, for **Safari and iPhone issues** (inputs under 16px that cause zoom, `100vh`, sticky inside overflow, fixed inside a transform, missing `viewport-fit`, autoplay rules, horizontal scroll, small tap targets…) and **accessibility issues** (missing alt text, labels and accessible names, low contrast, click handlers that can't be reached by keyboard, duplicate ids, heading order…). |
+| **Device** | Viewport, visual viewport, the measured `100vh`/`svh`/`lvh`/`dvh` and safe-area insets, plus toggles for a **safe-area and viewport overlay**, a **touch visualiser** (taps, swipes, long-press and multi-touch, drawn on screen) and **outline all elements**. |
+
+From the **⋯ menu**, you can switch between light, dark and auto themes, dock the panel to the bottom or right, **export a debug report** (JSON) or a **HAR** file, and start **remote mode**. Settings are remembered per site.
 
 ## Use it
 
@@ -21,24 +27,38 @@ A Chrome-style DevTools panel that runs inside the page, so it works in any Safa
 <script src="/path/to/safari-devtools.js"></script>   <!-- first thing in <head> -->
 ```
 
-Optional attributes: `data-open="true"` opens the panel on load, and `data-launcher="false"` hides the floating button so you open it with the shortcut only.
-
-**On any site (bookmarklet):** host `safari-devtools.js` somewhere reachable over HTTPS, then save this as a bookmark's URL:
-
-```
-javascript:(function(){var s=document.createElement('script');s.src='https://YOUR-HOST/safari-devtools.js?'+Date.now();s.dataset.open='true';document.body.appendChild(s);})()
-```
-
-The bookmarklet only sees logs and requests made *after* you click it, and sites with a strict Content-Security-Policy will block it.
+Optional attributes:
+- `data-open="true"` opens the panel on load.
+- `data-launcher="false"` hides the floating button.
+- `data-remote="http://<mac-ip>:9230"` starts remote mode.
 
 **Try it now:** open `demo.html` in Safari. Keep it in the same folder as the script.
+
+## Remote mode: debug an iPhone from your Mac
+
+Remote mode streams the phone's console, errors and network to your Mac, and runs code you type on the Mac on the phone. It needs no cable and works on the same Wi-Fi.
+
+```bash
+node remote/relay.js          # on your Mac (Node 16+, no install needed)
+```
+
+It prints your Mac's address. Then:
+
+1. **Try it:** open `http://<mac-ip>:9230/demo` on the iPhone.
+2. **Use it in your own page:** load the tool from the relay:
+   `<script src="http://<mac-ip>:9230/safari-devtools.js" data-remote="http://<mac-ip>:9230"></script>`.
+   If your page already loads the tool, add `?sdt-remote=http://<mac-ip>:9230` to its URL instead.
+3. **Watch it:** open `http://localhost:9230` on the Mac to see the logs and requests, and to run JavaScript on the phone.
+
+Safari won't let an `https://` page talk to an `http://` relay, because that's mixed content. Use it with local `http://` dev servers, or put the relay behind https.
 
 ## Shortcuts
 
 - **Ctrl+Shift+D**: show or hide the panel
 - **Ctrl+Shift+C**: inspect an element (Esc cancels)
-- **Ctrl+L** in the console: clear it
-- The floating button can be dragged; its position is remembered
+- **⌘F / Ctrl+F** in Elements: find
+- **Ctrl+L** in the Console: clear it
+- **Tab / →** in the Console: accept an autocomplete suggestion
 
 ## JavaScript API
 
@@ -52,10 +72,9 @@ SafariDevTools.clear();
 
 Page scripts can't see some things the browser's own DevTools can:
 
-- HttpOnly cookies are hidden.
-- Browser-added request headers (Cookie, User-Agent) aren't visible.
+- HttpOnly cookies and browser-added request headers (Cookie, User-Agent) aren't visible.
 - Cross-origin stylesheets can't be read.
-- Native resource loads (images, scripts, CSS) show timing only.
-- There's no JS debugger or breakpoints.
-
-For those, pair this with Safari's Web Inspector. You can also wrap the script in a Safari Web Extension so it injects into every page automatically.
+- Native resource loads (images, scripts, CSS) show timing only, and rules and throttling apply to `fetch`/XHR only.
+- There's no step-through JS debugger. DOM breakpoints can trigger `debugger;`, which pauses only when Safari's Web Inspector is open.
+- Safari doesn't expose long tasks, layout shifts or JS heap size to pages, so those show as unsupported.
+- The leak check relies on garbage-collection timing, so treat it as a hint.
