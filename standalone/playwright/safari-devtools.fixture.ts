@@ -82,6 +82,14 @@ export class DevTools {
   storage() { return this.call<Record<string, unknown>>('storage'); }
   viewport() { return this.call<Record<string, unknown>>('viewport'); }
   report() { return this.call<Record<string, unknown>>('report'); }
+  // design / assets
+  changes(format?: 'list' | 'css' | 'diff') { return this.call<any>('changes', format); }
+  fonts() { return this.call<{ scanned: number; faces: any[]; families: { family: string; elements: number; weights: string[]; sizes: number[]; fallbackFor: string[]; system: boolean }[] }>('fonts'); }
+  images() { return this.call<{ selector: string; src: string; kind: string; shown: number[]; natural: number[]; bytes: number | null; wastedBytes: number; issues: string[] }[]>('images'); }
+  animations() { return this.call<any[]>('animations'); }
+  setAnimationSpeed(rate: number) { return this.call<number>('setAnimationSpeed', rate); }
+  pauseAnimations() { return this.call('pauseAnimations'); }
+  layoutOverlay(selector: string, on = true) { return this.call<boolean>('layoutOverlay', selector, on); }
   /** Show the panel (useful with --headed or in trace screenshots). */
   open(tab?: string) { return this.call('open', tab); }
 }

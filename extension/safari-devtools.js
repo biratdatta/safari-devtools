@@ -884,7 +884,53 @@ td.edit{cursor:text}\n.del{border:0;background:none;color:var(--fg2);cursor:poin
 .src-hit{display:flex;gap:8px;padding:2px 10px;cursor:pointer;white-space:pre;overflow:hidden}\n\
 .src-hit:hover{background:var(--hover)}\n\
 mark{background:#fff4c2;color:#1f1f1f;border-radius:2px}\n\
-.view .split>.src-left{min-height:0}\n";
+.view .split>.src-left{min-height:0}\n\
+.chg-block{border-bottom:1px solid var(--line);padding:6px 10px 8px}\n\
+.chg-head{display:flex;align-items:center;gap:6px;margin-bottom:4px}\n\
+.chg-line{white-space:pre-wrap;word-break:break-all;padding:1px 6px;border-radius:2px}\n\
+.chg-line.del{background:var(--errbg);color:var(--errfg);text-decoration:line-through;text-decoration-color:rgba(217,48,37,.4)}\n\
+.chg-line.add{background:rgba(30,142,62,.1);color:#137333}\n\
+.root[data-theme=dark] .chg-line.add{color:#81c995}\n\
+.lbadge{display:inline-block;margin-left:6px;padding:0 5px;border:1px solid var(--line);border-radius:7px;font:10px/14px -apple-system,system-ui,sans-serif;color:var(--fg2);cursor:pointer;vertical-align:1px}\n\
+.lbadge:hover{border-color:#7b1fa2;color:#7b1fa2}\n\
+.lbadge.on{background:#7b1fa2;border-color:#7b1fa2;color:#fff}\n\
+.lay-layer{position:fixed;inset:0;pointer-events:none;z-index:2147483638}\n\
+.lay-box{position:fixed;border:2px dashed;box-sizing:border-box}\n\
+.lay-item{position:fixed;border:1px dashed;box-sizing:border-box;opacity:.8}\n\
+.lay-line{position:fixed;box-sizing:border-box;border:0 dashed}\n\
+.lay-line.v{border-left-width:1px}.lay-line.h{border-top-width:1px}\n\
+.lay-gap{position:fixed;background:repeating-linear-gradient(45deg,currentColor 0 1px,transparent 1px 6px);opacity:.35}\n\
+.lay-num{position:absolute;top:-16px;left:-7px;color:#fff;font:10px/14px var(--mono);padding:0 3px;border-radius:3px}\n\
+.lay-num.left{top:-7px;left:-22px}\n\
+.lay-label{position:fixed;white-space:nowrap;font:11px/16px -apple-system,system-ui,sans-serif;color:#fff!important;padding:0 6px;border-radius:3px;width:auto!important;height:auto!important}\n\
+.lay-row{display:flex;align-items:center;gap:6px;padding:2px 0}\n\
+.lay-dot{width:10px;height:10px;border-radius:5px;border:1px solid var(--line);flex:none}\n\
+.ms-layer{position:fixed;inset:0;pointer-events:none;z-index:2147483644}\n\
+.ms-box{position:fixed;box-sizing:border-box;border:1px solid}\n\
+.ms-box.a{border-color:#1a73e8;background:rgba(26,115,232,.08)}\n\
+.ms-box.t{border-color:#e8453c;background:rgba(232,69,60,.06)}\n\
+.ms-line{position:fixed;height:0;border-top:1px solid #e8453c}\n\
+.ms-line.v{width:0;border-top:0;border-left:1px solid #e8453c}\n\
+.ms-label{position:fixed;transform:translateX(-50%);background:#e8453c;color:#fff;font:11px/16px var(--mono);padding:0 5px;border-radius:3px;white-space:nowrap}\n\
+.design-ov{position:fixed;left:0;top:0;pointer-events:none;z-index:2147483637;max-width:none;display:none}\n\
+.drop-zone{border:2px dashed var(--line);border-radius:8px;padding:14px;text-align:center;color:var(--fg2);outline:none}\n\
+.drop-zone:focus,.drop-zone.over{border-color:var(--accent);color:var(--fg)}\n\
+.dz-row{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:8px}\n\
+.dz-ctl{display:flex;align-items:center;gap:6px;white-space:nowrap}\n\
+.asset-table{width:100%;border-collapse:collapse;table-layout:auto}\n\
+.asset-table th{position:sticky;top:0}\n\
+.asset-table td{white-space:normal;overflow:visible;height:auto;padding:5px 8px;border-bottom:1px solid var(--bg3);vertical-align:middle;max-width:340px}\n\
+.asset-table tbody tr{cursor:pointer}\n\
+.asset-detail td{background:var(--bg2)}\n\
+.flag{display:inline-block;margin:1px 4px 1px 0;padding:0 6px;border-radius:8px;background:var(--bg3);color:var(--fg2);font-size:11px;white-space:nowrap}\n\
+.flag.bad{background:var(--errbg);color:var(--errfg)}\n\
+.flag.warn{background:var(--warnbg);color:var(--warnfg)}\n\
+.flag.ok{background:rgba(30,142,62,.12);color:#137333}\n\
+.thumb{width:44px;height:32px;object-fit:contain;background:repeating-conic-gradient(var(--bg3) 0 25%,transparent 0 50%) 0 0/10px 10px;border:1px solid var(--line);border-radius:3px}\n\
+.ell{max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}\n\
+.anim-row{display:flex;align-items:center;gap:10px;padding:6px 10px;border-bottom:1px solid var(--bg3)}\n\
+.anim-info{flex:1;min-width:0}\n\
+.anim-scrub{width:180px;flex:none}\n";
 
   var ICON = {
     pick: '<svg viewBox="0 0 16 16"><path d="M7 13H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v4"/><path d="M8 8l6 2.5-2.5 1-1 2.5z"/></svg>',
@@ -930,7 +976,7 @@ mark{background:#fff4c2;color:#1f1f1f;border-radius:2px}\n\
     var pickBtn = h('button', { class: 'ibtn', title: 'Select an element in the page to inspect it (Ctrl+Shift+C)', onclick: function () { setPicking(!state.picking); } }, icon('pick'));
     ui.pickBtn = pickBtn;
     var tabs = h('div', { class: 'tabs' }, pickBtn, h('div', { class: 'sep' }));
-    ['Elements', 'Console', 'Sources', 'Network', 'Storage', 'Performance', 'Tokens', 'Audit', 'Device'].forEach(function (name) {
+    ['Elements', 'Console', 'Sources', 'Network', 'Storage', 'Changes', 'Performance', 'Tokens', 'Assets', 'Audit', 'Device'].forEach(function (name) {
       var id = name.toLowerCase();
       tabEls[id] = h('div', { class: 'tab', onclick: function () { switchTab(id); } }, name);
       tabs.append(tabEls[id]);
@@ -951,6 +997,8 @@ mark{background:#fff4c2;color:#1f1f1f;border-radius:2px}\n\
     views.tokens = buildTokens();
     views.audit = buildAudit();
     views.device = buildDevice();
+    views.changes = buildChanges();
+    views.assets = buildAssets();
     Object.keys(views).forEach(function (k) { viewWrap.append(views[k]); });
 
     panel.append(resizer, tabs, viewWrap);
@@ -966,6 +1014,7 @@ mark{background:#fff4c2;color:#1f1f1f;border-radius:2px}\n\
     var rq = null; try { rq = new URL(location.href).searchParams.get('sdt-remote'); } catch (e) {}
     var rurl = rq || cfg.remote || prefs.remoteUrl;
     if (rurl) startRemote(rurl);
+    if (design.src) placeDesign();
   }
 
   function setupFab() {
@@ -1052,6 +1101,8 @@ mark{background:#fff4c2;color:#1f1f1f;border-radius:2px}\n\
     if (id === 'tokens') renderTokens();
     if (id === 'audit' && !ui.auditRan) runAudit();
     if (id === 'device') renderDevice();
+    if (id === 'changes') renderChanges();
+    if (id === 'assets') renderAssets();
     if (id === 'console') { scrollConsole(true); setTimeout(function () { ui.input && ui.input.focus({ preventScroll: true }); }, 0); }
     if (id !== 'storage') stopStoragePoll(); else startStoragePoll();
   }
@@ -1444,7 +1495,7 @@ mark{background:#fff4c2;color:#1f1f1f;border-radius:2px}\n\
     var left = h('div', { class: 'left' }, findBar, ui.tree, ui.crumbs);
 
     ui.sideTabs = h('div', { class: 'side-tabs' });
-    ['Styles', 'Computed', 'Listeners', 'Component'].forEach(function (n) {
+    ['Styles', 'Computed', 'Layout', 'Listeners', 'Component'].forEach(function (n) {
       var t = h('div', { class: 'tab' + (state.sideTab === n ? ' on' : '') }, n);
       t.addEventListener('click', function () { state.sideTab = n; Array.prototype.forEach.call(ui.sideTabs.children, function (c) { c.classList.toggle('on', c === t); }); renderSide(); });
       ui.sideTabs.append(t);
@@ -1520,6 +1571,12 @@ mark{background:#fff4c2;color:#1f1f1f;border-radius:2px}\n\
       var addAttr = h('span', null, '');
       attrs.append(addAttr);
       row.append(h('span', { class: 't-tag' }, '<' + tag), attrs, h('span', { class: 't-tag' }, '>'));
+      var lk = layoutKind(n);
+      if (lk) {
+        var lb = h('span', { class: 'lbadge' + (layout.set.has(n) ? ' on' : ''), title: 'Toggle ' + lk + ' overlay' }, lk);
+        lb.addEventListener('click', function (ev) { ev.stopPropagation(); var on = toggleLayout(n); lb.classList.toggle('on', on); });
+        row.append(lb);
+      }
       row.addEventListener('dblclick', function (e) { if (e.target === row || e.target.classList.contains('t-tag')) editAttr(n, addAttr, null); });
       if (inline) {
         var tx = h('span', { class: 't-text' }, kids[0].data.trim());
@@ -1967,6 +2024,7 @@ mark{background:#fff4c2;color:#1f1f1f;border-radius:2px}\n\
     if (state.sideTab === 'Computed') renderComputed(el);
     else if (state.sideTab === 'Listeners') renderListeners(el);
     else if (state.sideTab === 'Component') renderComponent(el);
+    else if (state.sideTab === 'Layout') renderLayoutPane();
     else renderStyles(el);
     ui.side.scrollTop = st;
   }
@@ -2409,7 +2467,7 @@ mark{background:#fff4c2;color:#1f1f1f;border-radius:2px}\n\
     cb.addEventListener('change', function () {
       var dis = disabledFor(b.decl);
       if (cb.checked) { var v = dis.get(d.name); dis.delete(d.name); applyDecl(b.decl, null, d.name, v.value + (v.imp ? ' !important' : '')); }
-      else { dis.set(d.name, { value: d.value, imp: d.imp }); b.decl.removeProperty(d.name); }
+      else { trackChange(b.decl, [d.name]); dis.set(d.name, { value: d.value, imp: d.imp }); b.decl.removeProperty(d.name); }
       renderSide();
     });
     name.addEventListener('click', function () {
@@ -2427,6 +2485,7 @@ mark{background:#fff4c2;color:#1f1f1f;border-radius:2px}\n\
   }
 
   function applyDecl(decl, oldName, name, value) {
+    trackChange(decl, [oldName, name]);
     if (oldName && oldName !== name) decl.removeProperty(oldName);
     if (!name) return;
     value = String(value).trim().replace(/;+$/, '');
@@ -3190,7 +3249,7 @@ mark{background:#fff4c2;color:#1f1f1f;border-radius:2px}\n\
         val.addEventListener('click', function () {
           inlineEdit(val, t.value || '', function (nv) {
             nv = nv.trim();
-            if (nv) { document.documentElement.style.setProperty(t.name, nv); tokState.overrides[t.name] = nv; }
+            if (nv) { trackChange(document.documentElement.style, [t.name], { selector: ':root', source: 'design token overrides', context: [] }); document.documentElement.style.setProperty(t.name, nv); tokState.overrides[t.name] = nv; }
             setTimeout(renderTokens, 0);
           }, { suggest: suggestPropValue(document.documentElement, function () { return t.name; }) });
         });
@@ -3381,6 +3440,9 @@ mark{background:#fff4c2;color:#1f1f1f;border-radius:2px}\n\
       tog('overlay', 'Safe-area & viewport overlay', setViewportOverlay),
       tog('touches', 'Show touches', setTouchViz),
       tog('outline', 'Outline all elements', setOutlineAll)));
+    ui.designBox = h('div');
+    v.append(h('div', { class: 'dsec' }, h('h4', null, 'Design overlay \u2014 compare the page with a design export'), ui.designBox));
+    renderDesignControls();
     ui.devBody = h('div', { class: 'scroll' });
     v.append(ui.devBody);
     origAdd.call(window, 'resize', function () { if (state.tab === 'device') renderDevice(); if (dev.overlay) drawViewportOverlay(); });
@@ -3789,6 +3851,491 @@ mark{background:#fff4c2;color:#1f1f1f;border-radius:2px}\n\
 
   /* ------------------------------------------------------------------- boot */
 
+
+  /* ================================================================ CHANGES */
+  // Every CSS edit made in the panel, so it can be copied back into the source.
+  var changes = { map: new Map(), seq: 0 };
+  function sheetLabel(sh) {
+    if (!sh) return '';
+    if (sh.href) return shortName(sh.href);
+    var owner = sh.ownerNode, rn = owner && owner.getRootNode ? owner.getRootNode() : null;
+    if (rn && rn.host) return '<' + rn.host.localName + '> shadow style';
+    return owner ? '<style>' : 'constructed stylesheet';
+  }
+  function trackChange(decl, props, meta) {
+    if (!decl) return;
+    var c = changes.map.get(decl);
+    if (!c) {
+      c = { decl: decl, orig: {}, order: ++changes.seq, context: [] };
+      var r = decl.parentRule;
+      if (meta) Object.assign(c, meta);
+      else if (r) {
+        c.selector = r.selectorText; c.source = sheetLabel(r.parentStyleSheet);
+        for (var p = r.parentRule; p; p = p.parentRule) { if (p.media) c.context.unshift('@media ' + p.media.mediaText); else if (p.conditionText) c.context.unshift('@supports ' + p.conditionText); }
+      } else {
+        var el = state.selected && state.selected.style === decl ? state.selected : null;
+        c.el = el; c.selector = el ? cssPath(el) : 'element'; c.source = 'inline style';
+      }
+      changes.map.set(decl, c);
+    }
+    props.forEach(function (p) { if (!p || Object.prototype.hasOwnProperty.call(c.orig, p)) return; c.orig[p] = { v: decl.getPropertyValue(p), imp: decl.getPropertyPriority(p) }; });
+    setTimeout(updateChangesBadge, 0);
+  }
+  function fmtVal(v, imp) { return v ? v + (imp ? ' !important' : '') : null; }
+  function changeList() {
+    var out = [];
+    Array.from(changes.map.values()).sort(function (a, b) { return a.order - b.order; }).forEach(function (c) {
+      var lines = Object.keys(c.orig).map(function (p) {
+        return { prop: p, before: fmtVal(c.orig[p].v, c.orig[p].imp), after: fmtVal(c.decl.getPropertyValue(p), c.decl.getPropertyPriority(p)) };
+      }).filter(function (l) { return l.before !== l.after; });
+      if (lines.length) out.push({ c: c, selector: c.selector, source: c.source, context: c.context, lines: lines });
+    });
+    return out;
+  }
+  function changesAsCss(list) {
+    return (list || changeList()).map(function (b) {
+      var body = b.lines.map(function (l) { return l.after == null ? '  /* removed: ' + l.prop + ': ' + l.before + '; */' : '  ' + l.prop + ': ' + l.after + ';'; }).join('\n');
+      var css = (b.source ? '/* ' + b.source + ' */\n' : '') + b.selector + ' {\n' + body + '\n}';
+      b.context.slice().reverse().forEach(function (ctx) { css = ctx + ' {\n' + css.replace(/^/gm, '  ') + '\n}'; });
+      return css;
+    }).join('\n\n');
+  }
+  function changesAsDiff(list) {
+    return (list || changeList()).map(function (b) {
+      var head = '--- a/' + (b.source || 'styles') + '\n+++ b/' + (b.source || 'styles') + '\n@@ ' + b.selector + ' @@\n';
+      var ctx = b.context.map(function (c) { return ' ' + c + ' {\n'; }).join('');
+      var lines = b.lines.map(function (l) { return (l.before != null ? '-  ' + l.prop + ': ' + l.before + ';\n' : '') + (l.after != null ? '+  ' + l.prop + ': ' + l.after + ';\n' : ''); }).join('');
+      return head + ctx + ' ' + b.selector + ' {\n' + lines + ' }' + b.context.map(function () { return '\n }'; }).join('');
+    }).join('\n\n');
+  }
+  function revertChange(c) {
+    Object.keys(c.orig).forEach(function (p) { var o = c.orig[p]; if (o.v) c.decl.setProperty(p, o.v, o.imp); else c.decl.removeProperty(p); disabledFor(c.decl).delete(p); });
+    changes.map.delete(c.decl);
+    if (c.decl === document.documentElement.style) Object.keys(c.orig).forEach(function (p) { delete tokState.overrides[p]; });
+  }
+  function revertAll() { Array.from(changes.map.values()).forEach(revertChange); renderChanges(); renderSide(); updateChangesBadge(); }
+  function updateChangesBadge() { if (tabEls.changes) { var n = changeList().reduce(function (s, b) { return s + b.lines.length; }, 0); tabEls.changes.textContent = n ? 'Changes (' + n + ')' : 'Changes'; } }
+  function buildChanges() {
+    var v = h('div', { class: 'view' });
+    v.append(h('div', { class: 'toolbar' },
+      h('button', { class: 'chip', onclick: function () { copyAndFlash(changesAsCss(), 'CSS'); } }, 'Copy as CSS'),
+      h('button', { class: 'chip', onclick: function () { copyAndFlash(changesAsDiff(), 'diff'); } }, 'Copy as diff'),
+      h('button', { class: 'chip', onclick: function () { download('css-changes-' + location.hostname + '-' + stamp() + '.css', changesAsCss(), 'text/css'); } }, 'Download .css'),
+      h('div', { class: 'grow' }),
+      h('button', { class: 'chip', onclick: function () { if (confirm('Undo all CSS changes made in DevTools?')) revertAll(); } }, 'Revert all')));
+    ui.chgBody = h('div', { class: 'scroll' });
+    v.append(ui.chgBody);
+    return v;
+  }
+  function renderChanges() {
+    if (!ui.chgBody) return;
+    var b = clear(ui.chgBody), list = changeList();
+    if (!list.length) { b.append(h('div', { class: 'empty' }, 'No changes yet. Edit a style in Elements \u2192 Styles (or a token in Tokens) and it shows up here as a diff you can copy back into your .css / .scss.')); return; }
+    list.forEach(function (blk) {
+      var box = h('div', { class: 'chg-block' });
+      box.append(h('div', { class: 'chg-head' },
+        h('b', { class: 'mono' }, blk.selector), blk.context.length ? h('span', { class: 'muted mono' }, ' ' + blk.context.join(' ')) : null,
+        h('span', { class: 'grow' }), h('span', { class: 'muted' }, blk.source),
+        blk.c.el ? h('button', { class: 'chip', onclick: function () { inspect(blk.c.el); } }, 'Inspect') : null,
+        h('button', { class: 'chip', onclick: function () { copyAndFlash(changesAsCss([blk]), 'rule'); } }, 'Copy'),
+        h('button', { class: 'chip', onclick: function () { revertChange(blk.c); renderChanges(); renderSide(); updateChangesBadge(); } }, 'Revert')));
+      blk.lines.forEach(function (l) {
+        if (l.before != null) box.append(h('div', { class: 'chg-line del mono' }, '-  ' + l.prop + ': ' + l.before + ';'));
+        if (l.after != null) box.append(h('div', { class: 'chg-line add mono' }, '+  ' + l.prop + ': ' + l.after + ';'));
+      });
+      b.append(box);
+    });
+  }
+
+  /* ========================================================= LAYOUT OVERLAYS */
+  var layout = { set: new Map(), raf: null, palette: ['#c2185b', '#7b1fa2', '#00838f', '#ef6c00', '#2e7d32', '#1565c0'], n: 0, last: 0 };
+  function layoutKind(el) { try { var d = getComputedStyle(el).display; return /grid/.test(d) ? 'grid' : /flex/.test(d) ? 'flex' : null; } catch (e) { return null; } }
+  function toggleLayout(el, on) {
+    if (on === undefined) on = !layout.set.has(el);
+    if (on) layout.set.set(el, layout.palette[layout.n++ % layout.palette.length]); else layout.set.delete(el);
+    if (layout.set.size && !layout.raf) layoutLoop();
+    if (!layout.set.size && ui.layoutLayer) clear(ui.layoutLayer);
+    return on;
+  }
+  function layoutLoop() {
+    layout.raf = requestAnimationFrame(function (t) {
+      layout.raf = null;
+      if (!layout.set.size) { if (ui.layoutLayer) clear(ui.layoutLayer); return; }
+      if (t - layout.last > 32) { layout.last = t; drawLayouts(); }
+      layoutLoop();
+    });
+  }
+  function px(v) { var n = parseFloat(v); return isNaN(n) ? 0 : n; }
+  function tracks(v) { if (!v || v === 'none') return null; var t = String(v).replace(/\[[^\]]*\]/g, ' ').trim().split(/\s+/).map(parseFloat).filter(function (n) { return !isNaN(n); }); return t.length ? t : null; }
+  function drawLayouts() {
+    if (!ui.layoutLayer) { ui.layoutLayer = h('div', { class: 'lay-layer' }); root.insertBefore(ui.layoutLayer, root.firstChild); }
+    var L = clear(ui.layoutLayer);
+    function box(x, y, w, hh, cls, color, label) { var d = h('div', { class: cls, style: { left: x + 'px', top: y + 'px', width: Math.max(0, w) + 'px', height: Math.max(0, hh) + 'px', borderColor: color, color: color } }, label || null); if (cls === 'lay-label') d.style.background = color; L.append(d); return d; }
+    layout.set.forEach(function (color, el) {
+      if (!el.isConnected) { layout.set.delete(el); return; }
+      var cs = getComputedStyle(el), r = el.getBoundingClientRect(), kind = layoutKind(el);
+      var x0 = r.left + px(cs.borderLeftWidth) + px(cs.paddingLeft), y0 = r.top + px(cs.borderTopWidth) + px(cs.paddingTop);
+      var cw = r.width - px(cs.borderLeftWidth) - px(cs.borderRightWidth) - px(cs.paddingLeft) - px(cs.paddingRight);
+      var ch = r.height - px(cs.borderTopWidth) - px(cs.borderBottomWidth) - px(cs.paddingTop) - px(cs.paddingBottom);
+      box(r.left, r.top, r.width, r.height, 'lay-box', color);
+      var cg = px(cs.columnGap), rg = px(cs.rowGap);
+      if (kind === 'grid') {
+        var cols = tracks(cs.gridTemplateColumns) || [cw], rows = tracks(cs.gridTemplateRows) || [ch];
+        var x = x0;
+        cols.forEach(function (w, i) {
+          box(x, y0, 0, ch, 'lay-line v', color, h('span', { class: 'lay-num', style: { background: color } }, String(i + 1)));
+          x += w; box(x, y0, 0, ch, 'lay-line v', color);
+          if (i < cols.length - 1 && cg) box(x, y0, cg, ch, 'lay-gap', color);
+          x += i < cols.length - 1 ? cg : 0;
+        });
+        var y = y0;
+        rows.forEach(function (hgt, i) {
+          box(x0, y, cw, 0, 'lay-line h', color, h('span', { class: 'lay-num left', style: { background: color } }, String(i + 1)));
+          y += hgt; box(x0, y, cw, 0, 'lay-line h', color);
+          if (i < rows.length - 1 && rg) box(x0, y, cw, rg, 'lay-gap', color);
+          y += i < rows.length - 1 ? rg : 0;
+        });
+        box(r.left, r.top - 18, 0, 0, 'lay-label', color, 'grid ' + cols.length + '\u00d7' + rows.length + (cg || rg ? ' \u00b7 gap ' + (rg === cg ? cg : rg + ' ' + cg) + 'px' : ''));
+      } else if (kind === 'flex') {
+        var dir = cs.flexDirection, isRow = /row/.test(dir);
+        var items = Array.prototype.filter.call(el.children, function (c) { var s = getComputedStyle(c); return s.display !== 'none' && s.position !== 'absolute' && s.position !== 'fixed'; })
+          .map(function (c) { return c.getBoundingClientRect(); });
+        items.forEach(function (ir) { box(ir.left, ir.top, ir.width, ir.height, 'lay-item', color); });
+        var sorted = items.slice().sort(function (a, b) { return isRow ? a.left - b.left : a.top - b.top; });
+        for (var i = 1; i < sorted.length; i++) {
+          var a = sorted[i - 1], b = sorted[i];
+          if (isRow && b.left > a.right && Math.abs(b.top - a.top) < a.height) box(a.right, Math.min(a.top, b.top), b.left - a.right, Math.max(a.bottom, b.bottom) - Math.min(a.top, b.top), 'lay-gap', color);
+          if (!isRow && b.top > a.bottom && Math.abs(b.left - a.left) < a.width) box(Math.min(a.left, b.left), a.bottom, Math.max(a.right, b.right) - Math.min(a.left, b.left), b.top - a.bottom, 'lay-gap', color);
+        }
+        var arrow = { row: '\u2192', 'row-reverse': '\u2190', column: '\u2193', 'column-reverse': '\u2191' }[dir] || '\u2192';
+        box(r.left, r.top - 18, 0, 0, 'lay-label', color, 'flex ' + arrow + ' ' + dir + ' \u00b7 justify: ' + cs.justifyContent + ' \u00b7 align: ' + cs.alignItems + (cs.flexWrap !== 'nowrap' ? ' \u00b7 ' + cs.flexWrap : '') + (cg || rg ? ' \u00b7 gap ' + (isRow ? cg : rg) + 'px' : ''));
+      }
+    });
+  }
+  function renderLayoutPane() {
+    var grids = [], flexes = [];
+    walkDeep(document, function (n) { if (n.nodeType === 1 && n !== host) { var k = layoutKind(n); if (k === 'grid') grids.push(n); else if (k === 'flex') flexes.push(n); } if (grids.length + flexes.length > 600) return false; });
+    ui.side.append(h('div', { class: 'toolbar' },
+      h('button', { class: 'chip', onclick: function () { grids.forEach(function (g) { toggleLayout(g, true); }); renderSide(); } }, 'Show all grids'),
+      h('button', { class: 'chip', onclick: function () { flexes.slice(0, 40).forEach(function (g) { toggleLayout(g, true); }); renderSide(); } }, 'Show flex (first 40)'),
+      h('button', { class: 'chip', onclick: function () { layout.set.clear(); toggleLayout(document.body, false); renderSide(); } }, 'Hide all')));
+    [['Grid', grids], ['Flexbox', flexes]].forEach(function (g) {
+      var sec = h('div', { class: 'rule' }, h('div', { class: 'rule-head' }, h('b', null, g[0] + ' containers'), h('span', { class: 'muted' }, String(g[1].length))));
+      if (!g[1].length) sec.append(h('div', { class: 'muted' }, 'None on this page.'));
+      g[1].slice(0, 300).forEach(function (el) {
+        var cb = h('input', { type: 'checkbox' }); cb.checked = layout.set.has(el);
+        cb.addEventListener('change', function () { toggleLayout(el, cb.checked); dot.style.background = layout.set.get(el) || 'transparent'; });
+        var dot = h('span', { class: 'lay-dot', style: { background: layout.set.get(el) || 'transparent' } });
+        sec.append(h('label', { class: 'lay-row' }, cb, dot, nodeRef(el)));
+      });
+      ui.side.append(sec);
+    });
+    ui.side.append(h('div', { class: 'note' }, 'Tip: click a grid / flex badge next to a tag in the DOM tree to toggle its overlay.'));
+  }
+
+  /* ============================================================ MEASURE TOOL */
+  // Select an element, hold Alt (Option) and hover another one to see the distances.
+  var measure = { alt: false, layer: null };
+  function measureClear() { measure.alt = false; if (measure.layer) { measure.layer.remove(); measure.layer = null; } }
+  function drawMeasure(a, t) {
+    if (!measure.layer) { measure.layer = h('div', { class: 'ms-layer' }); root.append(measure.layer); }
+    var L = clear(measure.layer), T = t.getBoundingClientRect(), A = a ? a.getBoundingClientRect() : null;
+    function rect(R, cls) { L.append(h('div', { class: cls, style: { left: R.left + 'px', top: R.top + 'px', width: R.width + 'px', height: R.height + 'px' } })); }
+    function label(x, y, text) { L.append(h('div', { class: 'ms-label', style: { left: x + 'px', top: y + 'px' } }, text)); }
+    function hline(x1, x2, y) { if (x2 - x1 < 0.5) return; L.append(h('div', { class: 'ms-line', style: { left: x1 + 'px', top: y + 'px', width: (x2 - x1) + 'px' } })); label((x1 + x2) / 2, y - 18, String(Math.round((x2 - x1) * 10) / 10)); }
+    function vline(y1, y2, x) { if (y2 - y1 < 0.5) return; L.append(h('div', { class: 'ms-line v', style: { left: x + 'px', top: y1 + 'px', height: (y2 - y1) + 'px' } })); label(x + 6, (y1 + y2) / 2 - 8, String(Math.round((y2 - y1) * 10) / 10)); }
+    rect(T, 'ms-box t');
+    label(T.left + T.width / 2, T.bottom + 4, Math.round(T.width * 10) / 10 + ' \u00d7 ' + Math.round(T.height * 10) / 10);
+    if (!A || a === t) return;
+    rect(A, 'ms-box a');
+    var midY = Math.max(A.top, T.top) < Math.min(A.bottom, T.bottom) ? (Math.max(A.top, T.top) + Math.min(A.bottom, T.bottom)) / 2 : T.top + T.height / 2;
+    var midX = Math.max(A.left, T.left) < Math.min(A.right, T.right) ? (Math.max(A.left, T.left) + Math.min(A.right, T.right)) / 2 : T.left + T.width / 2;
+    if (T.left >= A.right) hline(A.right, T.left, midY);
+    else if (A.left >= T.right) hline(T.right, A.left, midY);
+    else { var outer = (T.left <= A.left && T.right >= A.right) ? T : A, inner = outer === T ? A : T; hline(outer.left, inner.left, inner.top + inner.height / 2); hline(inner.right, outer.right, inner.top + inner.height / 2); }
+    if (T.top >= A.bottom) vline(A.bottom, T.top, midX);
+    else if (A.top >= T.bottom) vline(T.bottom, A.top, midX);
+    else { var o2 = (T.top <= A.top && T.bottom >= A.bottom) ? T : A, i2 = o2 === T ? A : T; vline(o2.top, i2.top, i2.left + i2.width / 2); vline(i2.bottom, o2.bottom, i2.left + i2.width / 2); }
+  }
+  origAdd.call(window, 'keydown', function (e) {
+    if (e.key === 'Alt' && state.open && ui.ready && !measure.alt) { measure.alt = true; if (measure.lastTarget) drawMeasure(state.selected && state.selected.nodeType === 1 ? state.selected : null, measure.lastTarget); }
+  }, true);
+  origAdd.call(window, 'keyup', function (e) { if (e.key === 'Alt') measureClear(); }, true);
+  origAdd.call(window, 'blur', measureClear);
+  origAdd.call(document, 'mousemove', function (e) {
+    if (!state.open || !ui.ready) return;
+    var t = pickTarget(e);
+    if (!t) return;
+    measure.lastTarget = t;
+    if (measure.alt && e.altKey) drawMeasure(state.selected && state.selected.nodeType === 1 ? state.selected : null, t);
+    else if (measure.alt && !e.altKey) measureClear();
+  }, { capture: true, passive: true });
+
+  /* ========================================================== DESIGN OVERLAY */
+  var design = { src: null, opacity: 0.5, scale: 2, x: 0, y: 0, diff: false, scroll: true, show: true, img: null };
+  try { var ds = JSON.parse(sessionStorage.getItem('__sdt_design') || 'null'); if (ds) Object.assign(design, ds); } catch (e) {}
+  function saveDesign() { try { sessionStorage.setItem('__sdt_design', JSON.stringify({ src: design.src, opacity: design.opacity, scale: design.scale, x: design.x, y: design.y, diff: design.diff, scroll: design.scroll, show: design.show })); } catch (e) {} }
+  function placeDesign() {
+    if (!design.src || !design.show) { if (design.img) design.img.style.display = 'none'; return; }
+    if (!design.img) { design.img = h('img', { class: 'design-ov', alt: '' }); design.img.onload = placeDesign; root.insertBefore(design.img, root.firstChild); }
+    var im = design.img;
+    if (im.getAttribute('src') !== design.src) im.setAttribute('src', design.src);
+    im.style.display = 'block';
+    im.style.opacity = design.opacity;
+    im.style.mixBlendMode = design.diff ? 'difference' : 'normal';
+    var w = (im.naturalWidth || 0) / (design.scale || 1);
+    if (w) im.style.width = w + 'px';
+    im.style.left = (design.x - (design.scroll ? window.scrollX : 0)) + 'px';
+    im.style.top = (design.y - (design.scroll ? window.scrollY : 0)) + 'px';
+  }
+  origAdd.call(window, 'scroll', function () { if (design.img && design.src && design.scroll) placeDesign(); }, { passive: true });
+  function loadDesignFile(file) {
+    if (!file || !/^image\//.test(file.type)) { flash('That isn\u2019t an image'); return; }
+    var fr = new FileReader();
+    fr.onload = function () {
+      design.src = fr.result; design.show = true; saveDesign(); placeDesign(); renderDesignControls();
+      var probe = new Image();
+      probe.onload = function () { if (probe.naturalWidth > window.innerWidth * 1.5) design.scale = Math.round(probe.naturalWidth / window.innerWidth) || 2; else design.scale = 1; placeDesign(); renderDesignControls(); saveDesign(); };
+      probe.src = fr.result;
+    };
+    fr.readAsDataURL(file);
+  }
+  function renderDesignControls() {
+    if (!ui.designBox) return;
+    var box = clear(ui.designBox);
+    var file = h('input', { type: 'file', accept: 'image/*', style: { display: 'none' } });
+    file.addEventListener('change', function () { loadDesignFile(file.files[0]); });
+    var drop = h('div', { class: 'drop-zone', tabindex: '0' }, design.src ? 'Paste (\u2318V) or drop another image to replace \u00b7 arrow keys nudge (Shift = 10px)' : 'Drop a Figma/Sketch screenshot here, paste it (\u2318V) or ', design.src ? null : h('button', { class: 'chip', onclick: function () { file.click(); } }, 'choose a file'));
+    drop.addEventListener('dragover', function (e) { e.preventDefault(); drop.classList.add('over'); });
+    drop.addEventListener('dragleave', function () { drop.classList.remove('over'); });
+    drop.addEventListener('drop', function (e) { e.preventDefault(); drop.classList.remove('over'); loadDesignFile(e.dataTransfer.files[0]); });
+    drop.addEventListener('paste', function (e) { var it = Array.prototype.find.call(e.clipboardData.items || [], function (i) { return /^image\//.test(i.type); }); if (it) { e.preventDefault(); loadDesignFile(it.getAsFile()); } });
+    drop.addEventListener('keydown', function (e) {
+      var step = e.shiftKey ? 10 : 1, k = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] }[e.key];
+      if (k && design.src) { e.preventDefault(); design.x += k[0]; design.y += k[1]; placeDesign(); saveDesign(); renderDesignControls(); ui.designBox.querySelector('.drop-zone').focus(); }
+    });
+    box.append(file, drop);
+    if (!design.src) return;
+    function num(label, key, step) {
+      var i = h('input', { class: 'filter', type: 'number', step: String(step || 1), style: { width: '70px' } }); i.value = design[key];
+      i.addEventListener('input', function () { design[key] = +i.value || 0; placeDesign(); saveDesign(); });
+      return h('label', { class: 'dz-ctl' }, label, i);
+    }
+    function check(label, key) {
+      var c = h('input', { type: 'checkbox' }); c.checked = !!design[key];
+      c.addEventListener('change', function () { design[key] = c.checked; placeDesign(); saveDesign(); });
+      return h('label', { class: 'dz-ctl' }, c, label);
+    }
+    var op = h('input', { type: 'range', min: '0', max: '100', value: String(Math.round(design.opacity * 100)) });
+    var opv = h('span', { class: 'muted' }, Math.round(design.opacity * 100) + '%');
+    op.addEventListener('input', function () { design.opacity = op.value / 100; opv.textContent = op.value + '%'; placeDesign(); saveDesign(); });
+    var sc = h('select', { class: 'sel' });
+    [[1, '1x'], [2, '2x (retina export)'], [3, '3x'], [4, '4x']].forEach(function (o) { var opt = h('option', { value: String(o[0]) }, o[1]); if (design.scale === o[0]) opt.selected = true; sc.append(opt); });
+    sc.addEventListener('change', function () { design.scale = +sc.value; placeDesign(); saveDesign(); });
+    box.append(h('div', { class: 'dz-row' },
+      h('label', { class: 'dz-ctl' }, 'Opacity', op, opv),
+      h('label', { class: 'dz-ctl' }, 'Exported at', sc),
+      num('X', 'x'), num('Y', 'y')),
+      h('div', { class: 'dz-row' },
+        check(' Show', 'show'), check(' Difference blend (mismatches light up)', 'diff'), check(' Scroll with page', 'scroll'),
+        h('button', { class: 'chip', onclick: function () { design.x = 0; design.y = 0; placeDesign(); saveDesign(); renderDesignControls(); } }, 'Reset position'),
+        h('button', { class: 'chip', onclick: function () { design.src = null; if (design.img) { design.img.remove(); design.img = null; } saveDesign(); renderDesignControls(); } }, 'Remove')));
+  }
+
+  /* ================================================================= ASSETS */
+  var assets = { sub: 'Fonts', animTimer: null, rate: 1, rateTimer: null, interacting: false };
+  function buildAssets() {
+    var v = h('div', { class: 'view' });
+    var tabs = h('div', { class: 'side-tabs' });
+    ['Fonts', 'Images', 'Animations'].forEach(function (n) {
+      var t = h('div', { class: 'tab' + (assets.sub === n ? ' on' : '') }, n);
+      t.addEventListener('click', function () { assets.sub = n; Array.prototype.forEach.call(tabs.querySelectorAll('.tab'), function (x) { x.classList.toggle('on', x === t); }); renderAssets(); });
+      tabs.append(t);
+    });
+    tabs.append(h('div', { class: 'grow' }), h('button', { class: 'ibtn', title: 'Rescan', onclick: function () { renderAssets(); } }, icon('refresh')));
+    ui.assetBody = h('div', { class: 'scroll' });
+    v.append(tabs, ui.assetBody);
+    origAdd.call(document, 'pointerup', function () { assets.interacting = false; }, true);
+    return v;
+  }
+  function renderAssets() {
+    if (!ui.assetBody) return;
+    clearInterval(assets.animTimer); assets.animTimer = null;
+    if (assets.sub === 'Fonts') renderFonts(); else if (assets.sub === 'Images') renderImages(); else renderAnimations();
+  }
+  // --- fonts
+  var GENERIC = /^(serif|sans-serif|monospace|cursive|fantasy|system-ui|ui-sans-serif|ui-serif|ui-monospace|ui-rounded|-apple-system|blinkmacsystemfont|emoji|math|fangsong)$/i;
+  var fontAvail = {}, fontCanvas = null;
+  function fontAvailable(name) {
+    if (fontAvail[name] != null) return fontAvail[name];
+    var faces = [];
+    try { document.fonts.forEach(function (f) { if (f.family.replace(/^["']|["']$/g, '').toLowerCase() === name.toLowerCase()) faces.push(f); }); } catch (e) {}
+    if (faces.length) return (fontAvail[name] = faces.some(function (f) { return f.status === 'loaded'; }));
+    try {
+      fontCanvas = fontCanvas || document.createElement('canvas');
+      var g = fontCanvas.getContext('2d'), s = 'mmmmmmmmmmlli1WQ@#', ok = false;
+      ['monospace', 'serif', 'sans-serif'].forEach(function (base) {
+        g.font = '72px ' + base; var w1 = g.measureText(s).width;
+        g.font = '72px "' + name + '", ' + base; if (g.measureText(s).width !== w1) ok = true;
+      });
+      return (fontAvail[name] = ok);
+    } catch (e) { return (fontAvail[name] = false); }
+  }
+  function renderedFamily(stack) {
+    var parts = String(stack).split(',').map(function (s) { return s.trim().replace(/^["']|["']$/g, ''); }).filter(Boolean);
+    for (var i = 0; i < parts.length; i++) { if (GENERIC.test(parts[i]) || fontAvailable(parts[i])) return { name: parts[i], first: parts[0], fallback: i > 0, generic: GENERIC.test(parts[i]) }; }
+    return { name: '(browser default)', first: parts[0], fallback: true };
+  }
+  function fontReport() {
+    var fams = {}, n = 0;
+    walkDeep(document, function (el) {
+      if (el.nodeType !== 1 || el === host || n > 5000) return n > 5000 ? false : undefined;
+      var hasText = false;
+      for (var c = el.firstChild; c; c = c.nextSibling) if (c.nodeType === 3 && c.data.trim()) { hasText = true; break; }
+      if (!hasText) return;
+      n++;
+      var cs = getComputedStyle(el), rf = renderedFamily(cs.fontFamily);
+      var f = fams[rf.name] || (fams[rf.name] = { family: rf.name, elements: [], weights: {}, sizes: {}, stacks: {}, fallbacks: 0, generic: !!rf.generic });
+      f.elements.push(el); f.weights[cs.fontWeight] = 1; f.sizes[Math.round(px(cs.fontSize))] = 1; f.stacks[cs.fontFamily] = 1;
+      if (rf.fallback && !rf.generic) f.fallbacks++;
+      if (rf.fallback && rf.first && !GENERIC.test(rf.first)) f.missing = (f.missing || {}), f.missing[rf.first] = 1;
+    });
+    var faces = [];
+    try { document.fonts.forEach(function (ff) { faces.push({ family: ff.family.replace(/^["']|["']$/g, ''), weight: ff.weight, style: ff.style, status: ff.status }); }); } catch (e) {}
+    return { families: Object.keys(fams).map(function (k) { return fams[k]; }).sort(function (a, b) { return b.elements.length - a.elements.length; }), faces: faces, scanned: n };
+  }
+  function renderFonts() {
+    var b = clear(ui.assetBody), r = fontReport();
+    b.append(h('div', { class: 'note' }, 'Fonts actually used to draw text (checked against what\u2019s loaded/installed), across ' + r.scanned + ' text elements incl. shadow DOM.'));
+    var t = h('table', { class: 'asset-table' }, h('thead', null, h('tr', null, h('th', null, 'Rendered font'), h('th', null, 'Elements'), h('th', null, 'Weights'), h('th', null, 'Sizes (px)'), h('th', null, 'Notes'))));
+    var tb = h('tbody'); t.append(tb);
+    r.families.forEach(function (f) {
+      var miss = f.missing ? Object.keys(f.missing) : [];
+      var tr = h('tr', null,
+        h('td', null, h('span', { style: { fontFamily: '"' + f.family + '"', fontSize: '15px' } }, f.family), f.generic ? h('span', { class: 'flag' }, 'system') : null),
+        h('td', null, String(f.elements.length)),
+        h('td', null, Object.keys(f.weights).sort().join(', ')),
+        h('td', null, Object.keys(f.sizes).sort(function (a, c) { return a - c; }).join(', ')),
+        h('td', null, miss.length ? h('span', { class: 'flag bad', title: 'The first font in the CSS stack isn\u2019t available, so the browser fell back' }, 'fallback for ' + miss.join(', ')) : null));
+      tr.addEventListener('click', function () { var d = tr.nextSibling; if (d && d.classList.contains('asset-detail')) { d.remove(); return; } var det = h('tr', { class: 'asset-detail' }, h('td', { colspan: '5' }, f.elements.slice(0, 30).map(function (e) { return [nodeRef(e), ' ']; }), h('div', { class: 'muted mono' }, Object.keys(f.stacks).join('  |  ')))); tr.after(det); });
+      tb.append(tr);
+    });
+    b.append(t);
+    if (r.faces.length) {
+      var ff = h('div', { class: 'dsec' }, h('h4', null, 'Web fonts declared (@font-face)'));
+      r.faces.forEach(function (x) { ff.append(h('div', { class: 'kv' }, h('span', { class: 'k' }, x.family + ' ' + x.weight + ' ' + x.style), h('span', { class: 'v' }, h('span', { class: 'flag ' + (x.status === 'loaded' ? 'ok' : x.status === 'error' ? 'bad' : '') }, x.status === 'unloaded' ? 'not used (not downloaded)' : x.status)))); });
+      b.append(ff);
+    }
+  }
+  // --- images
+  function resourceSize(url) {
+    try { var e = performance.getEntriesByName(url)[0]; if (e) return e.transferSize || e.encodedBodySize || e.decodedBodySize || null; } catch (x) {}
+    return null;
+  }
+  function imageReport() {
+    var dpr = window.devicePixelRatio || 1, list = [];
+    walkDeep(document, function (el) {
+      if (el.nodeType !== 1 || el === host) return;
+      if (el.localName === 'img') {
+        var r = el.getBoundingClientRect(), src = el.currentSrc || el.src;
+        list.push({ el: el, src: src, kind: 'img', w: r.width, h: r.height, top: r.top, nw: el.naturalWidth, nh: el.naturalHeight, bytes: resourceSize(src), lazy: el.loading === 'lazy', dims: el.hasAttribute('width') && el.hasAttribute('height') });
+      } else {
+        var bg = getComputedStyle(el).backgroundImage, m = bg && bg !== 'none' ? bg.match(/url\(["']?([^"')]+)["']?\)/) : null;
+        if (m && !/^data:image\/svg/.test(m[1])) { var r2 = el.getBoundingClientRect(); list.push({ el: el, src: absUrl(m[1]), kind: 'background', w: r2.width, h: r2.height, top: r2.top, nw: 0, nh: 0, bytes: resourceSize(absUrl(m[1])), bgSize: getComputedStyle(el).backgroundSize }); }
+      }
+      if (list.length > 400) return false;
+    });
+    var waits = list.filter(function (i) { return i.kind === 'background'; }).map(function (i) {
+      return new Promise(function (res) { var im = new Image(); var t = setTimeout(res, 2500); im.onload = function () { i.nw = im.naturalWidth; i.nh = im.naturalHeight; clearTimeout(t); res(); }; im.onerror = function () { clearTimeout(t); res(); }; im.src = i.src; });
+    });
+    return Promise.all(waits).then(function () {
+      list.forEach(function (i) {
+        i.flags = [];
+        var needW = i.w * dpr, needH = i.h * dpr;
+        i.ratio = needW && needH && i.nw && i.nh ? (i.nw * i.nh) / (needW * needH) : null;
+        if (!i.w || !i.h) i.flags.push(['info', 'not visible']);
+        else if (i.ratio && i.ratio > 2.2 && i.kind === 'img') i.flags.push(['bad', i.ratio.toFixed(1) + '\u00d7 more pixels than needed']);
+        else if (i.ratio && i.ratio < 0.7 && i.kind === 'img') i.flags.push(['warn', 'low-res: looks blurry at ' + dpr + 'x']);
+        if (i.kind === 'img' && !i.dims) i.flags.push(['warn', 'no width/height (layout shift)']);
+        if (i.kind === 'img' && !i.lazy && i.top > window.innerHeight * 1.5) i.flags.push(['info', 'below the fold \u2014 add loading="lazy"']);
+        if (i.bytes > 150000 && /\.(png|jpe?g|gif)(\?|$)/i.test(i.src)) i.flags.push(['info', 'large ' + (i.src.match(/\.(png|jpe?g|gif)/i) || [''])[0] + ' \u2014 WebP/AVIF would be smaller']);
+        i.waste = i.bytes && i.ratio && i.ratio > 1 ? Math.round(i.bytes * (1 - 1 / i.ratio)) : 0;
+      });
+      return list;
+    });
+  }
+  function renderImages() {
+    var b = clear(ui.assetBody);
+    b.append(h('div', { class: 'note' }, 'Scanning images\u2026'));
+    imageReport().then(function (list) {
+      clear(b);
+      var total = list.reduce(function (s, i) { return s + (i.bytes || 0); }, 0), waste = list.reduce(function (s, i) { return s + i.waste; }, 0);
+      b.append(h('div', { class: 'note' }, list.length + ' images \u00b7 ' + fmtBytes(total) + ' downloaded' + (waste ? ' \u00b7 ~' + fmtBytes(waste) + ' could be saved by resizing' : '') + ' \u00b7 screen is ' + (window.devicePixelRatio || 1) + 'x'));
+      var t = h('table', { class: 'asset-table' }, h('thead', null, h('tr', null, h('th', null, ''), h('th', null, 'Image'), h('th', null, 'Shown at'), h('th', null, 'Actual size'), h('th', null, 'File'), h('th', null, 'Issues'))));
+      var tb = h('tbody'); t.append(tb);
+      list.sort(function (a, c) { return (c.waste || 0) - (a.waste || 0) || c.flags.length - a.flags.length; }).forEach(function (i) {
+        var tr = h('tr', { title: i.src },
+          h('td', null, h('img', { class: 'thumb', src: i.src, alt: '' })),
+          h('td', null, nodeRef(i.el), h('div', { class: 'muted ell' }, shortName(i.src)), i.kind === 'background' ? h('span', { class: 'flag' }, 'CSS background') : null),
+          h('td', null, Math.round(i.w) + ' \u00d7 ' + Math.round(i.h)),
+          h('td', null, i.nw ? i.nw + ' \u00d7 ' + i.nh : '\u2014'),
+          h('td', null, i.bytes ? fmtBytes(i.bytes) : '\u2014'),
+          h('td', null, i.flags.map(function (f) { return h('span', { class: 'flag ' + f[0] }, f[1]); })));
+        tb.append(tr);
+      });
+      b.append(t);
+    });
+  }
+  // --- animations
+  function animName(a) {
+    try {
+      if (window.CSSAnimation && a instanceof CSSAnimation) return '@keyframes ' + a.animationName;
+      if (window.CSSTransition && a instanceof CSSTransition) return 'transition: ' + a.transitionProperty;
+    } catch (e) {}
+    return a.id ? 'animate() #' + a.id : 'Web Animation (element.animate)';
+  }
+  function allAnimations() { try { return document.getAnimations ? document.getAnimations() : []; } catch (e) { return []; } }
+  function setAnimRate(r) {
+    assets.rate = r;
+    allAnimations().forEach(function (a) { try { a.playbackRate = r; } catch (e) {} });
+    clearInterval(assets.rateTimer); assets.rateTimer = null;
+    if (r !== 1) assets.rateTimer = setInterval(function () { allAnimations().forEach(function (a) { if (a.playbackRate !== assets.rate) try { a.playbackRate = assets.rate; } catch (e) {} }); }, 200);
+  }
+  function renderAnimations() {
+    var b = clear(ui.assetBody);
+    if (!document.getAnimations) { b.append(h('div', { class: 'empty' }, 'This browser doesn\u2019t support document.getAnimations().')); return; }
+    var rate = h('select', { class: 'sel' });
+    [[1, '1\u00d7 speed'], [0.5, '0.5\u00d7'], [0.25, '0.25\u00d7'], [0.1, '0.1\u00d7 (slow-mo)']].forEach(function (o) { var op = h('option', { value: String(o[0]) }, o[1]); if (assets.rate === o[0]) op.selected = true; rate.append(op); });
+    rate.addEventListener('change', function () { setAnimRate(+rate.value); });
+    b.append(h('div', { class: 'toolbar' },
+      h('button', { class: 'chip', onclick: function () { allAnimations().forEach(function (a) { try { a.pause(); } catch (e) {} }); fillAnims(); } }, '\u275a\u275a Pause all'),
+      h('button', { class: 'chip', onclick: function () { allAnimations().forEach(function (a) { try { a.play(); } catch (e) {} }); fillAnims(); } }, '\u25b6 Play all'),
+      rate, h('span', { class: 'muted' }, 'Speed also applies to animations that start later. JS animations driven by requestAnimationFrame aren\u2019t affected.')));
+    var list = h('div'); b.append(list);
+    list.addEventListener('pointerdown', function () { assets.interacting = true; });
+    function fillAnims() {
+      if (assets.interacting) return;
+      clear(list);
+      var anims = allAnimations();
+      if (!anims.length) { list.append(h('div', { class: 'empty' }, 'No animations running right now. Trigger one on the page (hover, open a menu\u2026) \u2014 this list refreshes live.')); return; }
+      anims.slice(0, 200).forEach(function (a) {
+        var timing = {}, ct = {};
+        try { timing = a.effect.getTiming(); ct = a.effect.getComputedTiming(); } catch (e) {}
+        var dur = typeof timing.duration === 'number' ? timing.duration : (ct.duration || 0), total = ct.endTime && isFinite(ct.endTime) ? ct.endTime : dur;
+        var scrub = h('input', { type: 'range', min: '0', max: String(Math.max(1, Math.round(isFinite(total) ? total : dur))), value: String(Math.round(a.currentTime || 0)), class: 'anim-scrub' });
+        scrub.addEventListener('input', function () { try { a.pause(); a.currentTime = +scrub.value; } catch (e) {} });
+        var target = a.effect && a.effect.target;
+        list.append(h('div', { class: 'anim-row' },
+          h('button', { class: 'chip', onclick: function () { try { a.playState === 'running' ? a.pause() : a.play(); } catch (e) {} fillAnims(); } }, a.playState === 'running' ? '\u275a\u275a' : '\u25b6'),
+          h('div', { class: 'anim-info' }, h('b', { class: 'mono' }, animName(a)), ' ', target ? nodeRef(target) : null,
+            h('div', { class: 'muted' }, a.playState + ' \u00b7 ' + Math.round(dur) + ' ms' + (timing.iterations === Infinity ? ' \u00b7 infinite' : timing.iterations > 1 ? ' \u00d7 ' + timing.iterations : '') + (timing.easing ? ' \u00b7 ' + timing.easing : '') + (timing.delay ? ' \u00b7 delay ' + timing.delay + 'ms' : '') + ' \u00b7 ' + a.playbackRate + '\u00d7')),
+          scrub));
+      });
+    }
+    fillAnims();
+    assets.animTimer = setInterval(function () { if (state.open && state.tab === 'assets' && assets.sub === 'Animations') fillAnims(); }, 700);
+  }
+
   /* ============================================================ AUTOMATION */
   // A JSON-friendly API for test runners (Playwright, WebDriver) and AI agents.
   // Everything returns plain data (no DOM nodes), so it survives page.evaluate()
@@ -3914,7 +4461,7 @@ mark{background:#fff4c2;color:#1f1f1f;border-radius:2px}\n\
       return opts && opts.severity ? list.filter(function (i) { return i.severity === opts.severity; }) : list;
     },
     tokens: function () { return collectTokens().map(function (t) { return { name: t.name, value: t.value, uses: t.uses, definedIn: t.defs.map(function (d) { return d.selector + ' (' + d.source + ')'; }) }; }); },
-    setToken: function (name, value) { document.documentElement.style.setProperty(name, value); tokState.overrides[name] = value; return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); },
+    setToken: function (name, value) { trackChange(document.documentElement.style, [name], { selector: ':root', source: 'design token overrides', context: [] }); document.documentElement.style.setProperty(name, value); tokState.overrides[name] = value; return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); },
     /** Find elements; selectors pierce shadow roots. */
     query: function (sel, limit) { return deepQueryAll(sel).slice(0, limit || 50).map(elInfo); },
     element: function (sel) { return elInfo(resolveEl(sel)); },
@@ -3955,6 +4502,21 @@ mark{background:#fff4c2;color:#1f1f1f;border-radius:2px}\n\
     close: function () { api.hide(); return true; },
     inspect: function (sel) { inspect(resolveEl(sel)); return elInfo(resolveEl(sel)); },
     eval: function (code) { return (0, eval)(code); },
+    /** CSS edits made in the panel. format: 'list' (default) | 'css' | 'diff' */
+    changes: function (format) {
+      var list = changeList();
+      if (format === 'css') return changesAsCss(list);
+      if (format === 'diff') return changesAsDiff(list);
+      return list.map(function (b) { return { selector: b.selector, source: b.source, context: b.context, lines: b.lines }; });
+    },
+    revertChanges: function () { revertAll(); return true; },
+    fonts: function () { var r = fontReport(); return { scanned: r.scanned, faces: r.faces, families: r.families.map(function (f) { return { family: f.family, elements: f.elements.length, weights: Object.keys(f.weights), sizes: Object.keys(f.sizes).map(Number), fallbackFor: f.missing ? Object.keys(f.missing) : [], system: f.generic }; }) }; },
+    images: function () { return imageReport().then(function (l) { return l.map(function (i) { return { selector: cssPath(i.el), src: i.src, kind: i.kind, shown: [Math.round(i.w), Math.round(i.h)], natural: [i.nw, i.nh], bytes: i.bytes, wastedBytes: i.waste, issues: i.flags.map(function (f) { return f[1]; }) }; }); }); },
+    animations: function () { return allAnimations().map(function (a) { var t = {}; try { t = a.effect.getTiming(); } catch (e) {} return { name: animName(a), target: a.effect && a.effect.target ? cssPath(a.effect.target) : null, state: a.playState, duration: t.duration, iterations: t.iterations, rate: a.playbackRate, currentTime: a.currentTime }; }); },
+    setAnimationSpeed: function (r) { setAnimRate(+r || 1); return assets.rate; },
+    pauseAnimations: function () { allAnimations().forEach(function (a) { try { a.pause(); } catch (e) {} }); return true; },
+    playAnimations: function () { allAnimations().forEach(function (a) { try { a.play(); } catch (e) {} }); return true; },
+    layoutOverlay: function (sel, on) { return toggleLayout(resolveEl(sel), on === undefined ? true : !!on); },
     help: function () { return Object.keys(automation).sort(); }
   };
 

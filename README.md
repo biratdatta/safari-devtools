@@ -33,10 +33,13 @@ A Chrome-style DevTools panel that runs **inside the page**, for Safari on Mac, 
 | **Sources** | Original files from source maps, with search across all files. |
 | **Network** | fetch, XHR, WebSocket and SSE. **Mock, block or delay** requests, throttle to 3G or offline, copy as fetch or cURL, replay requests, and export a HAR file. |
 | **Storage** | Local storage, session storage and cookies, with editing. |
+| **Changes** | Every CSS edit you made in the panel as a before/after diff, with copy as CSS (for `.scss`) or as a diff, and revert. |
+| **Assets** | Fonts that actually rendered (and fallbacks), oversized or blurry images, and animations you can pause, scrub and slow down. |
 | **Performance** | Web Vitals where Safari supports them, live FPS and DOM-size graphs, long tasks and a memory-leak check. |
 | **Tokens** | Every `--css-variable` on the page, grouped, with live overrides you can copy as CSS. |
 | **Audit** | Safari and iPhone pitfalls, plus accessibility checks that reach into shadow DOM. |
-| **Device** | Safe-area and viewport overlay, `100vh`/`dvh`/`svh` values, a touch visualiser and outline-all-elements. |
+| **Device** | A design overlay that compares the page with a Figma export (opacity, scale, difference blend), plus the safe-area and viewport overlay, a touch visualiser and outline-all-elements. |
+| **Layout and measuring** | Grid and flex overlays (lines, numbers, gaps, direction), and ⌥+hover distance measuring as in Figma. |
 | **Remote mode** | Debug an iPhone from your Mac over Wi-Fi: `node standalone/remote/relay.js`. |
 | **Automation** | `SafariDevTools.automation` JSON API, a Playwright fixture (WebKit desktop and iPhone), WebDriver for real Safari, and an HTTP API plus an **MCP server** for AI agents. See [standalone/README.md](standalone/README.md#automation-playwright-real-safari-and-ai-agents). |
 
