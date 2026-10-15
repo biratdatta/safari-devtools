@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Safari DevTools",
-  "version": "1.0.0",
-  "description": "A Chrome-style DevTools panel (Console, Elements/CSS, Network, Storage) on every page.",
+  "version": "1.2.0",
+  "description": "The best in-page DevTools for Safari: console, elements, CSS, network mocking, audits, design tools and more, on every page.",
   "icons": {
     "16": "images/icon-16.png",
     "32": "images/icon-32.png",

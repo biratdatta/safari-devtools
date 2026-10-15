@@ -4528,7 +4528,7 @@ mark{background:#fff4c2;color:#1f1f1f;border-radius:2px}\n\
     clear: clearConsole,
     automation: automation,
     ready: function () { return ui.ready; },
-    version: '1.1.0'
+    version: '1.2.0'
   };
   window.__SDT__ = api;
   window.SafariDevTools = api;

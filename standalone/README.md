@@ -1,6 +1,6 @@
 # Safari DevTools
 
-A Chrome-style DevTools panel that runs inside the page, so it works in any Safari, including iPhone and iPad. It's one dependency-free file, `safari-devtools.js`, and its UI is isolated in a Shadow DOM so it never clashes with your page's CSS.
+**The best in-page DevTools for Safari and iPhone.** A Chrome-style panel that runs inside the page, so it works in any Safari (Mac, iPhone, iPad and in-app WebViews) with no cable or Xcode. It's one dependency-free file, `safari-devtools.js`, and its UI is isolated in a Shadow DOM so it never clashes with your page's CSS. See the [main README](../README.md#how-it-compares) for how it compares with Safari's Web Inspector, Eruda and vConsole.
 
 ## Panels
 
