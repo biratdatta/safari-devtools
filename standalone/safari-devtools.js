@@ -186,7 +186,7 @@
     }
     var entry = {
       id: ++logSeq, level: level, args: args, sig: sig, count: 1, depth: groupDepth,
-      kind: opts.kind || 'log', site: opts.site !== undefined ? opts.site : callSite(), code: opts.code
+      kind: opts.kind || 'log', site: opts.site !== undefined ? opts.site : callSite(), code: opts.code, t: Date.now()
     };
     state.logs.push(entry);
     if (state.logs.length > MAX_LOGS) { var gone = state.logs.shift(); if (gone.row) gone.row.remove(); }
@@ -475,7 +475,8 @@
     slow3g: { label: 'Slow 3G', latency: 600, kbps: 400 },
     offline: { label: 'Offline', offline: true }
   };
-  function throttleCfg() { return THROTTLE[prefs.throttle] || THROTTLE.none; }
+  // Test runners can preset rules/throttling before the page loads via window.__SDT_RULES__ / __SDT_THROTTLE__.
+  function throttleCfg() { return THROTTLE[window.__SDT_THROTTLE__ || prefs.throttle] || THROTTLE.none; }
   function wait(ms) { return new Promise(function (r) { ms > 0 ? setTimeout(r, ms) : r(); }); }
   function ruleMatches(rule, url, method) {
     if (!rule || rule.on === false || !rule.match) return false;
@@ -491,7 +492,8 @@
     return url.toLowerCase().indexOf(m.toLowerCase()) !== -1;
   }
   function findRule(url, method) {
-    for (var i = 0; i < prefs.netRules.length; i++) if (ruleMatches(prefs.netRules[i], url, method)) return prefs.netRules[i];
+    var list = (Array.isArray(window.__SDT_RULES__) ? window.__SDT_RULES__ : []).concat(prefs.netRules);
+    for (var i = 0; i < list.length; i++) if (ruleMatches(list[i], url, method)) return list[i];
     return null;
   }
   function bandwidthDelay(bytes) { var t = throttleCfg(); return t.kbps ? (bytes * 8) / (t.kbps * 1000) * 1000 : 0; }
@@ -3242,8 +3244,7 @@ mark{background:#fff4c2;color:#1f1f1f;border-radius:2px}\n\
     return (el.getAttribute('title') || '').trim();
   }
   function isVisible(el) { var r = el.getBoundingClientRect(); if (!r.width || !r.height) return false; var cs = getComputedStyle(el); return cs.visibility !== 'hidden' && cs.display !== 'none' && +cs.opacity > 0.05; }
-  function runAudit() {
-    ui.auditRan = true;
+  function computeAudit() {
     var issues = [];
     function issue(sev, group, title, why, nodes) { if (nodes && !nodes.length) return; issues.push({ sev: sev, group: group, title: title, why: why, nodes: nodes || [] }); }
     var els = [];
@@ -3340,7 +3341,11 @@ mark{background:#fff4c2;color:#1f1f1f;border-radius:2px}\n\
     heads.forEach(function (hd, i) { if (i && +hd.localName[1] > +heads[i - 1].localName[1] + 1) skipped.push(hd); });
     issue('info', A, 'Skipped heading levels', 'Going from h2 to h4 makes the outline confusing for screen-reader users.', skipped);
 
-    // render
+    return { issues: issues, scanned: els.length };
+  }
+  function runAudit() {
+    ui.auditRan = true;
+    var res = computeAudit(), issues = res.issues, els = { length: res.scanned }, Q = 'Safari & iPhone', A = 'Accessibility';
     var b = clear(ui.auditBody);
     var counts = { error: 0, warn: 0, info: 0 };
     issues.forEach(function (i) { counts[i.sev]++; });
@@ -3558,8 +3563,8 @@ mark{background:#fff4c2;color:#1f1f1f;border-radius:2px}\n\
     if (seen.has(v)) return '[circular]';
     if (depth > 3) return '[' + ctorName(v) + ']';
     seen.add(v);
-    if (Array.isArray(v)) return v.slice(0, 100).map(function (x) { return ser(x, depth + 1, seen); });
-    var o = {}, keys = []; try { keys = Object.keys(v).slice(0, 60); } catch (e) {}
+    if (Array.isArray(v)) return v.slice(0, depth < 0 ? 5000 : 100).map(function (x) { return ser(x, depth + 1, seen); });
+    var o = {}, keys = []; try { keys = Object.keys(v).slice(0, depth < 0 ? 1000 : 60); } catch (e) {}
     keys.forEach(function (k) { try { o[k] = ser(v[k], depth + 1, seen); } catch (e) { o[k] = '[unreadable]'; } });
     return o;
   }
@@ -3601,19 +3606,7 @@ mark{background:#fff4c2;color:#1f1f1f;border-radius:2px}\n\
   }
   function exportHar() { download('network-' + location.hostname + '-' + stamp() + '.har', JSON.stringify(harFor(), null, 2)); }
   function exportReport() {
-    var storage = {};
-    ['local', 'session', 'cookies'].forEach(function (k) { var r = getStore(k); storage[k] = r.items || r.error; });
-    var m = measureViewport();
-    var report = {
-      generatedBy: 'Safari DevTools ' + api.version, generatedAt: new Date().toISOString(),
-      page: { url: location.href, title: document.title, userAgent: navigator.userAgent, viewport: window.innerWidth + 'x' + window.innerHeight, dpr: window.devicePixelRatio, safeArea: m.insets },
-      console: state.logs.map(function (e) { return { level: e.level, kind: e.kind, count: e.count, text: logText(e), site: e.site ? e.site.url + ':' + e.site.line : null }; }),
-      network: harFor().log.entries.map(function (x) { return { method: x.request.method, url: x.request.url, status: x.response.status, ms: Math.round(x.time), size: x.response.content.size, kind: x._kind }; }),
-      performance: { fcp: perf.fcp, lcp: perf.lcp, cls: perf.cls, inp: perf.inp, longTasks: perf.longtasks.length, fps: perf.fps.slice(-10) },
-      storage: storage,
-      rules: prefs.netRules, throttle: prefs.throttle
-    };
-    download('debug-report-' + location.hostname + '-' + stamp() + '.json', JSON.stringify(report, null, 2));
+    download('debug-report-' + location.hostname + '-' + stamp() + '.json', JSON.stringify(buildReport(), null, 2));
   }
 
   /* =========================================================== REMOTE MODE */
@@ -3639,12 +3632,21 @@ mark{background:#fff4c2;color:#1f1f1f;border-radius:2px}\n\
       remote.polling = false;
       (cmds || []).forEach(function (c) {
         var res, ok = true;
-        try { res = (0, eval)(c.code); } catch (e) { ok = false; res = e; }
+        try {
+          if (c.action) {
+            if (!automation[c.action]) throw new Error('Unknown action "' + c.action + '". Available: ' + Object.keys(automation).join(', '));
+            res = automation[c.action].apply(null, c.args || []);
+          } else res = (0, eval)(c.code);
+        } catch (e) { ok = false; res = e; }
+        if (c.action) {
+          Promise.resolve(res).then(function (v) { remoteSend({ type: 'result', id: c.id, ok: ok, value: ser(v, -6) }); flushRemote(); }, function (er) { remoteSend({ type: 'result', id: c.id, ok: false, value: ser(er) }); flushRemote(); });
+          return;
+        }
         remote.silent = true;
         addLog('info', [], { kind: 'input', code: '[remote] ' + c.code, site: null });
         addLog(ok ? 'info' : 'error', [res], { kind: ok ? 'result' : 'uncaught', site: null });
         remote.silent = false;
-        Promise.resolve(res).then(function (v) { remoteSend({ type: 'result', id: c.id, ok: ok, value: ser(v) }); }, function (er) { remoteSend({ type: 'result', id: c.id, ok: false, value: ser(er) }); });
+        Promise.resolve(res).then(function (v) { remoteSend({ type: 'result', id: c.id, ok: ok, value: ser(v) }); flushRemote(); }, function (er) { remoteSend({ type: 'result', id: c.id, ok: false, value: ser(er) }); flushRemote(); });
       });
       if (remote.on) setTimeout(pollRemote, 50);
     }, function () { remote.polling = false; if (remote.on) setTimeout(pollRemote, 3000); });
@@ -3786,13 +3788,185 @@ mark{background:#fff4c2;color:#1f1f1f;border-radius:2px}\n\
   }
 
   /* ------------------------------------------------------------------- boot */
+
+  /* ============================================================ AUTOMATION */
+  // A JSON-friendly API for test runners (Playwright, WebDriver) and AI agents.
+  // Everything returns plain data (no DOM nodes), so it survives page.evaluate()
+  // and the remote relay. Elements are addressed with CSS selectors; ">>>" pierces
+  // shadow roots, e.g. "user-card >>> .label".
+  function resolveEl(sel) {
+    if (sel && sel.nodeType) return sel;
+    if (typeof sel !== 'string' || !sel) throw new Error('Pass a CSS selector string');
+    var parts = sel.split('>>>').map(function (s) { return s.trim(); }), scope = document, el = null;
+    for (var i = 0; i < parts.length; i++) {
+      el = scope.querySelector(parts[i]);
+      if (!el) {
+        if (parts.length === 1) { var deep = deepQueryAll(parts[0]); el = deep[0] || null; }
+        if (!el) throw new Error('No element matches ' + JSON.stringify(sel));
+      }
+      if (i < parts.length - 1) { if (!el.shadowRoot) throw new Error(parts[i] + ' has no open shadow root'); scope = el.shadowRoot; }
+    }
+    return el;
+  }
+  function elInfo(el) {
+    var r = el.getBoundingClientRect();
+    return { selector: cssPath(el), jsPath: jsPath(el), tag: el.localName, id: el.id || null, classes: typeof el.className === 'string' ? el.className.split(/\s+/).filter(Boolean) : [],
+      text: (el.innerText || el.textContent || '').trim().slice(0, 200), rect: { x: Math.round(r.x), y: Math.round(r.y), width: Math.round(r.width), height: Math.round(r.height) },
+      visible: isVisible(el), inShadowRoot: el.getRootNode() !== document };
+  }
+  function logData(e) {
+    return { id: e.id, time: e.t, level: e.level, kind: e.kind, count: e.count, text: logText(e), site: e.site ? e.site.url + ':' + e.site.line : null };
+  }
+  function netData(e, withBodies) {
+    var d = { id: e.id, kind: e.kind, method: e.method, url: e.url, status: e.status, statusText: e.statusText || '', error: e.error || null,
+      ms: e.end != null ? Math.round(e.end - e.start) : null, size: e.size, mime: e.mime || '', mocked: !!e.mocked, blocked: !!e.blocked, done: !!e.done };
+    if (withBodies) { d.requestHeaders = e.reqHeaders || {}; d.responseHeaders = e.resHeaders || {}; d.requestBody = e.reqBody || null; d.responseBody = typeof e.resBody === 'string' ? e.resBody : null; if (e.messages) d.messages = e.messages; }
+    return d;
+  }
+  function textMatch(hay, needle) {
+    if (needle == null || needle === '') return true;
+    if (needle instanceof RegExp) return needle.test(hay);
+    var m = String(needle).match(/^\/(.+)\/([gimsuy]*)$/);
+    if (m) { try { return new RegExp(m[1], m[2]).test(hay); } catch (e) {} }
+    return String(hay).toLowerCase().indexOf(String(needle).toLowerCase()) !== -1;
+  }
+  function addRule(r) { r.on = true; r.id = r.id || ('r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5)); prefs.netRules.unshift(r); savePrefs(); if (ui.rulesBtn) renderRules(); return r.id; }
+  function buildReport() {
+    var storage = {};
+    ['local', 'session', 'cookies'].forEach(function (k) { var r = getStore(k); storage[k] = r.items || r.error; });
+    var m = root ? measureViewport() : { insets: null };
+    return {
+      generatedBy: 'Safari DevTools ' + api.version, generatedAt: new Date().toISOString(),
+      page: { url: location.href, title: document.title, userAgent: navigator.userAgent, viewport: window.innerWidth + 'x' + window.innerHeight, dpr: window.devicePixelRatio, safeArea: m.insets },
+      console: state.logs.map(logData),
+      network: state.net.map(function (e) { return netData(e, false); }),
+      performance: automation.perf(),
+      storage: storage,
+      rules: prefs.netRules, throttle: prefs.throttle
+    };
+  }
+  var automation = {
+    /** Console messages. filter: { level: 'error'|'warn'|'info'|'verbose', text: 'substring' or '/regex/', sinceId: n, limit: n } */
+    logs: function (f) {
+      f = f || {};
+      return state.logs.filter(function (e) {
+        if (e.kind === 'input' || e.kind === 'result') return false;
+        if (f.level && e.level !== f.level) return false;
+        if (f.sinceId && e.id <= f.sinceId) return false;
+        return textMatch(logText(e), f.text);
+      }).slice(-(f.limit || 1000)).map(logData);
+    },
+    errors: function () { return automation.logs({ level: 'error' }); },
+    warnings: function () { return automation.logs({ level: 'warn' }); },
+    clearLogs: function () { clearConsole(); return true; },
+    /** Resolves with the first console message matching `text` (substring or '/regex/'), or rejects after timeoutMs. */
+    waitForLog: function (text, timeoutMs, level) {
+      var start = logSeq;
+      return new Promise(function (resolve, reject) {
+        var found = automation.logs({ text: text, level: level }).pop();
+        if (found) return resolve(found);
+        var iv = setInterval(function () {
+          var hit = automation.logs({ text: text, level: level, sinceId: start })[0];
+          if (hit) { clearInterval(iv); clearTimeout(to); resolve(hit); }
+        }, 50);
+        var to = setTimeout(function () { clearInterval(iv); reject(new Error('Timed out waiting for console message ' + JSON.stringify(String(text)))); }, timeoutMs || 5000);
+      });
+    },
+    /** Requests seen so far. filter: { url: 'substring' or '/regex/', method, status, kind: 'fetch'|'xhr'|'ws'|'sse'|..., bodies: true } */
+    network: function (f) {
+      f = f || {};
+      return state.net.filter(function (e) {
+        if (f.method && e.method !== String(f.method).toUpperCase()) return false;
+        if (f.status != null && e.status !== f.status) return false;
+        if (f.kind && e.kind !== f.kind) return false;
+        if (f.failed && !(e.error || e.status >= 400)) return false;
+        return textMatch(e.url, f.url);
+      }).map(function (e) { return netData(e, !!f.bodies); });
+    },
+    waitForRequest: function (url, timeoutMs) {
+      return new Promise(function (resolve, reject) {
+        var iv = setInterval(function () { var hit = state.net.filter(function (e) { return e.done && textMatch(e.url, url); })[0]; if (hit) { clearInterval(iv); clearTimeout(to); resolve(netData(hit, true)); } }, 50);
+        var to = setTimeout(function () { clearInterval(iv); reject(new Error('Timed out waiting for request ' + url)); }, timeoutMs || 5000);
+      });
+    },
+    clearNetwork: function () { state.net.length = 0; if (ui.ready) renderNet(); return true; },
+    har: function () { return harFor(); },
+    /** Mock fetch/XHR responses. opts: { status, body (string or JSON value), type, delay, method } -> rule id */
+    mock: function (match, opts) {
+      opts = opts || {};
+      var body = opts.body == null ? '' : typeof opts.body === 'string' ? opts.body : JSON.stringify(opts.body);
+      return addRule({ match: match, method: opts.method || 'ANY', action: 'mock', status: opts.status || 200, type: opts.type || (typeof opts.body === 'string' ? 'text/plain' : 'application/json'), body: body, delay: opts.delay || 0 });
+    },
+    block: function (match, method) { return addRule({ match: match, method: method || 'ANY', action: 'block' }); },
+    delay: function (match, ms, method) { return addRule({ match: match, method: method || 'ANY', action: 'delay', delay: ms || 1000 }); },
+    rules: function () { return JSON.parse(JSON.stringify(prefs.netRules)); },
+    removeRule: function (id) { prefs.netRules = prefs.netRules.filter(function (r) { return r.id !== id && r.match !== id; }); savePrefs(); if (ui.rulesBtn) renderRules(); return true; },
+    clearRules: function () { prefs.netRules = []; savePrefs(); if (ui.rulesBtn) renderRules(); return true; },
+    /** 'none' | 'fast4g' | 'fast3g' | 'slow3g' | 'offline' */
+    throttle: function (preset) { if (preset != null) { if (!THROTTLE[preset]) throw new Error('Unknown preset ' + preset + '. Use: ' + Object.keys(THROTTLE).join(', ')); prefs.throttle = preset; savePrefs(); } return prefs.throttle; },
+    /** Safari/iPhone + accessibility audit. Returns [{ severity, group, title, why, count, elements:[selector] }] */
+    audit: function (opts) {
+      var res = computeAudit();
+      var list = res.issues.map(function (i) {
+        return { severity: i.sev === 'warn' ? 'warning' : i.sev, group: i.group, title: i.title, why: i.why, count: i.nodes.length,
+          elements: i.nodes.slice(0, (opts && opts.maxElements) || 20).map(function (n) { return n.nodeType === 1 ? cssPath(n) : nodeLabel(n); }) };
+      });
+      return opts && opts.severity ? list.filter(function (i) { return i.severity === opts.severity; }) : list;
+    },
+    tokens: function () { return collectTokens().map(function (t) { return { name: t.name, value: t.value, uses: t.uses, definedIn: t.defs.map(function (d) { return d.selector + ' (' + d.source + ')'; }) }; }); },
+    setToken: function (name, value) { document.documentElement.style.setProperty(name, value); tokState.overrides[name] = value; return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); },
+    /** Find elements; selectors pierce shadow roots. */
+    query: function (sel, limit) { return deepQueryAll(sel).slice(0, limit || 50).map(elInfo); },
+    element: function (sel) { return elInfo(resolveEl(sel)); },
+    /** Matched CSS rules (like the Styles pane) for an element. */
+    styles: function (sel) {
+      var el = resolveEl(sel), out = [{ selector: 'element.style', source: 'inline', declarations: parseDecls(el.style.cssText) }];
+      collectRules(el).rules.forEach(function (r) { out.push({ selector: r.rule.selectorText, source: r.label, specificity: r.spec, declarations: parseDecls(r.rule.style.cssText) }); });
+      if (el.shadowRoot) collectRules(el, sheetsOf(el.shadowRoot), true).rules.forEach(function (r) { out.push({ selector: r.rule.selectorText, source: r.label + ' (shadow root)', declarations: parseDecls(r.rule.style.cssText) }); });
+      return out;
+    },
+    computed: function (sel, props) {
+      var cs = getComputedStyle(resolveEl(sel)), out = {};
+      (props && props.length ? props : Array.prototype.slice.call(cs)).forEach(function (p) { out[p] = cs.getPropertyValue(p).trim(); });
+      return out;
+    },
+    listeners: function (sel) {
+      var el = resolveEl(sel);
+      return (listenerReg.get(el) || []).map(function (l) { var f = parseStack(l.stack || '')[0]; return { type: l.type, capture: l.capture, once: l.once, passive: l.passive, handler: typeof l.listener === 'function' ? fnPreview(l.listener) : 'handleEvent', addedAt: f ? f.url + ':' + f.line : null }; });
+    },
+    component: function (sel) {
+      var el = resolveEl(sel), ctor = window.customElements && customElements.get(el.localName), props = {};
+      var names = ctor && ctor.elementProperties instanceof Map ? Array.from(ctor.elementProperties.keys()).filter(function (k) { return typeof k === 'string'; }) : Object.keys(el).filter(function (k) { return k.charAt(0) !== '_'; });
+      names.forEach(function (k) { try { props[k] = ser(el[k]); } catch (e) {} });
+      return { tag: el.localName, defined: !!ctor, shadowRoot: !!el.shadowRoot, observedAttributes: (ctor && ctor.observedAttributes) || [], properties: props,
+        slots: el.shadowRoot ? Array.prototype.map.call(el.shadowRoot.querySelectorAll('slot'), function (s) { return { name: s.name || '(default)', assigned: s.assignedNodes({ flatten: true }).length }; }) : [],
+        parts: el.shadowRoot ? Array.prototype.map.call(el.shadowRoot.querySelectorAll('[part]'), function (n) { return n.getAttribute('part'); }) : [] };
+    },
+    storage: function () { var o = {}; ['local', 'session', 'cookies'].forEach(function (k) { var r = getStore(k); o[k] = r.items ? Object.fromEntries(r.items) : { error: r.error }; }); return o; },
+    perf: function () {
+      var nav = null; try { nav = performance.getEntriesByType('navigation')[0]; } catch (e) {}
+      return { fcp: perf.fcp, lcp: perf.lcp, cls: perf.supports.cls ? perf.cls : null, inp: perf.inp, ttfb: nav ? nav.responseStart - nav.requestStart : null,
+        domContentLoaded: nav ? nav.domContentLoadedEventEnd : null, load: nav ? nav.loadEventEnd : null, longTasks: perf.longtasks.length, fps: perf.fps.slice(-10), domElements: document.getElementsByTagName('*').length };
+    },
+    viewport: function () { var m = root ? measureViewport() : {}; return { width: window.innerWidth, height: window.innerHeight, dpr: window.devicePixelRatio, safeArea: m.insets, units: m.units }; },
+    report: function () { return buildReport(); },
+    /** Open the panel on a tab: 'elements'|'console'|'sources'|'network'|'storage'|'performance'|'tokens'|'audit'|'device' */
+    open: function (tab) { api.show(); if (tab) switchTab(String(tab).toLowerCase()); return true; },
+    close: function () { api.hide(); return true; },
+    inspect: function (sel) { inspect(resolveEl(sel)); return elInfo(resolveEl(sel)); },
+    eval: function (code) { return (0, eval)(code); },
+    help: function () { return Object.keys(automation).sort(); }
+  };
+
   var api = {
     show: function () { if (ui.ready) show(); else state.open = true; },
     hide: function () { if (ui.ready) hide(); else state.open = false; },
     toggle: function () { state.open ? api.hide() : api.show(); },
-    inspect: function (n) { if (ui.ready) inspect(n); },
+    inspect: function (n) { if (ui.ready) inspect(typeof n === 'string' ? resolveEl(n) : n); },
     clear: clearConsole,
-    version: '1.0.0'
+    automation: automation,
+    ready: function () { return ui.ready; },
+    version: '1.1.0'
   };
   window.__SDT__ = api;
   window.SafariDevTools = api;

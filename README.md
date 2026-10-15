@@ -38,6 +38,7 @@ A Chrome-style DevTools panel that runs **inside the page**, for Safari on Mac, 
 | **Audit** | Safari and iPhone pitfalls, plus accessibility checks that reach into shadow DOM. |
 | **Device** | Safe-area and viewport overlay, `100vh`/`dvh`/`svh` values, a touch visualiser and outline-all-elements. |
 | **Remote mode** | Debug an iPhone from your Mac over Wi-Fi: `node standalone/remote/relay.js`. |
+| **Automation** | `SafariDevTools.automation` JSON API, a Playwright fixture (WebKit desktop and iPhone), WebDriver for real Safari, and an HTTP API plus an **MCP server** for AI agents. See [standalone/README.md](standalone/README.md#automation-playwright-real-safari-and-ai-agents). |
 
 Extras: light and dark themes, docking to the bottom or right, a debug-report export, and settings remembered per site.
 

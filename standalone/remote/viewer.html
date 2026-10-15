@@ -67,6 +67,8 @@
 </main>
 <script>
   const $ = (id) => document.getElementById(id);
+  const TOKEN = new URLSearchParams(location.search).get('token') || '';
+  const q = (u) => TOKEN ? u + (u.includes('?') ? '&' : '?') + 'token=' + encodeURIComponent(TOKEN) : u;
   let current = '', es = null, history = [], hi = 0;
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c])); }
   function addLog(m) {
@@ -101,7 +103,7 @@
     current = id;
     $('console').innerHTML = ''; $('net').innerHTML = ''; $('netEmpty').style.display = '';
     if (!id) return;
-    es = new EventSource('/events?client=' + encodeURIComponent(id));
+    es = new EventSource(q('/events?client=' + encodeURIComponent(id)));
     es.onmessage = (ev) => {
       const m = JSON.parse(ev.data);
       if (m.type === 'hello') $('info').textContent = (m.title ? m.title + ' — ' : '') + m.url + ' · ' + m.viewport + ' @' + m.dpr + 'x';
@@ -111,7 +113,7 @@
   }
   async function refreshClients() {
     try {
-      const list = await (await fetch('/clients')).json();
+      const list = await (await fetch(q('/clients'))).json();
       const sel = $('clients'), prev = sel.value;
       sel.innerHTML = list.length ? '' : '<option value="">Waiting for a device…</option>';
       list.forEach((c) => {
@@ -137,7 +139,7 @@
     history.push(code); hi = history.length;
     addLog({ type: 'log', kind: 'input', level: 'info', text: '› ' + code });
     $('code').value = '';
-    await fetch('/eval?client=' + encodeURIComponent(current), { method: 'POST', body: JSON.stringify({ code }) });
+    await fetch(q('/eval?client=' + encodeURIComponent(current)), { method: 'POST', body: JSON.stringify({ code }) });
   };
   $('code').onkeydown = (e) => {
     if (e.key === 'ArrowUp' && history.length) { hi = Math.max(0, hi - 1); $('code').value = history[hi]; e.preventDefault(); }

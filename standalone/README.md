@@ -52,6 +52,59 @@ It prints your Mac's address. Then:
 
 Safari won't let an `https://` page talk to an `http://` relay, because that's mixed content. Use it with local `http://` dev servers, or put the relay behind https.
 
+## Automation: Playwright, real Safari and AI agents
+
+Everything the panel shows is also available as JSON through `window.SafariDevTools.automation`, so tests and agents can use it. Call `.help()` for the list of methods.
+
+```js
+const A = SafariDevTools.automation;
+A.errors();                                   // console errors (with source-mapped locations)
+A.network({ url: '/api', failed: true, bodies: true });
+A.mock('/api/user', { status: 500, body: { error: 'down' } });   // also block(), delay(), throttle('slow3g')
+A.audit({ severity: 'error' });               // Safari + accessibility issues, with CSS selectors
+A.styles('user-card >>> .label');             // ">>>" goes into shadow roots
+A.listeners('#buy'); A.component('user-card'); A.tokens(); A.perf(); A.report();
+await A.waitForLog('ready'); await A.waitForRequest('/api/user');
+```
+
+**Playwright (Safari's WebKit engine, desktop and iPhone).** See `playwright/`. The fixture injects the tool before the page's own scripts. It adds a typed `devtools` object to every test, and attaches a debug report and a HAR file when a test fails.
+
+```ts
+import { test, expect } from './safari-devtools.fixture';
+test('checkout survives an API outage', async ({ page, devtools }) => {
+  await devtools.mockBeforeLoad('/api/cart', { status: 503 });
+  await page.goto('/checkout');
+  expect(await devtools.errors()).toEqual([]);
+});
+```
+
+To set it up, run `cd playwright && npm run setup`, then `npm test`. Playwright drives WebKit, the engine Safari uses, not the Safari app itself.
+
+**Real Safari (WebDriver).** `playwright/real-safari.mjs` drives the actual Safari app through `safaridriver`, injects the tool and reads its data. It needs a one-time setup:
+
+1. In Safari → Settings → Developer, tick **Allow remote automation**.
+2. Run `safaridriver --enable` in Terminal.
+
+**AI agents and other tools (remote).** The relay (`node remote/relay.js`) has a JSON API for any connected page, including an iPhone:
+
+| Endpoint | What it does |
+|---|---|
+| `GET /api/devices` | Connected pages (URL, user agent, viewport) |
+| `GET /api/logs?level=error&text=…` | Console messages |
+| `GET /api/network` | Requests |
+| `POST /api/eval` `{ "code": "document.title" }` | Run JavaScript on the device and get the result |
+| `POST /api/call` `{ "action": "audit", "args": [] }` | Call any automation method |
+
+By default these endpoints only answer requests from your Mac. To allow other machines, start the relay with `SDT_TOKEN=secret node remote/relay.js` and send `Authorization: Bearer secret`.
+
+**MCP server (Claude, Cursor and other MCP clients).** `remote/mcp.js` exposes the same features as tools. They include `get_console`, `get_network`, `run_js`, `audit_page`, `inspect_element`, `mock_request`, `set_throttling`, `get_design_tokens`, `get_performance` and `debug_report`.
+
+```bash
+claude mcp add safari-devtools -- node /path/to/remote/mcp.js        # Claude Code
+```
+
+For Claude Desktop, add `"safari-devtools": { "command": "node", "args": ["/path/to/remote/mcp.js"] }` under `mcpServers`. Start the relay first. Set `SDT_RELAY` or `SDT_TOKEN` if you changed the defaults.
+
 ## Shortcuts
 
 - **Ctrl+Shift+D**: show or hide the panel
