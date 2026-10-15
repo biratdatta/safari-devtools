@@ -90,6 +90,14 @@ export class DevTools {
   setAnimationSpeed(rate: number) { return this.call<number>('setAnimationSpeed', rate); }
   pauseAnimations() { return this.call('pauseAnimations'); }
   layoutOverlay(selector: string, on = true) { return this.call<boolean>('layoutOverlay', selector, on); }
+  // console, components, issues, snippets
+  issues(category?: string) { return this.call<{ category: string; message: string; url: string | null; count: number; at: string | null; time: number }[]>('issues', category); }
+  components() { return this.call<{ frameworks: string[]; components: { kind: string; name: string; depth: number; element: string | null }[] }>('components'); }
+  store(which = 0) { return this.call<{ name: string; kind: string; actions: { index: number; type: string; action: unknown; time: number }[]; state: unknown } | null>('store', which); }
+  storeJump(index: number, which = 0) { return this.call('storeJump', index, which); }
+  storeDispatch(action: object, which = 0) { return this.call('storeDispatch', action, which); }
+  liveExpressions(list?: string[]) { return this.call<{ expression: string; value: unknown }[]>('liveExpressions', list); }
+  runSnippet(name: string) { return this.call('runSnippet', name); }
   /** Show the panel (useful with --headed or in trace screenshots). */
   open(tab?: string) { return this.call('open', tab); }
 }

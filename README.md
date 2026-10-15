@@ -29,6 +29,7 @@ It's one dependency-free JavaScript file, plus an optional Safari extension that
 | Check a web component's API | Dig through the shadow DOM by hand | **Component** pane: properties, slots, `::part()` hooks and the CSS variables it reads |
 | Compare the page with the Figma design | Take screenshots and flip between them | **Design overlay** with opacity and difference blend, plus **⌥+hover** to measure |
 | Catch iPhone-only layout bugs | Find them on a real device, one at a time | **Audit** flags inputs that cause zoom, `100vh`, broken sticky, safe-area misses, sideways scroll and more |
+| Time-travel through Redux / NgRx state in Safari | Not possible: Safari has no Redux DevTools extension | **Components → Store**: action log, diff, Jump and Dispatch |
 | Let tests or AI agents read the page | Not available | `SafariDevTools.automation` JSON API, a Playwright fixture, WebDriver, an HTTP API and an **MCP server** |
 
 ## How it compares
@@ -49,6 +50,9 @@ It's one dependency-free JavaScript file, plus an optional Safari extension that
 | WebSocket and EventSource messages | ✅ | ✅ | ❌ |
 | Safari/iPhone pitfalls and accessibility audit (through shadow DOM) | ✅ | Partial | ❌ |
 | Fonts, images and animations inspectors | ✅ | Partial | ❌ |
+| Angular, Lit and React component inspector | ✅ | ❌ | ❌ |
+| Redux / NgRx store log with time travel | ✅ | ❌ | ❌ |
+| Live expressions, snippets and command palette | ✅ | Partial | Partial |
 | Remote debugging over Wi-Fi from any browser | ✅ | Pairing required | ❌ |
 | Playwright fixture, JSON API and MCP server for AI agents | ✅ | ❌ | ❌ |
 | Step-through JavaScript debugger | ❌ | ✅ | ❌ |
@@ -60,6 +64,7 @@ Safari DevTools runs inside the page, which is what makes it work on any device 
 
 | Version | Highlights |
 |---|---|
+| **1.3** | **Components** tab (Angular signals, Lit and React trees, and a Redux/NgRx store with time travel), **Issues** tab, **live expressions**, **preserve log**, Chrome's console helpers, real `console.table`, **Snippets** and a **command palette** |
 | **1.2** | **Changes** tab (CSS diff → copy as CSS or patch), **grid and flex overlays**, **⌥+hover measure tool**, **design overlay** with difference blend, and the **Assets** tab (rendered fonts and fallbacks, oversized or blurry images, an animation slow-motion and scrubber) |
 | **1.1** | Automation API, Playwright fixture (WebKit desktop and iPhone), WebDriver script for real Safari, relay HTTP API and **MCP server** for AI agents |
 | **1.0** | Console, Elements (Styles, Computed, Listeners, Component), Sources with source maps, Network with mocking and throttling, Storage, Performance, Tokens, Audit, Device, remote mode for iPhone, and the Safari extension |
@@ -89,6 +94,9 @@ Safari DevTools runs inside the page, which is what makes it work on any device 
 | **Sources** | Original files from source maps, with search across all files. |
 | **Network** | fetch, XHR, WebSocket and SSE. **Mock, block or delay** requests, throttle to 3G or offline, copy as fetch or cURL, replay requests, and export a HAR file. |
 | **Storage** | Local storage, session storage and cookies, with editing. |
+| **Components** | Angular (signals and inputs), Lit and React component trees with editable state, plus a **Redux/NgRx/Zustand store log with time travel**. Safari has no Redux DevTools, so this provides it. |
+| **Issues** | CSP violations, mixed content, deprecated APIs, scroll-blocking listeners, and failed loads and requests, in one place. |
+| **Console power-ups** | Live expressions, preserving the log across reloads, real `console.table`, `monitorEvents`, `monitor`, `debug`, `getEventListeners`, Snippets per site, and a **⌘K / Ctrl+Shift+P command palette**. |
 | **Changes** | Every CSS edit you made in the panel as a before/after diff, with copy as CSS (for `.scss`) or as a diff, and revert. |
 | **Assets** | Fonts that actually rendered (and fallbacks), oversized or blurry images, and animations you can pause, scrub and slow down. |
 | **Performance** | Web Vitals where Safari supports them, live FPS and DOM-size graphs, long tasks and a memory-leak check. |

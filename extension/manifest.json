@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Safari DevTools",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "The best in-page DevTools for Safari: console, elements, CSS, network mocking, audits, design tools and more, on every page.",
   "icons": {
     "16": "images/icon-16.png",
