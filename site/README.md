@@ -1,0 +1,33 @@
+# Website
+
+The static site for Safari DevTools: no build step, no external requests.
+
+## Deploy on Cloudflare Pages (from this repo)
+
+1. Cloudflare dashboard → **Workers & Pages** → **Create** → **Pages** → **Connect to Git**.
+2. Pick the `biratdatta/safari-devtools` repo and the `main` branch.
+3. Build settings:
+   - **Framework preset:** None
+   - **Build command:** *(leave empty)*
+   - **Build output directory:** `site`
+4. **Save and Deploy.** It's live at `https://<project>.pages.dev`; add your own domain under **Custom domains**.
+
+Every push to `main` redeploys the site automatically.
+
+## Keeping it up to date
+
+After changing the tool or the extensions, run `./sync.sh` from the repo root. It copies `safari-devtools.js` into
+`site/` and `site/demo/` and rebuilds the two extension zips in `site/downloads/`. Commit and push, and Cloudflare
+redeploys.
+
+## What's here
+
+```
+index.html            the landing page (CSS and JS inline)
+safari-devtools.js    the tool, for "Try it on this page" and the bookmarklet
+demo/                 the live demo shop used by the showcase (the real panel)
+downloads/            Chrome and Safari extension zips (rebuilt by ../sync.sh)
+media/                demo video and poster
+og.jpg, favicon.png   social preview image and icons
+_headers, 404.html    Cloudflare Pages headers and not-found page
+```

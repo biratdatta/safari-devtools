@@ -1,0 +1,547 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Safari DevTools · Chrome-style DevTools inside any page</title>
+<meta name="description" content="A free, open-source, Chrome-style DevTools panel that runs inside the page, in Safari, Chrome and on iPhone. Explain errors with Claude, file Jira bugs in one click, check accessibility, mock APIs.">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Safari DevTools: DevTools, inside the page">
+<meta property="og:description" content="Chrome-style DevTools for Safari, Chrome and iPhone. Free and open source.">
+<meta property="og:image" content="/og.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Safari DevTools: DevTools, inside the page">
+<meta name="twitter:description" content="Chrome-style DevTools for Safari, Chrome and iPhone. Free and open source.">
+<meta name="twitter:image" content="/og.jpg">
+<style>
+/* Layout: one centred column (max 1080px) of alternating white / soft-grey bands, product first. */
+:root{
+  --bg:#ffffff; --bg2:#f5f5f7; --card:#ffffff; --ink:#1d1d1f; --ink2:#6e6e73; --ink3:#86868b; --line:#d2d2d7; --hair:#e8e8ed;
+  --accent:#0071e3; --accent-ink:#ffffff; --accent-soft:#e8f1fc; --good:#1f8a3b; --bad:#d70015;
+  --code-bg:#f5f5f7; --shadow:0 30px 80px rgba(0,0,0,.10),0 8px 24px rgba(0,0,0,.06);
+  --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Helvetica Neue",Helvetica,Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Monaco,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#000000; --bg2:#101012; --card:#1c1c1e; --ink:#f5f5f7; --ink2:#a1a1a6; --ink3:#86868b; --line:#3a3a3c; --hair:#2c2c2e;
+  --accent:#2997ff; --accent-ink:#000000; --accent-soft:#0a2a4a; --good:#32d74b; --bad:#ff453a; --code-bg:#1c1c1e;
+  --shadow:0 30px 80px rgba(0,0,0,.6),0 8px 24px rgba(0,0,0,.4); color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#000000; --bg2:#101012; --card:#1c1c1e; --ink:#f5f5f7; --ink2:#a1a1a6; --ink3:#86868b; --line:#3a3a3c; --hair:#2c2c2e;
+  --accent:#2997ff; --accent-ink:#000000; --accent-soft:#0a2a4a; --good:#32d74b; --bad:#ff453a; --code-bg:#1c1c1e;
+  --shadow:0 30px 80px rgba(0,0,0,.6),0 8px 24px rgba(0,0,0,.4); color-scheme:dark}
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:64px}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{animation:none!important;transition:none!important}}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.47 var(--font);-webkit-font-smoothing:antialiased;letter-spacing:-.01em}
+a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+img,video{max-width:100%;display:block}
+:focus-visible{outline:3px solid var(--accent);outline-offset:3px;border-radius:6px}
+.wrap{max-width:1080px;margin:0 auto;padding-inline:22px}
+section{padding-block:96px}
+.band{background:var(--bg2)}
+h1,h2,h3{text-wrap:balance;margin:0;letter-spacing:-.025em}
+h1{font-size:clamp(44px,8vw,84px);line-height:1.04;font-weight:700}
+h2{font-size:clamp(32px,5vw,52px);line-height:1.08;font-weight:700}
+h3{font-size:21px;line-height:1.25;font-weight:600}
+.lead{font-size:clamp(19px,2.4vw,24px);line-height:1.38;color:var(--ink2);max-width:42ch}
+.eyebrow{font-size:14px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+.center{text-align:center}.center .lead{margin-inline:auto}
+.muted{color:var(--ink2)}
+.small{font-size:14px}
+
+/* nav */
+.nav{position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--bg) 78%,transparent);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border-bottom:1px solid var(--hair)}
+.nav .wrap{display:flex;align-items:center;gap:22px;height:52px}
+.brand{display:flex;align-items:center;gap:9px;color:var(--ink);font-weight:600;font-size:17px}
+.brand:hover{text-decoration:none}
+.brand img{width:26px;height:26px;border-radius:7px}
+.nav nav{display:flex;gap:22px;margin-left:auto;font-size:14px}
+.nav nav a{color:var(--ink2)}.nav nav a:hover{color:var(--ink);text-decoration:none}
+.btn{display:inline-flex;align-items:center;gap:8px;border-radius:980px;padding:11px 22px;font:600 16px/1 var(--font);border:1px solid transparent;cursor:pointer;white-space:nowrap}
+.btn:hover{text-decoration:none}
+.btn.primary{background:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.ghost{background:transparent;color:var(--accent);border-color:var(--accent)}
+.btn.ghost:hover{background:var(--accent-soft)}
+.btn.small{padding:7px 14px;font-size:14px}
+.btn svg{width:18px;height:18px}
+@media (max-width:720px){.nav nav{display:none}.nav .btn{margin-left:auto}}
+
+/* hero */
+.hero{padding-block:88px 40px;text-align:center}
+.hero h1{margin-top:14px}
+.hero .lead{margin:22px auto 0}
+.ctas{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:34px}
+.works{margin-top:22px;font-size:14px;color:var(--ink3)}
+
+/* live showcase */
+.show{padding-block:24px 96px}
+.chips{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:22px}
+.chip{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:980px;padding:8px 16px;font:500 14px/1 var(--font);cursor:pointer}
+.chip:hover{border-color:var(--ink3)}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.window{border-radius:14px;overflow:hidden;background:var(--card);box-shadow:var(--shadow);border:1px solid var(--hair)}
+.wbar{height:40px;display:flex;align-items:center;gap:14px;padding:0 14px;background:var(--bg2);border-bottom:1px solid var(--hair)}
+.dots{display:flex;gap:7px}.dots i{width:12px;height:12px;border-radius:6px;display:block}
+.dots i:nth-child(1){background:#ff5f57}.dots i:nth-child(2){background:#febc2e}.dots i:nth-child(3){background:#28c840}
+.url{flex:1;display:flex;justify-content:center}
+.url span{max-width:420px;width:100%;text-align:center;font:500 13px/26px var(--font);color:var(--ink2);background:var(--bg);border:1px solid var(--hair);border-radius:7px}
+.stage{position:relative;width:100%;aspect-ratio:16/9;overflow:hidden;background:#fff}
+.stage iframe{position:absolute;left:0;top:0;width:1280px;height:720px;border:0;transform-origin:0 0}
+.stage .loading{position:absolute;inset:0;display:grid;place-items:center;color:#6e6e73;font-size:15px}
+.show-note{margin-top:16px;text-align:center;font-size:14px;color:var(--ink3)}
+.mobile-demo{display:none;text-align:center;margin-top:18px}
+@media (max-width:640px){.stage{display:none}.mobile-demo{display:block}.wbar .url span{font-size:12px}}
+.mobile-poster{aspect-ratio:16/9;display:grid;place-items:center;background:var(--bg2);padding:24px;text-align:center;color:var(--ink2);font-size:15px}
+
+/* features */
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-top:52px}
+@media (max-width:900px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:600px){.grid{grid-template-columns:1fr}}
+.card{background:var(--card);border-radius:20px;padding:28px 26px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.band .card{box-shadow:0 1px 0 var(--hair)}
+.ico{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent);margin-bottom:6px}
+.ico svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.card p{margin:0;color:var(--ink2);font-size:16px}
+.tag{align-self:flex-start;font:600 12px/1 var(--font);color:var(--accent);background:var(--accent-soft);padding:5px 9px;border-radius:980px;letter-spacing:.02em}
+
+/* split rows */
+.split{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center}
+@media (max-width:860px){.split{grid-template-columns:1fr;gap:28px}}
+.split p{color:var(--ink2);margin:16px 0 0}
+.split ul{margin:20px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:12px}
+.split li{display:flex;gap:10px;color:var(--ink2)}
+.split li::before{content:"";flex:none;width:18px;height:18px;margin-top:3px;border-radius:9px;background:var(--accent-soft) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 8.5l2.5 2.5L12 5.5' fill='none' stroke='%230071e3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/12px no-repeat}
+
+/* code */
+pre,code{font-family:var(--mono)}
+.code{position:relative;background:var(--code-bg);border:1px solid var(--hair);border-radius:14px;padding:18px 20px;font-size:13.5px;line-height:1.6;overflow-x:auto;min-width:0;margin:0}
+.code .c{color:var(--ink3)}.code .k{color:#af52de}.code .s{color:#c41a16}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .code .s{color:#ff9f8a}}
+.copy{position:absolute;top:10px;right:10px;font:600 12px/1 var(--font);padding:6px 10px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink2);cursor:pointer}
+.copy:hover{color:var(--ink)}
+
+/* comparison */
+.table-wrap{overflow-x:auto;margin-top:44px;border-radius:18px;border:1px solid var(--hair);background:var(--card)}
+table{border-collapse:collapse;width:100%;min-width:640px;font-size:15px}
+th,td{padding:13px 18px;text-align:left;border-bottom:1px solid var(--hair)}
+th{font-weight:600;font-size:14px;color:var(--ink2)}
+th:nth-child(2){color:var(--accent)}
+td:not(:first-child),th:not(:first-child){text-align:center;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+.y{color:var(--good);font-weight:700}.n{color:var(--ink3)}.p{color:var(--ink2)}
+
+/* install */
+.tabs{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:40px}
+.tabs button{border:0;background:transparent;color:var(--ink2);font:600 15px/1 var(--font);padding:11px 18px;border-radius:980px;cursor:pointer}
+.tabs button[aria-selected="true"]{background:var(--card);color:var(--ink);box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.panel{max-width:760px;margin:26px auto 0;background:var(--card);border-radius:22px;padding:30px 32px}
+.panel[hidden]{display:none}
+.panel ol{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:12px;color:var(--ink2)}
+.panel ol b{color:var(--ink)}
+.panel .row{display:flex;gap:12px;flex-wrap:wrap;margin-top:22px}
+.kbd{font:600 13px var(--mono);border:1px solid var(--line);border-bottom-width:2px;border-radius:6px;padding:1px 6px;color:var(--ink);background:var(--bg)}
+.bm{display:inline-flex;align-items:center;gap:8px;border:2px dashed var(--accent);border-radius:12px;padding:12px 18px;font-weight:600;color:var(--accent);cursor:grab;background:var(--accent-soft)}
+
+/* video */
+.video{border-radius:18px;overflow:hidden;box-shadow:var(--shadow);margin-top:44px;background:#000}
+.video video{width:100%;aspect-ratio:16/9}
+
+/* use cases */
+.uses{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:44px}
+@media (max-width:860px){.uses{grid-template-columns:1fr 1fr}}
+@media (max-width:560px){.uses{grid-template-columns:1fr}}
+.use{border:1px solid var(--hair);border-radius:18px;padding:22px;background:var(--card)}
+.use b{display:block;font-size:17px;margin-bottom:4px}
+.use span{color:var(--ink2);font-size:15px}
+
+/* faq */
+.faq{max-width:760px;margin:40px auto 0}
+details{border-bottom:1px solid var(--hair);padding:18px 4px}
+summary{cursor:pointer;font-weight:600;font-size:18px;list-style:none;display:flex;justify-content:space-between;gap:16px}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";font-weight:400;color:var(--ink3);font-size:22px;line-height:1}
+details[open] summary::after{content:"−"}
+details p{color:var(--ink2);margin:12px 0 0}
+
+/* footer */
+footer{padding-block:40px 60px;border-top:1px solid var(--hair);font-size:13px;color:var(--ink3)}
+footer .wrap{display:flex;gap:18px;flex-wrap:wrap;justify-content:space-between;align-items:center}
+footer a{color:var(--ink2)}
+
+/* toast */
+.toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);opacity:0;background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:980px;font-size:14px;transition:.2s;z-index:60;pointer-events:none}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="#top"><img src="/logo.png" alt="" width="26" height="26">Safari DevTools</a>
+    <nav aria-label="Sections">
+      <a href="#features">Features</a>
+      <a href="#iphone">iPhone</a>
+      <a href="#agents">Tests &amp; AI</a>
+      <a href="#compare">Compare</a>
+      <a href="#install">Install</a>
+      <a href="https://github.com/biratdatta/safari-devtools">GitHub</a>
+    </nav>
+    <a class="btn primary small" href="#install">Get it free</a>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero">
+    <div class="wrap">
+      <div class="eyebrow">Free · Open source · Version 1.5</div>
+      <h1>DevTools, inside the page.</h1>
+      <p class="lead">A Chrome-style DevTools panel that runs right inside any web page, in Safari, Chrome and on your iPhone. No cable, no Xcode, no setup.</p>
+      <div class="ctas">
+        <a class="btn primary" href="#install" data-tab="chrome">Add to Chrome</a>
+        <a class="btn primary" href="#install" data-tab="safari">Add to Safari</a>
+        <button class="btn ghost" type="button" id="tryIt">Try it on this page</button>
+      </div>
+      <p class="works">Works in Safari, Chrome and Edge · Mac, iPhone, iPad and in-app WebViews · One file, no dependencies</p>
+    </div>
+  </section>
+
+  <section class="show" aria-labelledby="show-title">
+    <div class="wrap">
+      <h2 id="show-title" class="center" style="font-size:clamp(22px,3vw,28px);font-weight:600;margin-bottom:22px">This is the real panel. Click around.</h2>
+      <div class="chips" role="group" aria-label="Show a feature">
+        <button class="chip" data-state="console" data-play="0" aria-pressed="true">Console</button>
+        <button class="chip" data-state="explain" data-play="1" aria-pressed="false">Explain with Claude</button>
+        <button class="chip" data-state="elements" data-play="1" aria-pressed="false">Elements</button>
+        <button class="chip" data-state="network" data-play="1" aria-pressed="false">Network</button>
+        <button class="chip" data-state="accessibility" data-play="1" aria-pressed="false">Accessibility</button>
+        <button class="chip" data-state="contrast" data-play="0" aria-pressed="false">Contrast</button>
+        <button class="chip" data-state="bug" data-play="1" aria-pressed="false">Jira bug report</button>
+        <button class="chip" data-state="responsive" data-play="0" aria-pressed="false">Responsive</button>
+      </div>
+      <div class="window">
+        <div class="wbar"><div class="dots" aria-hidden="true"><i></i><i></i><i></i></div><div class="url"><span>acme.shop/checkout · demo</span></div></div>
+        <div class="stage" id="stage">
+          <div class="loading">Loading the live demo…</div>
+          <iframe id="demo" title="Live Safari DevTools demo in a sample shop" loading="lazy"></iframe>
+        </div>
+        <div class="mobile-demo"><div class="mobile-poster">The live demo needs a wider screen.<br><a class="btn primary small" style="margin-top:14px" id="openDemo" href="/demo/app.html?state=console&amp;play=0">Open it full screen</a></div></div>
+      </div>
+      <p class="show-note">A sample shop with a deliberate bug. The Claude answer and Jira ticket are simulated here; everything else is the real tool.</p>
+    </div>
+  </section>
+
+  <section class="band" id="features" aria-labelledby="features-title">
+    <div class="wrap">
+      <div class="center">
+        <div class="eyebrow">Features</div>
+        <h2 id="features-title" style="margin-top:10px">Everything you reach for in Chrome. And more.</h2>
+        <p class="lead" style="margin-top:16px">Sixteen panels in a single file. It looks and works like Chrome DevTools, so there's nothing new to learn.</p>
+      </div>
+      <div class="grid">
+        <article class="card">
+          <div class="ico"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M7 9l3 3-3 3M12.5 15H17"/></svg></div>
+          <h3>Console</h3>
+          <p>Logs, errors and rejections with source-mapped stack traces that point to your TypeScript. Autocomplete, <code>$0</code>, <code>copy()</code>, live expressions and real <code>console.table</code>.</p>
+        </article>
+        <article class="card">
+          <div class="ico"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.6L18.5 9l-4.7 1.6L12 15l-1.8-4.4L5.5 9l4.7-1.4z"/><path d="M18 15l.8 2 2.2.8-2.2.8L18 21l-.8-2.4-2.2-.8 2.2-.8z"/></svg></div>
+          <span class="tag">New in 1.4</span>
+          <h3>Explain with Claude</h3>
+          <p>One click sends the error, your original source and the recent requests to Claude, and you get back the cause and a fix. You see the prompt before it's sent.</p>
+        </article>
+        <article class="card">
+          <div class="ico"><svg viewBox="0 0 24 24"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5"/></svg></div>
+          <h3>Elements &amp; CSS</h3>
+          <p>DOM tree through shadow roots, live CSS with suggestions for your <code>var(--tokens)</code>, grid and flex overlays, a measure tool, and a Changes tab that copies your edits as CSS.</p>
+        </article>
+        <article class="card">
+          <div class="ico"><svg viewBox="0 0 24 24"><path d="M3 12h4l2-6 4 12 2-6h6"/></svg></div>
+          <h3>Network</h3>
+          <p>fetch, XHR, WebSocket and SSE with a waterfall. Mock, block or delay any request, throttle to 3G or offline, and export a HAR file.</p>
+        </article>
+        <article class="card">
+          <div class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="4.5" r="1.8"/><path d="M5 8l7 1.5L19 8M12 9.5V14l-3 6M12 14l3 6"/></svg></div>
+          <span class="tag">New in 1.4</span>
+          <h3>Accessibility</h3>
+          <p>The accessibility tree as screen readers get it, a numbered tab order on the page, a focus tracker, and a contrast fixer that suggests the nearest passing colour from your tokens.</p>
+        </article>
+        <article class="card">
+          <div class="ico"><svg viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="13" rx="5"/><path d="M9 7a3 3 0 016 0M12 11v9M3 12h4M17 12h4M4 7l3 2M20 7l-3 2M4 19l3-2M20 19l-3-2"/></svg></div>
+          <span class="tag">New in 1.4</span>
+          <h3>One-click Jira bugs</h3>
+          <p>Steps to reproduce are captured for you, with console errors, a HAR file, device info and a screenshot. Sign-in codes and tokens are blanked automatically.</p>
+        </article>
+        <article class="card">
+          <div class="ico"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="12" height="10" rx="1.5"/><rect x="16" y="8" width="5" height="11" rx="1.2"/><path d="M6 19h6"/></svg></div>
+          <h3>Responsive &amp; emulation</h3>
+          <p>iPhone and iPad sizes side by side with synced scrolling. Emulate dark mode, reduced motion, RTL, larger text and pseudo-localisation.</p>
+        </article>
+        <article class="card">
+          <div class="ico"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/><path d="M15 3h6v6M3 15v6h6"/></svg></div>
+          <h3>Snapshots &amp; coverage</h3>
+          <p>Save a component as a baseline and see every style, size and text change after an edit. Find CSS rules and design tokens that nothing uses.</p>
+        </article>
+        <article class="card">
+          <div class="ico"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h7"/><circle cx="18" cy="16" r="3"/></svg></div>
+          <h3>Components &amp; state</h3>
+          <p>Angular signals, Lit and React trees with editable state, plus a Redux, NgRx and Zustand action log with time travel, which Safari never had.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section id="iphone" aria-labelledby="iphone-title">
+    <div class="wrap split">
+      <div>
+        <div class="eyebrow">iPhone</div>
+        <h2 id="iphone-title" style="margin-top:10px">Debug your iPhone from your Mac, over Wi-Fi.</h2>
+        <p>Run a tiny relay on your Mac and the phone's console and network stream straight to your desktop browser. Type JavaScript on the Mac, it runs on the phone.</p>
+        <ul>
+          <li>No cable, no Xcode, no pairing</li>
+          <li>Works in in-app WebViews that Web Inspector can't open</li>
+          <li>On the phone itself, the full panel opens with one tap</li>
+        </ul>
+      </div>
+      <pre class="code"><button class="copy" type="button">Copy</button><span class="c"># on your Mac, in the cloned repo (Node 18+, nothing to install)</span>
+node standalone/remote/relay.js
+
+<span class="c"># then open on the iPhone</span>
+http://&lt;your-mac-ip&gt;:9230/demo
+
+<span class="c"># and watch on the Mac</span>
+http://localhost:9230</pre>
+    </div>
+  </section>
+
+  <section class="band" id="agents" aria-labelledby="agents-title">
+    <div class="wrap split">
+      <pre class="code"><button class="copy" type="button">Copy</button><span class="k">import</span> { test, expect } <span class="k">from</span> <span class="s">'./safari-devtools.fixture'</span>;
+
+test(<span class="s">'checkout has no errors'</span>, <span class="k">async</span> ({ page, devtools }) =&gt; {
+  <span class="k">await</span> devtools.mockBeforeLoad(<span class="s">'/api/coupon'</span>, { status: 410 });
+  <span class="k">await</span> page.goto(<span class="s">'/checkout'</span>);
+  expect(<span class="k">await</span> devtools.errors()).toEqual([]);
+  expect(<span class="k">await</span> devtools.tabOrder()).not.toHaveLength(0);
+});</pre>
+      <div>
+        <div class="eyebrow">Tests &amp; AI agents</div>
+        <h2 id="agents-title" style="margin-top:10px">Built for Playwright and AI agents, too.</h2>
+        <p>Everything in the panel is also a JSON API. Use it from Playwright in WebKit, WebDriver for real Safari, a small HTTP API, or an MCP server, so Claude, Cursor and other agents can read and drive the page.</p>
+        <ul>
+          <li>Playwright fixture with failure attachments (HAR + debug report)</li>
+          <li>MCP tools: console, network, audit, accessibility tree, snapshots, bug reports</li>
+          <li>Mock, block and throttle from your tests</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="compare" aria-labelledby="compare-title">
+    <div class="wrap">
+      <div class="center">
+        <div class="eyebrow">How it compares</div>
+        <h2 id="compare-title" style="margin-top:10px">What you get that you didn't have.</h2>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col"></th><th scope="col">Safari DevTools</th><th scope="col">Safari Web Inspector</th><th scope="col">Eruda / vConsole</th></tr></thead>
+          <tbody>
+            <tr><td>Runs on iPhone with no Mac or cable</td><td class="y">✓</td><td class="n">✕</td><td class="y">✓</td></tr>
+            <tr><td>Same panel in Safari and Chrome</td><td class="y">✓</td><td class="p">Safari only</td><td class="y">✓</td></tr>
+            <tr><td>Source-mapped stack traces</td><td class="y">✓</td><td class="y">✓</td><td class="n">✕</td></tr>
+            <tr><td>Explain errors with Claude</td><td class="y">✓</td><td class="n">✕</td><td class="n">✕</td></tr>
+            <tr><td>One-click Jira bug reports</td><td class="y">✓</td><td class="n">✕</td><td class="n">✕</td></tr>
+            <tr><td>Accessibility tree, tab order, contrast fixer</td><td class="y">✓</td><td class="p">Partial</td><td class="n">✕</td></tr>
+            <tr><td>Mock, block or delay requests</td><td class="y">✓</td><td class="y">✓</td><td class="n">✕</td></tr>
+            <tr><td>Redux / NgRx time travel</td><td class="y">✓</td><td class="n">✕</td><td class="n">✕</td></tr>
+            <tr><td>Design-token editor and coverage</td><td class="y">✓</td><td class="n">✕</td><td class="n">✕</td></tr>
+            <tr><td>Playwright fixture and MCP server</td><td class="y">✓</td><td class="n">✕</td><td class="n">✕</td></tr>
+            <tr><td>Step-through JavaScript debugger</td><td class="n">✕</td><td class="y">✓</td><td class="n">✕</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="center small muted" style="margin-top:14px">It runs inside the page, so it can't see HttpOnly cookies or pause JavaScript. For those, it hands off to the browser's own tools.</p>
+    </div>
+  </section>
+
+  <section class="band" id="install" aria-labelledby="install-title">
+    <div class="wrap">
+      <div class="center">
+        <div class="eyebrow">Install</div>
+        <h2 id="install-title" style="margin-top:10px">Get it in a minute.</h2>
+      </div>
+      <div class="tabs" role="tablist" aria-label="Install options">
+        <button role="tab" id="t-chrome" aria-controls="p-chrome" aria-selected="true">Chrome &amp; Edge</button>
+        <button role="tab" id="t-safari" aria-controls="p-safari" aria-selected="false">Safari</button>
+        <button role="tab" id="t-bookmarklet" aria-controls="p-bookmarklet" aria-selected="false">Bookmarklet</button>
+        <button role="tab" id="t-script" aria-controls="p-script" aria-selected="false">Your own app</button>
+      </div>
+      <div class="panel" role="tabpanel" id="p-chrome" aria-labelledby="t-chrome">
+        <ol>
+          <li>Download the extension and unzip it.</li>
+          <li>Open <b>chrome://extensions</b> (or edge://extensions) and turn on <b>Developer mode</b>.</li>
+          <li>Click <b>Load unpacked</b> and choose the <b>safari-devtools-chrome</b> folder.</li>
+          <li>Open any site and press <span class="kbd">⌥</span> <span class="kbd">⇧</span> <span class="kbd">D</span> or click the icon.</li>
+        </ol>
+        <div class="row"><a class="btn primary" href="/downloads/safari-devtools-chrome.zip" download>Download for Chrome</a><a class="btn ghost" href="https://github.com/biratdatta/safari-devtools/tree/main/chrome-extension">View source</a></div>
+      </div>
+      <div class="panel" role="tabpanel" id="p-safari" aria-labelledby="t-safari" hidden>
+        <ol>
+          <li>Download the extension and unzip it.</li>
+          <li>In Safari, open <b>Settings → Advanced</b> and turn on <b>Show features for web developers</b>.</li>
+          <li>Open <b>Settings → Developer</b>, click <b>Add Temporary Extension…</b> and choose the <b>safari-devtools-extension</b> folder.</li>
+          <li>Allow it on websites, then press <span class="kbd">Ctrl</span> <span class="kbd">⇧</span> <span class="kbd">D</span> on any page.</li>
+        </ol>
+        <p class="small muted" style="margin:18px 0 0">Temporary extensions are removed when Safari quits. To keep it installed, build it once with Xcode using the script in the folder.</p>
+        <div class="row"><a class="btn primary" href="/downloads/safari-devtools-safari.zip" download>Download for Safari</a><a class="btn ghost" href="https://github.com/biratdatta/safari-devtools/tree/main/extension">View source</a></div>
+      </div>
+      <div class="panel" role="tabpanel" id="p-bookmarklet" aria-labelledby="t-bookmarklet" hidden>
+        <p class="muted" style="margin:0 0 18px">No install, and it works where extensions aren't allowed. Drag this to your bookmarks bar, then click it on any page.</p>
+        <a class="bm" id="bookmarklet" href="#install" title="Drag me to your bookmarks bar">⇱ Safari DevTools</a>
+        <p class="small muted" style="margin:18px 0 0">On iPhone: bookmark any page, then edit the bookmark and paste the code below as its address.</p>
+        <pre class="code" style="margin-top:12px"><button class="copy" type="button">Copy</button><span id="bmCode"></span></pre>
+      </div>
+      <div class="panel" role="tabpanel" id="p-script" aria-labelledby="t-script" hidden>
+        <p class="muted" style="margin:0 0 16px">Add one line as the first thing in <code>&lt;head&gt;</code> of your development build. It captures every log and request from the first line.</p>
+        <pre class="code"><button class="copy" type="button">Copy</button>&lt;script src=<span class="s">"https://cdn.jsdelivr.net/gh/biratdatta/safari-devtools@v1.5.2/standalone/safari-devtools.js"</span>&gt;&lt;/script&gt;</pre>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="video-title">
+    <div class="wrap">
+      <div class="center">
+        <div class="eyebrow">Demo</div>
+        <h2 id="video-title" style="margin-top:10px">See it in one minute.</h2>
+      </div>
+      <div class="video"><video controls preload="none" playsinline poster="/media/poster.jpg"><source src="/media/demo.mp4" type="video/mp4">Your browser can't play this video. <a href="/media/demo.mp4">Download it</a>.</video></div>
+    </div>
+  </section>
+
+  <section class="band" aria-labelledby="uses-title">
+    <div class="wrap">
+      <div class="center">
+        <div class="eyebrow">Who it's for</div>
+        <h2 id="uses-title" style="margin-top:10px">One tool, a lot of jobs.</h2>
+      </div>
+      <div class="uses">
+        <div class="use"><b>Front-end developers</b><span>Safari-only bugs, iPhone layouts, web components and shadow DOM.</span></div>
+        <div class="use"><b>QA</b><span>Bug reports with steps, errors, HAR and device info, filed in Jira.</span></div>
+        <div class="use"><b>Designers</b><span>Live token edits, grid overlays, a measure tool and design overlays.</span></div>
+        <div class="use"><b>Accessibility</b><span>Screen-reader tree, tab order, focus traps and contrast fixes.</span></div>
+        <div class="use"><b>Test automation</b><span>Playwright in WebKit, WebDriver for real Safari, network mocks.</span></div>
+        <div class="use"><b>AI agents</b><span>An MCP server so Claude, Cursor and others can inspect live pages.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="faq-title">
+    <div class="wrap">
+      <h2 id="faq-title" class="center">Questions</h2>
+      <div class="faq">
+        <details><summary>Is it really free?</summary><p>Yes. It's open source under the MIT licence. Use it at work, change it, ship it.</p></details>
+        <details><summary>Does it send my data anywhere?</summary><p>No. Everything stays in the page. "Explain with Claude" and Jira reports only run through a relay you start on your own machine, with your own keys, and you see the prompt before anything is sent. Sign-in codes and tokens are blanked first.</p></details>
+        <details><summary>Does it work on iPhone and iPad?</summary><p>Yes, in Safari and in in-app WebViews. Load it with the script tag or the bookmarklet, or stream it to your Mac with remote mode.</p></details>
+        <details><summary>Why not just use Safari's Web Inspector?</summary><p>Web Inspector needs a Mac, a cable or pairing, and doesn't open most in-app WebViews. Safari DevTools runs in the page itself, looks like Chrome DevTools and adds things Safari doesn't have, like Redux time travel, an accessibility toolkit and AI explanations.</p></details>
+        <details><summary>What can't it do?</summary><p>It runs inside the page, so it can't pause JavaScript at breakpoints, see HttpOnly cookies or browser-added headers, or read cross-origin stylesheets. Use the browser's own tools for those.</p></details>
+        <details><summary>My company blocks extensions. Can I still use it?</summary><p>Usually, yes. The bookmarklet and the script tag aren't extensions, so extension policies don't apply to them.</p></details>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>Safari DevTools · MIT licence · Made by Birat Datta</span>
+    <span><a href="https://github.com/biratdatta/safari-devtools">GitHub</a> · <a href="https://github.com/biratdatta/safari-devtools/issues">Report an issue</a></span>
+  </div>
+</footer>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  var toast = document.getElementById('toast'), tt;
+  function say(t) { toast.textContent = t; toast.classList.add('on'); clearTimeout(tt); tt = setTimeout(function () { toast.classList.remove('on'); }, 1800); }
+
+  /* ---- live showcase: the real tool running in a demo shop, scaled to fit ---- */
+  var stage = document.getElementById('stage'), frame = document.getElementById('demo');
+  function fit() { var w = stage.clientWidth; if (w) frame.style.transform = 'scale(' + (w / 1280) + ')'; }
+  function show(state, play) {
+    frame.src = '/demo/app.html?state=' + encodeURIComponent(state) + '&play=' + play;
+    document.getElementById('openDemo').href = frame.src;
+  }
+  frame.addEventListener('load', function () { var l = stage.querySelector('.loading'); if (l) l.remove(); });
+  document.querySelectorAll('.chip').forEach(function (c) {
+    c.addEventListener('click', function () {
+      document.querySelectorAll('.chip').forEach(function (o) { o.setAttribute('aria-pressed', String(o === c)); });
+      show(c.dataset.state, c.dataset.play);
+    });
+  });
+  addEventListener('resize', fit); fit();
+  // Load the demo when it scrolls near the screen (and only on screens wide enough to read it).
+  if (matchMedia('(min-width: 641px)').matches) {
+    if ('IntersectionObserver' in window) {
+      var io = new IntersectionObserver(function (es) { if (es.some(function (e) { return e.isIntersecting; })) { io.disconnect(); show('console', 0); } }, { rootMargin: '300px' });
+      io.observe(stage);
+    } else show('console', 0);
+  }
+
+  /* ---- "Try it on this page" ---- */
+  document.getElementById('tryIt').addEventListener('click', function () {
+    if (window.SafariDevTools) { window.SafariDevTools.toggle(); return; }
+    var s = document.createElement('script');
+    s.src = '/safari-devtools.js'; s.dataset.open = 'true';
+    s.onload = function () { console.log('Hi! This is Safari DevTools running on this page. Try the Elements tab, or type 1 + 1 below.'); say('Opened at the bottom of the page'); };
+    s.onerror = function () { say('Could not load the tool'); };
+    document.head.appendChild(s);
+  });
+
+  /* ---- install tabs ---- */
+  var tabs = document.querySelectorAll('[role="tab"]');
+  function pick(id) {
+    tabs.forEach(function (t) {
+      var on = t.id === 't-' + id;
+      t.setAttribute('aria-selected', String(on));
+      document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
+    });
+  }
+  tabs.forEach(function (t, i) {
+    t.addEventListener('click', function () { pick(t.id.slice(2)); });
+    t.addEventListener('keydown', function (e) {
+      if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+      var n = tabs[(i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length]; n.focus(); n.click();
+    });
+  });
+  document.querySelectorAll('[data-tab]').forEach(function (a) { a.addEventListener('click', function () { pick(a.dataset.tab); }); });
+  // Suggest the right tab for this browser.
+  var ua = navigator.userAgent;
+  if (/Safari\//.test(ua) && !/Chrome\/|Chromium\/|Edg\//.test(ua)) pick('safari');
+
+  /* ---- bookmarklet, pointing at this site's copy of the tool ---- */
+  var src = location.origin + '/safari-devtools.js';
+  var bm = "javascript:(function(){if(window.SafariDevTools){SafariDevTools.toggle();return;}var s=document.createElement('script');s.src='" + src + "';s.dataset.open='true';s.onerror=function(){alert('This site blocks outside scripts, so Safari DevTools could not load here.');};document.head.appendChild(s);})();";
+  document.getElementById('bookmarklet').href = bm;
+  document.getElementById('bookmarklet').addEventListener('click', function (e) { e.preventDefault(); say('Drag this to your bookmarks bar'); });
+  document.getElementById('bmCode').textContent = bm;
+
+  /* ---- copy buttons ---- */
+  document.querySelectorAll('.copy').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var text = b.parentElement.textContent.replace(/^Copy/, '').trim();
+      (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(function () { say('Copied'); }, function () {
+        var r = document.createRange(); r.selectNodeContents(b.parentElement); var sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); say('Press ⌘C to copy');
+      });
+    });
+  });
+})();
+</script>
+</body>
+</html>

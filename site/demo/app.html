@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Acme Shop · Checkout</title>
+<script src="demo-setup.js"></script>
+<script src="safari-devtools.js" data-launcher="false"></script>
+<script src="demo-mocks.js"></script>
+<style>
+:root{--brand:#0b57d0;--brand-ink:#ffffff;--ink:#1f2937;--ink-2:#4b5563;--ink-soft:#9ca3af;--surface:#ffffff;--page:#f4f6fa;--line:#e3e7ee;--success:#15803d;--danger:#b42318;--radius:12px;--space-2:8px;--space-4:16px;--space-6:24px}
+@media (prefers-color-scheme: dark){:root{--ink:#e5e7eb;--ink-2:#cbd5e1;--surface:#161b22;--page:#0d1117;--line:#2b3340;--brand:#5b9dff}}
+*{box-sizing:border-box}
+body{margin:0;font:15px/1.5 -apple-system,system-ui,'Segoe UI',Roboto,sans-serif;background:var(--page);color:var(--ink)}
+header{display:flex;align-items:center;gap:var(--space-4);padding:14px 28px;background:var(--surface);border-bottom:1px solid var(--line)}
+.logo{font-weight:800;font-size:19px;letter-spacing:-.3px}.logo span{color:var(--brand)}
+nav{display:flex;gap:18px;margin-left:24px;color:var(--ink-2);font-size:14px}nav a{color:inherit;text-decoration:none}
+.grow{flex:1}
+.icon-btn{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:var(--surface);display:grid;place-items:center;color:var(--ink-2)}
+main{display:grid;grid-template-columns:1.4fr 1fr;gap:var(--space-6);padding:26px 28px;max-width:1180px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:var(--space-6)}
+h1{font-size:24px;margin:0 0 4px;letter-spacing:-.4px}
+.hint{color:var(--ink-soft);font-size:13px;margin:0 0 var(--space-4)}
+.item{display:flex;align-items:center;gap:14px;padding:12px 0;border-top:1px solid var(--line)}
+.thumb{width:52px;height:52px;border-radius:10px;background:linear-gradient(135deg,#dbeafe,#e0e7ff)}
+.thumb.b{background:linear-gradient(135deg,#fde68a,#fecaca)}
+.item .name{font-weight:600}.item .meta{color:var(--ink-2);font-size:13px}.price{margin-left:auto;font-weight:600;font-variant-numeric:tabular-nums}
+.row{display:flex;justify-content:space-between;padding:6px 0;color:var(--ink-2)}.row.total{color:var(--ink);font-weight:700;font-size:18px;border-top:1px solid var(--line);margin-top:8px;padding-top:12px}
+label{display:block;font-size:13px;color:var(--ink-2);margin:10px 0 4px}
+input{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;font:inherit;background:var(--surface);color:var(--ink)}
+.pay{margin-top:var(--space-4);width:100%;padding:12px;border:0;border-radius:10px;background:var(--brand);color:var(--brand-ink);font:600 16px/1 inherit;font-family:inherit;cursor:pointer}
+.links{display:flex;gap:10px;margin-top:12px}.links a{font-size:13px;color:var(--brand)}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">acme<span>.</span>shop</div>
+  <nav><a href="#">Store</a><a href="#">Deals</a><a href="#">Orders</a></nav>
+  <div class="grow"></div>
+  <button class="icon-btn" type="button"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5L14 14"/></svg></button>
+  <acme-avatar user="Birat"></acme-avatar>
+</header>
+<main>
+  <section class="card" id="cart">
+    <h1>Your cart</h1>
+    <p class="hint">Free delivery on orders over $50. Items are reserved for 15 minutes.</p>
+    <div class="item"><div class="thumb"></div><div><div class="name">Noise-cancelling headphones</div><div class="meta">Midnight · Qty 1</div></div><div class="price">$199.00</div></div>
+    <div class="item"><div class="thumb b"></div><div><div class="name">USB-C charging cable</div><div class="meta">2 m · Qty 2</div></div><div class="price">$38.00</div></div>
+  </section>
+  <aside class="card" id="summary">
+    <div class="row"><span>Subtotal</span><span>$237.00</span></div>
+    <div class="row"><span>Delivery</span><span>Free</span></div>
+    <div class="row total"><span>Total</span><span id="total">$237.00</span></div>
+    <label for="email">Email for receipt</label>
+    <input id="email" type="email" placeholder="you@example.com">
+    <input type="text" placeholder="Coupon code">
+    <button class="pay" id="pay" type="button">Pay $237.00</button>
+    <div class="links"><a href="#" tabindex="3">Terms</a><a href="#">Returns</a></div>
+  </aside>
+</main>
+<script>
+customElements.define('acme-avatar', class extends HTMLElement {
+  static get observedAttributes() { return ['user']; }
+  constructor() { super(); this.attachShadow({ mode: 'open' }); }
+  connectedCallback() {
+    const u = this.getAttribute('user') || '?';
+    this.shadowRoot.innerHTML = '<style>:host{display:inline-flex}.av{width:34px;height:34px;border-radius:50%;background:var(--brand);color:#fff;display:grid;place-items:center;font:600 14px system-ui}</style><button class="av" part="avatar" aria-label="Account: ' + u + '">' + u[0] + '</button>';
+  }
+});
+</script>
+<script src="cart.js"></script>
+<script src="demo-steps.js"></script>
+</body>
+</html>

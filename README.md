@@ -175,7 +175,8 @@ standalone/   safari-devtools.js (the tool), demo.html, docs, remote/ (relay + v
 extension/          Safari Web Extension (manifest, content script, icons, Xcode build script)
 chrome-extension/   Chrome / Edge extension (Manifest V3, service worker, MAIN-world content script)
 docs/               demo videos (16:9 and 9:16), GIF and screenshots used in this README
-sync.sh             copies safari-devtools.js and the shared extension files into both extensions
+site/               the website (static, deployed by Cloudflare Pages from this folder)
+sync.sh             copies safari-devtools.js into both extensions and the website, and rebuilds the download zips
 ```
 
 `safari-devtools.js` is the same file in all three folders, and `content.js` / `background.js` are shared by both extensions. Edit `standalone/safari-devtools.js` (or `extension/`'s shared files), then run `./sync.sh`.

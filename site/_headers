@@ -1,0 +1,20 @@
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+  X-Frame-Options: SAMEORIGIN
+
+/media/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/downloads/*
+  Cache-Control: public, max-age=3600
+  Content-Disposition: attachment
+
+/safari-devtools.js
+  Cache-Control: public, max-age=3600
+  Access-Control-Allow-Origin: *
+
+/demo/*
+  Cache-Control: public, max-age=3600
+  X-Robots-Tag: noindex
