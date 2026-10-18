@@ -9,7 +9,7 @@
  *
  * The tool is injected with page.addInitScript, so it runs before the page's own
  * scripts on every navigation and captures everything from the first line.
- * Works in every Playwright browser; use the WebKit projects to test Safari's engine.
+ * Works in every Playwright browser: the WebKit projects test Safari's engine, the Chromium ones Chrome.
  * On failure, a debug report and a HAR file are attached to the test result.
  */
 import { test as base, expect, type Page } from '@playwright/test';
@@ -98,6 +98,24 @@ export class DevTools {
   storeDispatch(action: object, which = 0) { return this.call('storeDispatch', action, which); }
   liveExpressions(list?: string[]) { return this.call<{ expression: string; value: unknown }[]>('liveExpressions', list); }
   runSnippet(name: string) { return this.call('runSnippet', name); }
+  // accessibility
+  a11yTree(opts?: { text?: boolean; limit?: number }) { return this.call<{ depth: number; role?: string; name?: string; nameFrom?: string | null; states?: string[]; problem?: string | null; selector?: string; text?: string; hidden?: boolean }[]>('a11yTree', opts); }
+  tabOrder() { return this.call<{ index: number; tabindex: number; role: string; name: string; selector: string }[]>('tabOrder'); }
+  focusTracking(on?: boolean) { return this.call<boolean>('focusTracking', on); }
+  focusLog() { return this.call<{ time: number; element: string | null; label: string; via: string | null; problems: string[] }[]>('focusLog'); }
+  contrast(selector: string) { return this.call<{ ratio: number; passAA: boolean; passAAA: boolean; targetAA: number; tokens: { name: string; value: string; ratio: number }[] } | null>('contrast', selector); }
+  // emulation & CSS
+  emulate(opts: { colorScheme?: '' | 'light' | 'dark'; reducedMotion?: '' | 'reduce' | 'no-preference' | boolean; dir?: '' | 'ltr' | 'rtl'; textScale?: number; pseudo?: boolean; vision?: '' | 'protanopia' | 'deuteranopia' | 'tritanopia' | 'achromatopsia' | 'blur' }) { return this.call<Record<string, unknown>>('emulate', opts); }
+  coverage() { return this.call<{ sheets: { source: string; total: number; unused: string[]; inactiveMedia: number; blocked: boolean }[]; unusedTokens: string[] }>('coverage'); }
+  // visual regression
+  snapshot(name: string, selector = 'body') { return this.call<{ name: string; elements: number }>('snapshot', name, selector); }
+  compareSnapshot(name: string) { return this.call<{ name: string; note: string | null; diffs: { type: 'added' | 'removed' | 'moved' | 'resized' | 'style' | 'text' | 'missing'; path: string; detail: string }[] }>('compareSnapshot', name); }
+  exportSnapshots() { return this.call<Record<string, unknown>>('exportSnapshots'); }
+  importSnapshots(data: Record<string, unknown>) { return this.call<number>('importSnapshots', data); }
+  // bug reports
+  breadcrumbs() { return this.call<{ t: number; kind: string; text: string }[]>('breadcrumbs'); }
+  bugReport(fields?: { summary?: string; what?: string; steps?: string; expected?: string; actual?: string }) { return this.call<{ summary: string; description: string; errors: string[]; failedRequests: string[]; environment: string }>('bugReport', fields); }
+  explainPrompt(errorIndex?: number) { return this.call<string>('explainPrompt', errorIndex); }
   /** Show the panel (useful with --headed or in trace screenshots). */
   open(tab?: string) { return this.call('open', tab); }
 }

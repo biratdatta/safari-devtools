@@ -52,3 +52,24 @@ test('brand token is applied to the card', async ({ page, devtools }) => {
   const css = await devtools.computed('#profile', ['padding-top']);
   expect(css['padding-top']).toBe('16px');
 });
+
+test('keyboard users can reach every control, with a name', async ({ page, devtools }) => {
+  await page.goto('/demo.html');
+  const order = await devtools.tabOrder();
+  expect(order.length).toBeGreaterThan(0);
+  expect(order.filter((o) => !o.name), 'controls without an accessible name').toEqual([]);
+});
+
+test('profile card has no visual regressions (snapshot)', async ({ page, devtools }) => {
+  await page.goto('/demo.html');
+  await devtools.snapshot('profile', '#profile');
+  // ...change something here, e.g. toggle a theme or load new data...
+  const { diffs } = await devtools.compareSnapshot('profile');
+  expect(diffs, JSON.stringify(diffs, null, 2)).toEqual([]);
+});
+
+test('layout survives dark mode, RTL and 200% text', async ({ page, devtools }) => {
+  await page.goto('/demo.html');
+  await devtools.emulate({ colorScheme: 'dark', dir: 'rtl', textScale: 200 });
+  expect(await devtools.errors()).toEqual([]);
+});

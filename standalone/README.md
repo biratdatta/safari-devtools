@@ -1,12 +1,12 @@
 # Safari DevTools
 
-**The best in-page DevTools for Safari and iPhone.** A Chrome-style panel that runs inside the page, so it works in any Safari (Mac, iPhone, iPad and in-app WebViews) with no cable or Xcode. It's one dependency-free file, `safari-devtools.js`, and its UI is isolated in a Shadow DOM so it never clashes with your page's CSS. See the [main README](../README.md#how-it-compares) for how it compares with Safari's Web Inspector, Eruda and vConsole.
+**The best in-page DevTools for Safari and iPhone, and it works in Chrome too.** A Chrome-style panel that runs inside the page, so it works in any Safari (Mac, iPhone, iPad and in-app WebViews) with no cable or Xcode, and in Chrome, Edge and other Chromium browsers (desktop and Android). It's one dependency-free file, `safari-devtools.js`, and its UI is isolated in a Shadow DOM so it never clashes with your page's CSS. See the [main README](../README.md#how-it-compares) for how it compares with Safari's Web Inspector, Eruda and vConsole.
 
 ## Panels
 
 | Panel | What you get |
 |---|---|
-| **Console** | Logs, warnings, errors and unhandled rejections, with `%c` styling, groups, `count` and `time`. Repeated messages collapse into a counter, and objects open as expandable trees. Error stack traces are **source-mapped**, so minified names like `at o` become `UserService.loadUser (user.service.ts:42)`. The REPL has **autocomplete** for globals and object properties (Tab or → to accept), history on ↑/↓, and `$0`, `$()`, `$$()`, `copy()`, `clear()` and `inspect()`. |
+| **Console** | Every error has an **✨ Explain** button: it collects the error, the source-mapped stack, the original source around the failing line, recent requests and console output, and asks Claude for the cause and a fix (or opens the prompt in Claude.ai). Logs, warnings, errors and unhandled rejections, with `%c` styling, groups, `count` and `time`. Repeated messages collapse into a counter, and objects open as expandable trees. Error stack traces are **source-mapped**, so minified names like `at o` become `UserService.loadUser (user.service.ts:42)`. The REPL has **autocomplete** for globals and object properties (Tab or → to accept), history on ↑/↓, and `$0`, `$()`, `$$()`, `copy()`, `clear()` and `inspect()`. |
 | **Elements** | Live DOM tree including shadow roots, a box-model highlight and an element picker (Ctrl+Shift+C). **Find** (⌘F) matches text, CSS selectors (piercing shadow roots) or XPath. Right-click a node to copy its selector, JS path, XPath or outerHTML, edit it as HTML, hide it, delete it or store it as a global. **DOM breakpoints** fire on subtree, attribute or removal changes and log the call stack, optionally pausing in Web Inspector. |
 | **Styles · Computed · Listeners · Component** | **Layout** lists every grid and flex container. Click the `grid`/`flex` badge next to a tag in the tree to overlay grid lines with numbers, gaps, flex items and direction on the page. **Styles** shows matched, `:host`, user-agent and inherited rules with overrides struck through, and live editing with suggestions for properties, keywords and your `var(--tokens)`. **Computed** has the box model. **Listeners** lists every event listener on the element and its ancestors, with where it was added, and lets you remove one. **Component** is for web components: properties (editable), observed attributes, slots, `::part()` hooks and the CSS variables it reads, plus Lit and Angular component details. |
 | **Console extras** | **Live expressions** (pinned JS values that update continuously), **Preserve log** across reloads and navigations, real `console.table()` tables, and Chrome's console helpers: `monitorEvents(el, 'mouse')`, `unmonitorEvents`, `monitor(fn)` / `unmonitor`, `debug(fn)` / `undebug`, `getEventListeners(el)`, `keys()`, `values()`, `table()` and `dir()`. |
@@ -20,9 +20,12 @@
 | **Performance** | FCP, LCP, CLS, INP and TTFB where Safari supports them, a live FPS graph, a DOM-size graph, long tasks, the biggest layout shifts, page-load timings, and a **memory leak check** for removed elements still held in memory. |
 | **Tokens** | Every CSS custom property on the page (including inside components), grouped by prefix with its current value, where it's defined and how often it's used. Click a value to override it live across the page, then copy your overrides as CSS. |
 | **Audit** | Scans the page, including shadow DOM, for **Safari and iPhone issues** (inputs under 16px that cause zoom, `100vh`, sticky inside overflow, fixed inside a transform, missing `viewport-fit`, autoplay rules, horizontal scroll, small tap targets…) and **accessibility issues** (missing alt text, labels and accessible names, low contrast, click handlers that can't be reached by keyboard, duplicate ids, heading order…). |
-| **Device** | A **design overlay**: drop, paste (⌘V) or choose a Figma/Sketch export, set its opacity and export scale (1×–4×), nudge it with the arrow keys, and switch on *difference* blend so any mismatch lights up. Also viewport, visual viewport, the measured `100vh`/`svh`/`lvh`/`dvh` and safe-area insets, plus toggles for a **safe-area and viewport overlay**, a **touch visualiser** (taps, swipes, long-press and multi-touch, drawn on screen) and **outline all elements**. |
+| **Accessibility** | **Tree:** the role, accessible name (and where it comes from) and states of every element, as VoiceOver gets them, including inside shadow DOM and slots; elements with no name are flagged. **Tab order:** every focusable element in keyboard order, and an on-page overlay with numbered badges and the path between them; positive `tabindex` is flagged. **Focus tracker:** logs each focus change and flags focus that escapes an open dialog or is lost to `<body>`. **Contrast:** pick any text to see its ratio against the real background (AA/AAA, large-text aware) and the **nearest passing colours from your design tokens**, or the nearest passing shade of the same hue, with one-click Apply (recorded in Changes). |
+| **Coverage** | CSS rules that match nothing on the current page (per stylesheet, including shadow roots), rules inside inactive `@media` blocks, and **design tokens that are declared but never used**. Copy the list as a report. |
+| **Snapshots** | **Visual regression for components:** select an element and save it as a baseline (layout, text and ~40 key computed styles for each element inside). After a change, Compare lists added/removed elements, moved or resized boxes, and style and text changes, and outlines them on the page. Export/import baselines as JSON to share or use in Playwright. |
+| **Device** | **Emulation:** dark/light colour scheme, reduced motion, RTL, text size 125–200%, **pseudo-localisation** (accented, ~35% longer text in brackets, to catch truncation before translating) and colour-vision deficiency filters. **Responsive preview:** the page at iPhone SE, iPhone 15, iPhone 15 Pro Max, iPad mini, iPad Air and iPad landscape side by side, with zoom and synced scrolling. A **design overlay**: drop, paste (⌘V) or choose a Figma/Sketch export, set its opacity and export scale (1×–4×), nudge it with the arrow keys, and switch on *difference* blend so any mismatch lights up. Also viewport, visual viewport, the measured `100vh`/`svh`/`lvh`/`dvh` and safe-area insets, plus toggles for a **safe-area and viewport overlay**, a **touch visualiser** (taps, swipes, long-press and multi-touch, drawn on screen) and **outline all elements**. |
 
-From the **⋯ menu**, you can switch between light, dark and auto themes, dock the panel to the bottom or right, **export a debug report** (JSON) or a **HAR** file, and start **remote mode**. Settings are remembered per site.
+From the **⋯ menu**, you can switch between light, dark and auto themes, dock the panel to the bottom or right, **export a debug report** (JSON) or a **HAR** file, and start **remote mode**, open the **responsive preview**, or **report a bug**. The 🐞 button builds a bug report with auto-captured steps to reproduce (clicks, changes and navigation; typed values are never recorded), console errors, failed requests, device info, a HAR file, the debug report and an optional screenshot, and files it in **Jira** in one click (or copy it as Jira text). Settings are remembered per site.
 
 ## Use it
 
@@ -37,7 +40,9 @@ Optional attributes:
 - `data-launcher="false"` hides the floating button.
 - `data-remote="http://<mac-ip>:9230"` starts remote mode.
 
-**Try it now:** open `demo.html` in Safari. Keep it in the same folder as the script.
+**Try it now:** open `demo.html` in Safari or Chrome. Keep it in the same folder as the script.
+
+**On every site:** use the browser extension. Safari: `safari-devtools-extension/`. Chrome, Edge, Brave or Arc: `chrome://extensions` → **Developer mode** → **Load unpacked** → the `safari-devtools-chrome/` folder (see the main README).
 
 ## Remote mode: debug an iPhone from your Mac
 
@@ -56,6 +61,21 @@ It prints your Mac's address. Then:
 3. **Watch it:** open `http://localhost:9230` on the Mac to see the logs and requests, and to run JavaScript on the phone.
 
 Safari won't let an `https://` page talk to an `http://` relay, because that's mixed content. Use it with local `http://` dev servers, or put the relay behind https.
+
+## Explain with Claude and Jira bug reports
+
+Both run through the relay on your Mac, so your API key and Jira token never reach the page or the phone.
+
+```bash
+ANTHROPIC_API_KEY=sk-ant-... \
+JIRA_URL=https://your-team.atlassian.net JIRA_EMAIL=you@company.com JIRA_TOKEN=... JIRA_PROJECT=WEB \
+node remote/relay.js
+```
+
+- `SDT_MODEL` picks the Claude model (default `claude-sonnet-5-5`); `JIRA_ISSUE_TYPE` defaults to `Bug`. Create a Jira API token at id.atlassian.com → Security → API tokens.
+- Without a relay you can still use **Open in Claude.ai**, **Copy prompt**, **Copy as Jira text** and **Download attachments**.
+- These endpoints spend money or create tickets, so without `SDT_TOKEN` the relay only accepts them from this Mac **and** from local pages (`localhost`, `127.0.0.1`, `*.local`, `*.test`). Add other dev sites with `SDT_ORIGINS=https://staging.example.com`. For a phone or another machine, start the relay with `SDT_TOKEN=...` and enter the token in the relay field of the Explain or Report dialog.
+- The prompt is shown before anything is sent, so you can remove anything private. Screenshots use Safari's screen-sharing prompt on the Mac; iOS has no screen capture API, so attach one by hand there.
 
 ## Automation: Playwright, real Safari and AI agents
 
@@ -102,7 +122,7 @@ To set it up, run `cd playwright && npm run setup`, then `npm test`. Playwright 
 
 By default these endpoints only answer requests from your Mac. To allow other machines, start the relay with `SDT_TOKEN=secret node remote/relay.js` and send `Authorization: Bearer secret`.
 
-**MCP server (Claude, Cursor and other MCP clients).** `remote/mcp.js` exposes the same features as tools. They include `get_console`, `get_network`, `run_js`, `audit_page`, `inspect_element`, `mock_request`, `set_throttling`, `get_design_tokens`, `get_performance` and `debug_report`.
+**MCP server (Claude, Cursor and other MCP clients).** `remote/mcp.js` exposes the same features as tools. They include `get_console`, `get_network`, `run_js`, `audit_page`, `inspect_element`, `mock_request`, `set_throttling`, `get_design_tokens`, `get_performance`, `debug_report`, and from 1.4 `accessibility_tree`, `tab_order`, `check_contrast`, `css_coverage`, `emulate`, `save_snapshot`, `compare_snapshot`, `bug_report` and `explain_error_context`.
 
 ```bash
 claude mcp add safari-devtools -- node /path/to/remote/mcp.js        # Claude Code
@@ -112,8 +132,8 @@ For Claude Desktop, add `"safari-devtools": { "command": "node", "args": ["/path
 
 ## Shortcuts
 
-- **Ctrl+Shift+D**: show or hide the panel
-- **Ctrl+Shift+C**: inspect an element (Esc cancels)
+- **Ctrl+Shift+D** or **Alt+Shift+D** (⌥⇧D): show or hide the panel. In Chrome on Windows/Linux use Alt+Shift+D, because Chrome keeps Ctrl+Shift+D for itself
+- **Ctrl+Shift+C** or **Alt+Shift+C**: inspect an element (Esc cancels). In Chrome on Windows/Linux, Ctrl+Shift+C opens Chrome's own inspector, so use Alt+Shift+C
 - **Ctrl+Shift+P** (or **⌘K** inside the panel): **command palette**. Jump to any panel, action, snippet or source file, or type `#id`, `.class` or `<tag` to find elements
 - **⌘F / Ctrl+F** in Elements: find
 - **Hold ⌥ (Option) and hover** with the panel open: measure the distance from the selected element to the one under the mouse, as in Figma

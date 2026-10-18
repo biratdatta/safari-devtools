@@ -81,6 +81,25 @@ const TOOLS = [
     run: (a) => call('viewport', [], a.device) },
   { name: 'debug_report', description: 'Full debug report: page info, console, network, performance, storage and active rules.', inputSchema: { type: 'object', properties: { device } },
     run: (a) => call('report', [], a.device, 30000) },
+  { name: 'accessibility_tree', description: 'What screen readers get: role, accessible name and states for every element (through shadow DOM and slots), with problems such as missing names.',
+    inputSchema: { type: 'object', properties: { device, limit: { type: 'number' } } }, run: (a) => call('a11yTree', [{ limit: a.limit || 800 }], a.device) },
+  { name: 'tab_order', description: 'Keyboard Tab order of focusable elements (positive tabindex first) with role and name.', inputSchema: { type: 'object', properties: { device } },
+    run: (a) => call('tabOrder', [], a.device) },
+  { name: 'check_contrast', description: 'Text contrast for an element (WCAG AA/AAA) plus the nearest passing colours from the design tokens.',
+    inputSchema: { type: 'object', properties: { device, selector: { type: 'string' } }, required: ['selector'] }, run: (a) => call('contrast', [a.selector], a.device) },
+  { name: 'css_coverage', description: 'CSS rules that match nothing on the current page, and design tokens that are declared but never used.', inputSchema: { type: 'object', properties: { device } },
+    run: (a) => call('coverage', [], a.device, 30000) },
+  { name: 'emulate', description: 'Emulate colour scheme (light/dark), reduced motion, RTL, text size (100-200), pseudo-localisation and colour-vision deficiencies. Empty string resets a setting.',
+    inputSchema: { type: 'object', properties: { device, colorScheme: { type: 'string', enum: ['', 'light', 'dark'] }, reducedMotion: { type: 'string', enum: ['', 'reduce', 'no-preference'] }, dir: { type: 'string', enum: ['', 'ltr', 'rtl'] }, textScale: { type: 'number' }, pseudo: { type: 'boolean' }, vision: { type: 'string', enum: ['', 'protanopia', 'deuteranopia', 'tritanopia', 'achromatopsia', 'blur'] } } },
+    run: (a) => { const o = Object.assign({}, a); delete o.device; return call('emulate', [o], a.device); } },
+  { name: 'save_snapshot', description: 'Save a visual-regression baseline of an element subtree (layout, text and key computed styles).',
+    inputSchema: { type: 'object', properties: { device, name: { type: 'string' }, selector: { type: 'string' } }, required: ['name'] }, run: (a) => call('snapshot', [a.name, a.selector || 'body'], a.device) },
+  { name: 'compare_snapshot', description: 'Compare the page with a saved baseline: added/removed elements, moved/resized boxes, style and text changes.',
+    inputSchema: { type: 'object', properties: { device, name: { type: 'string' } }, required: ['name'] }, run: (a) => call('compareSnapshot', [a.name], a.device) },
+  { name: 'bug_report', description: 'A ready-to-file bug report: auto-captured steps (breadcrumbs), console errors, failed requests and environment, as Jira-formatted text.',
+    inputSchema: { type: 'object', properties: { device, summary: { type: 'string' }, what: { type: 'string' } } }, run: (a) => call('bugReport', [{ summary: a.summary, what: a.what }], a.device) },
+  { name: 'explain_error_context', description: 'Everything needed to explain the latest console error: message, source-mapped stack, original source around the failing line, recent requests and logs.',
+    inputSchema: { type: 'object', properties: { device, index: { type: 'number', description: 'Which error (0 = first). Defaults to the latest.' } } }, run: (a) => call('explainPrompt', [a.index], a.device) },
 ];
 
 function send(msg) { process.stdout.write(JSON.stringify(msg) + '\n'); }
@@ -90,7 +109,7 @@ async function handle(msg) {
   const { id, method, params } = msg;
   if (method === 'initialize') {
     return send({ jsonrpc: '2.0', id, result: { protocolVersion: (params && params.protocolVersion) || '2025-06-18', capabilities: { tools: {} },
-      serverInfo: { name: 'safari-devtools', version: '1.1.0' },
+      serverInfo: { name: 'safari-devtools', version: '1.4.0' },
       instructions: 'Inspect and control web pages running in Safari or on an iPhone via the Safari DevTools relay. Call list_devices first.' } });
   }
   if (method === 'ping') return send({ jsonrpc: '2.0', id, result: {} });

@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Safari DevTools: couldn't open</title>
+<style>
+:root{--bg:#f7f8fa;--fg:#1d2330;--muted:#5b6475;--line:#d9dde5;--card:#fff;--bad:#c62828;--accent:#1a73e8}
+@media (prefers-color-scheme: dark){:root{--bg:#16181d;--fg:#e6e9ef;--muted:#9aa3b2;--line:#2b303a;--card:#1d2027;--bad:#ff6b6b;--accent:#8ab4f8;color-scheme:dark}}
+body{background:var(--bg);color:var(--fg);font:15px/1.55 -apple-system,system-ui,sans-serif;margin:0;padding:32px 16px}
+main{max-width:680px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+h1{font-size:22px;margin:0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 18px}
+.label{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:4px}
+pre{white-space:pre-wrap;word-break:break-word;font:13px/1.5 ui-monospace,Menlo,monospace;margin:0;color:var(--bad)}
+code{font:13px ui-monospace,Menlo,monospace}
+ol{margin:6px 0 0;padding-left:20px} li{margin:4px 0}
+button{font:inherit;padding:6px 14px;border-radius:6px;border:1px solid var(--line);background:var(--card);color:var(--fg);cursor:pointer}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+</style></head>
+<body><main>
+<h1>Safari DevTools couldn't open on that page</h1>
+<div class="card"><div class="label">Page</div><div id="url"></div></div>
+<div class="card"><div class="label">What Chrome said</div><pre id="err"></pre></div>
+<div class="card"><div class="label">How to fix it</div><div id="fix"></div></div>
+<div><button id="copy">Copy details</button></div>
+</main><script src="help.js"></script></body></html>

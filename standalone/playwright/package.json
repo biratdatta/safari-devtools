@@ -2,7 +2,9 @@
   "name": "safari-devtools-playwright",
   "private": true,
   "scripts": {
-    "setup": "npm install && npx playwright install webkit",
+    "setup": "npm install && npx playwright install webkit chromium",
+    "test:safari": "playwright test --project=\"Desktop Safari (WebKit)\" --project=\"iPhone (WebKit)\"",
+    "test:chrome": "playwright test --project=\"Desktop Chrome\" --project=\"Android (Chrome)\"",
     "test": "playwright test",
     "test:headed": "playwright test --headed",
     "report": "playwright show-report",

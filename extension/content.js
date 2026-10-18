@@ -1,4 +1,4 @@
-// Runs in the extension's isolated world at document_start.
+// Runs in the extension's isolated world at document_start (Safari and Chrome).
 // Its only job: load safari-devtools.js into the PAGE's own JavaScript world,
 // so it can see the page's console, fetch/XHR and storage.
 (function () {
@@ -37,6 +37,10 @@
   whenRoot(inject);
 
   function inject() {
+    // 0) Chrome loads the tool itself as a MAIN-world content script (manifest "world": "MAIN"),
+    //    which also works on pages whose CSP blocks injected scripts. Nothing to do then.
+    if (ping()) { log('ready (main world)'); return; }
+
     // 1) Inline injection: runs synchronously, before the page's own scripts,
     //    so every log and request from page load is captured.
     try {
@@ -69,9 +73,9 @@
   }
 
   // Toolbar button → toggle the panel.
-  ext.runtime.onMessage.addListener(function (msg) {
+  ext.runtime.onMessage.addListener(function (msg, sender, sendResponse) {
     if (!msg || msg.type !== 'sdt-command') return;
-    if (loaded || ping()) send(msg.command);
-    else pending.push(msg.command);
+    if (loaded || ping()) { send(msg.command); if (sendResponse) sendResponse({ ok: true }); }
+    else { pending.push(msg.command); if (sendResponse) sendResponse({ ok: false, queued: true }); }
   });
 })();
