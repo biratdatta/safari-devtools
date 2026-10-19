@@ -9,6 +9,10 @@
 <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 <link rel="icon" type="image/png" href="/favicon.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="alternate" hreflang="en" href="/">
+<link rel="alternate" hreflang="zh-Hans" href="/zh/">
+<link rel="alternate" hreflang="ja" href="/ja/">
+<link rel="alternate" hreflang="x-default" href="/">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Safari DevTools: DevTools, inside the page">
 <meta property="og:description" content="Chrome-style DevTools for Safari, Chrome and iPhone. Free and open source.">
@@ -62,7 +66,8 @@ h3{font-size:21px;line-height:1.25;font-weight:600}
 .brand:hover{text-decoration:none}
 .brand img{width:26px;height:26px;border-radius:7px}
 .nav nav{display:flex;gap:22px;margin-left:auto;font-size:14px}
-.nav nav a{color:var(--ink2)}.nav nav a:hover{color:var(--ink);text-decoration:none}
+.nav nav a{color:var(--ink2);white-space:nowrap}.nav nav a:hover{color:var(--ink);text-decoration:none}
+.brand,.lang-btn{white-space:nowrap}
 .btn{display:inline-flex;align-items:center;gap:8px;border-radius:980px;padding:11px 22px;font:600 16px/1 var(--font);border:1px solid transparent;cursor:pointer;white-space:nowrap}
 .btn:hover{text-decoration:none}
 .btn.primary{background:var(--accent);color:var(--accent-ink)}
@@ -71,7 +76,8 @@ h3{font-size:21px;line-height:1.25;font-weight:600}
 .btn.ghost:hover{background:var(--accent-soft)}
 .btn.small{padding:7px 14px;font-size:14px}
 .btn svg{width:18px;height:18px}
-@media (max-width:720px){.nav nav{display:none}.nav .btn{margin-left:auto}}
+@media (max-width:960px){.nav nav{display:none}.nav .lang{margin-left:auto}}
+@media (max-width:420px){.lang-cur{display:none}}
 
 /* hero */
 .hero{padding-block:88px 40px;text-align:center}
@@ -175,6 +181,29 @@ footer{padding-block:40px 60px;border-top:1px solid var(--hair);font-size:13px;c
 footer .wrap{display:flex;gap:18px;flex-wrap:wrap;justify-content:space-between;align-items:center}
 footer a{color:var(--ink2)}
 
+/* Chinese and Japanese: native fonts, no negative tracking, roomier line height, phrase-aware line breaks */
+:lang(zh) body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans CJK SC","Noto Sans SC",sans-serif;letter-spacing:0}
+:lang(ja) body{font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans CJK JP","Noto Sans JP",Meiryo,sans-serif;letter-spacing:0}
+:lang(zh) h1,:lang(zh) h2,:lang(zh) h3,:lang(ja) h1,:lang(ja) h2,:lang(ja) h3{letter-spacing:0;line-height:1.2}
+:lang(zh) .lead,:lang(ja) .lead{line-height:1.6}
+:lang(ja) h1,:lang(ja) h2,:lang(ja) .lead{word-break:auto-phrase}
+:lang(zh) .eyebrow,:lang(ja) .eyebrow{letter-spacing:.02em}
+
+/* language menu */
+.lang{position:relative}
+.lang-btn{display:inline-flex;align-items:center;gap:6px;border:0;background:transparent;color:var(--ink2);font:500 14px/1 var(--font);padding:7px 8px;border-radius:8px;cursor:pointer}
+.lang-btn:hover{color:var(--ink);background:var(--bg2)}
+.lang-btn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.5}
+.lang-menu{position:absolute;right:0;top:calc(100% + 6px);min-width:150px;background:var(--card);border:1px solid var(--hair);border-radius:12px;box-shadow:var(--shadow);padding:6px;display:flex;flex-direction:column}
+.lang-menu[hidden]{display:none}
+.lang-menu a{color:var(--ink);padding:9px 12px;border-radius:8px;font-size:15px}
+.lang-menu a:hover{background:var(--bg2);text-decoration:none}
+.lang-menu a[aria-current="page"]{color:var(--accent);font-weight:600}
+.lang-suggest{background:var(--accent-soft);color:var(--ink);font-size:14px;text-align:center;padding:9px 44px;position:relative}
+.lang-suggest[hidden]{display:none}
+.lang-suggest a{font-weight:600}
+.lang-suggest button{position:absolute;right:10px;top:50%;transform:translateY(-50%);border:0;background:transparent;color:var(--ink2);font-size:18px;cursor:pointer;padding:4px 8px}
+
 /* toast */
 .toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);opacity:0;background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:980px;font-size:14px;transition:.2s;z-index:60;pointer-events:none}
 .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
@@ -193,9 +222,18 @@ footer a{color:var(--ink2)}
       <a href="#install">Install</a>
       <a href="https://github.com/biratdatta/safari-devtools">GitHub</a>
     </nav>
+    <div class="lang" id="lang">
+      <button class="lang-btn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Language"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M1.5 8h13M8 1.5c1.8 1.8 2.6 4 2.6 6.5S9.8 12.7 8 14.5M8 1.5C6.2 3.3 5.4 5.5 5.4 8s.8 4.7 2.6 6.5"/></svg><span class="lang-cur">English</span></button>
+      <div class="lang-menu" hidden>
+        <a href="/" hreflang="en" lang="en" data-lang="en" aria-current="page">English</a>
+        <a href="/zh/" hreflang="zh-Hans" lang="zh-Hans" data-lang="zh">简体中文</a>
+        <a href="/ja/" hreflang="ja" lang="ja" data-lang="ja">日本語</a>
+      </div>
+    </div>
     <a class="btn primary small" href="#install">Get it free</a>
   </div>
 </header>
+<div class="lang-suggest" id="langSuggest" hidden><span></span> <button type="button" aria-label="Close">×</button></div>
 
 <main id="top">
   <section class="hero">
@@ -532,10 +570,35 @@ test(<span class="s">'checkout has no errors'</span>, <span class="k">async</spa
   document.getElementById('bookmarklet').addEventListener('click', function (e) { e.preventDefault(); say('Drag this to your bookmarks bar'); });
   document.getElementById('bmCode').textContent = bm;
 
+  /* ---- language menu ---- */
+  var langBox = document.getElementById('lang'), langBtn = langBox.querySelector('.lang-btn'), langMenu = langBox.querySelector('.lang-menu');
+  function menu(open) { langMenu.hidden = !open; langBtn.setAttribute('aria-expanded', String(open)); }
+  langBtn.addEventListener('click', function (e) { e.stopPropagation(); menu(langMenu.hidden); });
+  document.addEventListener('click', function (e) { if (!langBox.contains(e.target)) menu(false); });
+  langBox.addEventListener('keydown', function (e) { if (e.key === 'Escape') { menu(false); langBtn.focus(); } });
+  langMenu.querySelectorAll('a').forEach(function (a) { a.addEventListener('click', function () { try { localStorage.setItem('sdtLang', a.dataset.lang); } catch (err) {} }); });
+  // On the English page, offer Chinese or Japanese once if the browser prefers it (no automatic redirect).
+  (function () {
+    if (document.documentElement.lang !== 'en') return;
+    var chosen = null; try { chosen = localStorage.getItem('sdtLang'); } catch (err) {}
+    if (chosen) return;
+    var pref = (navigator.languages || [navigator.language || '']).join(',').toLowerCase();
+    var offer = /(^|,)zh/.test(pref) ? ['/zh/', '此页面有简体中文版本。', '查看中文版', 'zh'] : /(^|,)ja/.test(pref) ? ['/ja/', 'このページには日本語版があります。', '日本語で見る', 'ja'] : null;
+    if (!offer) return;
+    var bar = document.getElementById('langSuggest');
+    bar.querySelector('span').innerHTML = '';
+    var t = document.createElement('span'); t.textContent = offer[1] + ' ';
+    var a = document.createElement('a'); a.href = offer[0]; a.textContent = offer[2] + ' →'; a.lang = offer[3];
+    a.addEventListener('click', function () { try { localStorage.setItem('sdtLang', offer[3]); } catch (err) {} });
+    bar.querySelector('span').append(t, a);
+    bar.hidden = false;
+    bar.querySelector('button').addEventListener('click', function () { bar.hidden = true; try { localStorage.setItem('sdtLang', 'en'); } catch (err) {} });
+  })();
+
   /* ---- copy buttons ---- */
   document.querySelectorAll('.copy').forEach(function (b) {
     b.addEventListener('click', function () {
-      var text = b.parentElement.textContent.replace(/^Copy/, '').trim();
+      var text = b.parentElement.textContent.slice(b.textContent.length).trim();
       (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(function () { say('Copied'); }, function () {
         var r = document.createRange(); r.selectNodeContents(b.parentElement); var sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); say('Press ⌘C to copy');
       });

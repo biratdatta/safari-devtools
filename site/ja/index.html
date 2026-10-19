@@ -1,0 +1,610 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Safari DevTools · どんなページでも動く Chrome 風 DevTools</title>
+<meta name="description" content="無料・オープンソースの Chrome 風 DevTools パネル。ページの中で動き、Safari、Chrome、iPhone に対応。Claude でエラーを解説、Jira へのバグ登録はワンクリック、アクセシビリティのチェックや API のモックも。">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="alternate" hreflang="en" href="/">
+<link rel="alternate" hreflang="zh-Hans" href="/zh/">
+<link rel="alternate" hreflang="ja" href="/ja/">
+<link rel="alternate" hreflang="x-default" href="/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Safari DevTools：ページの中に DevTools を">
+<meta property="og:description" content="Safari、Chrome、iPhone で使える Chrome 風 DevTools。無料のオープンソース。">
+<meta property="og:image" content="/og.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Safari DevTools：ページの中に DevTools を">
+<meta name="twitter:description" content="Safari、Chrome、iPhone で使える Chrome 風 DevTools。無料のオープンソース。">
+<meta name="twitter:image" content="/og.jpg">
+<style>
+/* Layout: one centred column (max 1080px) of alternating white / soft-grey bands, product first. */
+:root{
+  --bg:#ffffff; --bg2:#f5f5f7; --card:#ffffff; --ink:#1d1d1f; --ink2:#6e6e73; --ink3:#86868b; --line:#d2d2d7; --hair:#e8e8ed;
+  --accent:#0071e3; --accent-ink:#ffffff; --accent-soft:#e8f1fc; --good:#1f8a3b; --bad:#d70015;
+  --code-bg:#f5f5f7; --shadow:0 30px 80px rgba(0,0,0,.10),0 8px 24px rgba(0,0,0,.06);
+  --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Helvetica Neue",Helvetica,Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Monaco,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#000000; --bg2:#101012; --card:#1c1c1e; --ink:#f5f5f7; --ink2:#a1a1a6; --ink3:#86868b; --line:#3a3a3c; --hair:#2c2c2e;
+  --accent:#2997ff; --accent-ink:#000000; --accent-soft:#0a2a4a; --good:#32d74b; --bad:#ff453a; --code-bg:#1c1c1e;
+  --shadow:0 30px 80px rgba(0,0,0,.6),0 8px 24px rgba(0,0,0,.4); color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#000000; --bg2:#101012; --card:#1c1c1e; --ink:#f5f5f7; --ink2:#a1a1a6; --ink3:#86868b; --line:#3a3a3c; --hair:#2c2c2e;
+  --accent:#2997ff; --accent-ink:#000000; --accent-soft:#0a2a4a; --good:#32d74b; --bad:#ff453a; --code-bg:#1c1c1e;
+  --shadow:0 30px 80px rgba(0,0,0,.6),0 8px 24px rgba(0,0,0,.4); color-scheme:dark}
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:64px}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{animation:none!important;transition:none!important}}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.47 var(--font);-webkit-font-smoothing:antialiased;letter-spacing:-.01em}
+a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+img,video{max-width:100%;display:block}
+:focus-visible{outline:3px solid var(--accent);outline-offset:3px;border-radius:6px}
+.wrap{max-width:1080px;margin:0 auto;padding-inline:22px}
+section{padding-block:96px}
+.band{background:var(--bg2)}
+h1,h2,h3{text-wrap:balance;margin:0;letter-spacing:-.025em}
+h1{font-size:clamp(44px,8vw,84px);line-height:1.04;font-weight:700}
+h2{font-size:clamp(32px,5vw,52px);line-height:1.08;font-weight:700}
+h3{font-size:21px;line-height:1.25;font-weight:600}
+.lead{font-size:clamp(19px,2.4vw,24px);line-height:1.38;color:var(--ink2);max-width:42ch}
+.eyebrow{font-size:14px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+.center{text-align:center}.center .lead{margin-inline:auto}
+.muted{color:var(--ink2)}
+.small{font-size:14px}
+
+/* nav */
+.nav{position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--bg) 78%,transparent);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border-bottom:1px solid var(--hair)}
+.nav .wrap{display:flex;align-items:center;gap:22px;height:52px}
+.brand{display:flex;align-items:center;gap:9px;color:var(--ink);font-weight:600;font-size:17px}
+.brand:hover{text-decoration:none}
+.brand img{width:26px;height:26px;border-radius:7px}
+.nav nav{display:flex;gap:22px;margin-left:auto;font-size:14px}
+.nav nav a{color:var(--ink2);white-space:nowrap}.nav nav a:hover{color:var(--ink);text-decoration:none}
+.brand,.lang-btn{white-space:nowrap}
+.btn{display:inline-flex;align-items:center;gap:8px;border-radius:980px;padding:11px 22px;font:600 16px/1 var(--font);border:1px solid transparent;cursor:pointer;white-space:nowrap}
+.btn:hover{text-decoration:none}
+.btn.primary{background:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.ghost{background:transparent;color:var(--accent);border-color:var(--accent)}
+.btn.ghost:hover{background:var(--accent-soft)}
+.btn.small{padding:7px 14px;font-size:14px}
+.btn svg{width:18px;height:18px}
+@media (max-width:960px){.nav nav{display:none}.nav .lang{margin-left:auto}}
+@media (max-width:420px){.lang-cur{display:none}}
+
+/* hero */
+.hero{padding-block:88px 40px;text-align:center}
+.hero h1{margin-top:14px}
+.hero .lead{margin:22px auto 0}
+.ctas{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:34px}
+.works{margin-top:22px;font-size:14px;color:var(--ink3)}
+
+/* live showcase */
+.show{padding-block:24px 96px}
+.chips{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:22px}
+.chip{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:980px;padding:8px 16px;font:500 14px/1 var(--font);cursor:pointer}
+.chip:hover{border-color:var(--ink3)}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.window{border-radius:14px;overflow:hidden;background:var(--card);box-shadow:var(--shadow);border:1px solid var(--hair)}
+.wbar{height:40px;display:flex;align-items:center;gap:14px;padding:0 14px;background:var(--bg2);border-bottom:1px solid var(--hair)}
+.dots{display:flex;gap:7px}.dots i{width:12px;height:12px;border-radius:6px;display:block}
+.dots i:nth-child(1){background:#ff5f57}.dots i:nth-child(2){background:#febc2e}.dots i:nth-child(3){background:#28c840}
+.url{flex:1;display:flex;justify-content:center}
+.url span{max-width:420px;width:100%;text-align:center;font:500 13px/26px var(--font);color:var(--ink2);background:var(--bg);border:1px solid var(--hair);border-radius:7px}
+.stage{position:relative;width:100%;aspect-ratio:16/9;overflow:hidden;background:#fff}
+.stage iframe{position:absolute;left:0;top:0;width:1280px;height:720px;border:0;transform-origin:0 0}
+.stage .loading{position:absolute;inset:0;display:grid;place-items:center;color:#6e6e73;font-size:15px}
+.show-note{margin-top:16px;text-align:center;font-size:14px;color:var(--ink3)}
+.mobile-demo{display:none;text-align:center;margin-top:18px}
+@media (max-width:640px){.stage{display:none}.mobile-demo{display:block}.wbar .url span{font-size:12px}}
+.mobile-poster{aspect-ratio:16/9;display:grid;place-items:center;background:var(--bg2);padding:24px;text-align:center;color:var(--ink2);font-size:15px}
+
+/* features */
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-top:52px}
+@media (max-width:900px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:600px){.grid{grid-template-columns:1fr}}
+.card{background:var(--card);border-radius:20px;padding:28px 26px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.band .card{box-shadow:0 1px 0 var(--hair)}
+.ico{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent);margin-bottom:6px}
+.ico svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.card p{margin:0;color:var(--ink2);font-size:16px}
+.tag{align-self:flex-start;font:600 12px/1 var(--font);color:var(--accent);background:var(--accent-soft);padding:5px 9px;border-radius:980px;letter-spacing:.02em}
+
+/* split rows */
+.split{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center}
+@media (max-width:860px){.split{grid-template-columns:1fr;gap:28px}}
+.split p{color:var(--ink2);margin:16px 0 0}
+.split ul{margin:20px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:12px}
+.split li{display:flex;gap:10px;color:var(--ink2)}
+.split li::before{content:"";flex:none;width:18px;height:18px;margin-top:3px;border-radius:9px;background:var(--accent-soft) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 8.5l2.5 2.5L12 5.5' fill='none' stroke='%230071e3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/12px no-repeat}
+
+/* code */
+pre,code{font-family:var(--mono)}
+.code{position:relative;background:var(--code-bg);border:1px solid var(--hair);border-radius:14px;padding:18px 20px;font-size:13.5px;line-height:1.6;overflow-x:auto;min-width:0;margin:0}
+.code .c{color:var(--ink3)}.code .k{color:#af52de}.code .s{color:#c41a16}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .code .s{color:#ff9f8a}}
+.copy{position:absolute;top:10px;right:10px;font:600 12px/1 var(--font);padding:6px 10px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink2);cursor:pointer}
+.copy:hover{color:var(--ink)}
+
+/* comparison */
+.table-wrap{overflow-x:auto;margin-top:44px;border-radius:18px;border:1px solid var(--hair);background:var(--card)}
+table{border-collapse:collapse;width:100%;min-width:640px;font-size:15px}
+th,td{padding:13px 18px;text-align:left;border-bottom:1px solid var(--hair)}
+th{font-weight:600;font-size:14px;color:var(--ink2)}
+th:nth-child(2){color:var(--accent)}
+td:not(:first-child),th:not(:first-child){text-align:center;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+.y{color:var(--good);font-weight:700}.n{color:var(--ink3)}.p{color:var(--ink2)}
+
+/* install */
+.tabs{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:40px}
+.tabs button{border:0;background:transparent;color:var(--ink2);font:600 15px/1 var(--font);padding:11px 18px;border-radius:980px;cursor:pointer}
+.tabs button[aria-selected="true"]{background:var(--card);color:var(--ink);box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.panel{max-width:760px;margin:26px auto 0;background:var(--card);border-radius:22px;padding:30px 32px}
+.panel[hidden]{display:none}
+.panel ol{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:12px;color:var(--ink2)}
+.panel ol b{color:var(--ink)}
+.panel .row{display:flex;gap:12px;flex-wrap:wrap;margin-top:22px}
+.kbd{font:600 13px var(--mono);border:1px solid var(--line);border-bottom-width:2px;border-radius:6px;padding:1px 6px;color:var(--ink);background:var(--bg)}
+.bm{display:inline-flex;align-items:center;gap:8px;border:2px dashed var(--accent);border-radius:12px;padding:12px 18px;font-weight:600;color:var(--accent);cursor:grab;background:var(--accent-soft)}
+
+/* video */
+.video{border-radius:18px;overflow:hidden;box-shadow:var(--shadow);margin-top:44px;background:#000}
+.video video{width:100%;aspect-ratio:16/9}
+
+/* use cases */
+.uses{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:44px}
+@media (max-width:860px){.uses{grid-template-columns:1fr 1fr}}
+@media (max-width:560px){.uses{grid-template-columns:1fr}}
+.use{border:1px solid var(--hair);border-radius:18px;padding:22px;background:var(--card)}
+.use b{display:block;font-size:17px;margin-bottom:4px}
+.use span{color:var(--ink2);font-size:15px}
+
+/* faq */
+.faq{max-width:760px;margin:40px auto 0}
+details{border-bottom:1px solid var(--hair);padding:18px 4px}
+summary{cursor:pointer;font-weight:600;font-size:18px;list-style:none;display:flex;justify-content:space-between;gap:16px}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";font-weight:400;color:var(--ink3);font-size:22px;line-height:1}
+details[open] summary::after{content:"−"}
+details p{color:var(--ink2);margin:12px 0 0}
+
+/* footer */
+footer{padding-block:40px 60px;border-top:1px solid var(--hair);font-size:13px;color:var(--ink3)}
+footer .wrap{display:flex;gap:18px;flex-wrap:wrap;justify-content:space-between;align-items:center}
+footer a{color:var(--ink2)}
+
+/* Chinese and Japanese: native fonts, no negative tracking, roomier line height, phrase-aware line breaks */
+:lang(zh) body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans CJK SC","Noto Sans SC",sans-serif;letter-spacing:0}
+:lang(ja) body{font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans CJK JP","Noto Sans JP",Meiryo,sans-serif;letter-spacing:0}
+:lang(zh) h1,:lang(zh) h2,:lang(zh) h3,:lang(ja) h1,:lang(ja) h2,:lang(ja) h3{letter-spacing:0;line-height:1.2}
+:lang(zh) .lead,:lang(ja) .lead{line-height:1.6}
+:lang(ja) h1,:lang(ja) h2,:lang(ja) .lead{word-break:auto-phrase}
+:lang(zh) .eyebrow,:lang(ja) .eyebrow{letter-spacing:.02em}
+
+/* language menu */
+.lang{position:relative}
+.lang-btn{display:inline-flex;align-items:center;gap:6px;border:0;background:transparent;color:var(--ink2);font:500 14px/1 var(--font);padding:7px 8px;border-radius:8px;cursor:pointer}
+.lang-btn:hover{color:var(--ink);background:var(--bg2)}
+.lang-btn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.5}
+.lang-menu{position:absolute;right:0;top:calc(100% + 6px);min-width:150px;background:var(--card);border:1px solid var(--hair);border-radius:12px;box-shadow:var(--shadow);padding:6px;display:flex;flex-direction:column}
+.lang-menu[hidden]{display:none}
+.lang-menu a{color:var(--ink);padding:9px 12px;border-radius:8px;font-size:15px}
+.lang-menu a:hover{background:var(--bg2);text-decoration:none}
+.lang-menu a[aria-current="page"]{color:var(--accent);font-weight:600}
+.lang-suggest{background:var(--accent-soft);color:var(--ink);font-size:14px;text-align:center;padding:9px 44px;position:relative}
+.lang-suggest[hidden]{display:none}
+.lang-suggest a{font-weight:600}
+.lang-suggest button{position:absolute;right:10px;top:50%;transform:translateY(-50%);border:0;background:transparent;color:var(--ink2);font-size:18px;cursor:pointer;padding:4px 8px}
+
+/* toast */
+.toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);opacity:0;background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:980px;font-size:14px;transition:.2s;z-index:60;pointer-events:none}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="#top"><img src="/logo.png" alt="" width="26" height="26">Safari DevTools</a>
+    <nav aria-label="セクション">
+      <a href="#features">機能</a>
+      <a href="#iphone">iPhone</a>
+      <a href="#agents">テストと AI</a>
+      <a href="#compare">比較</a>
+      <a href="#install">インストール</a>
+      <a href="https://github.com/biratdatta/safari-devtools">GitHub</a>
+    </nav>
+    <div class="lang" id="lang">
+      <button class="lang-btn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="言語"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M1.5 8h13M8 1.5c1.8 1.8 2.6 4 2.6 6.5S9.8 12.7 8 14.5M8 1.5C6.2 3.3 5.4 5.5 5.4 8s.8 4.7 2.6 6.5"/></svg><span class="lang-cur">日本語</span></button>
+      <div class="lang-menu" hidden>
+        <a href="/" hreflang="en" lang="en" data-lang="en">English</a>
+        <a href="/zh/" hreflang="zh-Hans" lang="zh-Hans" data-lang="zh">简体中文</a>
+        <a href="/ja/" hreflang="ja" lang="ja" data-lang="ja" aria-current="page">日本語</a>
+      </div>
+    </div>
+    <a class="btn primary small" href="#install">無料で入手</a>
+  </div>
+</header>
+<div class="lang-suggest" id="langSuggest" hidden><span></span> <button type="button" aria-label="閉じる">×</button></div>
+
+<main id="top">
+  <section class="hero">
+    <div class="wrap">
+      <div class="eyebrow">無料 · オープンソース · バージョン 1.5</div>
+      <h1>DevTools を、ページの中に。</h1>
+      <p class="lead">Chrome 風の DevTools パネルが、どんな Web ページの中でもそのまま動きます。Safari でも Chrome でも、iPhone でも。ケーブルも Xcode も設定も不要です。</p>
+      <div class="ctas">
+        <a class="btn primary" href="#install" data-tab="chrome">Chrome に追加</a>
+        <a class="btn primary" href="#install" data-tab="safari">Safari に追加</a>
+        <button class="btn ghost" type="button" id="tryIt">このページで試す</button>
+      </div>
+      <p class="works">Safari、Chrome、Edge に対応 · Mac、iPhone、iPad、アプリ内 WebView · 1 ファイル、依存なし</p>
+    </div>
+  </section>
+
+  <section class="show" aria-labelledby="show-title">
+    <div class="wrap">
+      <h2 id="show-title" class="center" style="font-size:clamp(22px,3vw,28px);font-weight:600;margin-bottom:22px">本物のパネルです。自由に触ってみてください。</h2>
+      <div class="chips" role="group" aria-label="機能を表示">
+        <button class="chip" data-state="console" data-play="0" aria-pressed="true">コンソール</button>
+        <button class="chip" data-state="explain" data-play="1" aria-pressed="false">Claude で解説</button>
+        <button class="chip" data-state="elements" data-play="1" aria-pressed="false">要素</button>
+        <button class="chip" data-state="network" data-play="1" aria-pressed="false">ネットワーク</button>
+        <button class="chip" data-state="accessibility" data-play="1" aria-pressed="false">アクセシビリティ</button>
+        <button class="chip" data-state="contrast" data-play="0" aria-pressed="false">コントラスト</button>
+        <button class="chip" data-state="bug" data-play="1" aria-pressed="false">Jira バグ報告</button>
+        <button class="chip" data-state="responsive" data-play="0" aria-pressed="false">レスポンシブ</button>
+      </div>
+      <div class="window">
+        <div class="wbar"><div class="dots" aria-hidden="true"><i></i><i></i><i></i></div><div class="url"><span>acme.shop/checkout · デモ</span></div></div>
+        <div class="stage" id="stage">
+          <div class="loading">ライブデモを読み込み中…</div>
+          <iframe id="demo" title="サンプルショップで動く Safari DevTools のライブデモ" loading="lazy"></iframe>
+        </div>
+        <div class="mobile-demo"><div class="mobile-poster">ライブデモは広い画面向けです。<br><a class="btn primary small" style="margin-top:14px" id="openDemo" href="/demo/app.html?state=console&amp;play=0">全画面で開く</a></div></div>
+      </div>
+      <p class="show-note">わざとバグを入れたサンプルショップです。Claude の回答と Jira チケットはここではシミュレーションで、それ以外はすべて本物のツールです。パネルの表示は英語です。</p>
+    </div>
+  </section>
+
+  <section class="band" id="features" aria-labelledby="features-title">
+    <div class="wrap">
+      <div class="center">
+        <div class="eyebrow">機能</div>
+        <h2 id="features-title" style="margin-top:10px">Chrome でいつも使う機能を、すべて。さらにその先も。</h2>
+        <p class="lead" style="margin-top:16px">1 つのファイルに 16 のパネル。見た目も操作も Chrome DevTools と同じなので、新しく覚えることはありません。</p>
+      </div>
+      <div class="grid">
+        <article class="card">
+          <div class="ico"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M7 9l3 3-3 3M12.5 15H17"/></svg></div>
+          <h3>コンソール</h3>
+          <p>ログ、エラー、未処理の reject を表示。ソースマップでスタックトレースを TypeScript の元コードに対応付けます。補完、<code>$0</code>、<code>copy()</code>、ライブ式、本物の <code>console.table</code> にも対応。</p>
+        </article>
+        <article class="card">
+          <div class="ico"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.6L18.5 9l-4.7 1.6L12 15l-1.8-4.4L5.5 9l4.7-1.4z"/><path d="M18 15l.8 2 2.2.8-2.2.8L18 21l-.8-2.4-2.2-.8 2.2-.8z"/></svg></div>
+          <span class="tag">1.4 の新機能</span>
+          <h3>Claude でエラーを解説</h3>
+          <p>ワンクリックで、エラーと元のソースコード、直近のリクエストを Claude に送り、原因と修正方法を受け取れます。送信前にプロンプトを確認できます。</p>
+        </article>
+        <article class="card">
+          <div class="ico"><svg viewBox="0 0 24 24"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5"/></svg></div>
+          <h3>要素と CSS</h3>
+          <p>Shadow DOM の中まで見える DOM ツリー、<code>var(--tokens)</code> を補完するライブ CSS 編集、Grid / Flex オーバーレイ、計測ツール、編集内容を CSS としてコピーできる Changes タブ。</p>
+        </article>
+        <article class="card">
+          <div class="ico"><svg viewBox="0 0 24 24"><path d="M3 12h4l2-6 4 12 2-6h6"/></svg></div>
+          <h3>ネットワーク</h3>
+          <p>fetch、XHR、WebSocket、SSE をウォーターフォールで表示。任意のリクエストをモック・ブロック・遅延でき、3G やオフラインへのスロットリング、HAR の書き出しも可能。</p>
+        </article>
+        <article class="card">
+          <div class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="4.5" r="1.8"/><path d="M5 8l7 1.5L19 8M12 9.5V14l-3 6M12 14l3 6"/></svg></div>
+          <span class="tag">1.4 の新機能</span>
+          <h3>アクセシビリティ</h3>
+          <p>スクリーンリーダーが受け取るアクセシビリティツリー、ページ上に番号で示すタブ順、フォーカストラッカー、そしてデザイントークンから基準を満たす最も近い色を提案するコントラスト修正。</p>
+        </article>
+        <article class="card">
+          <div class="ico"><svg viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="13" rx="5"/><path d="M9 7a3 3 0 016 0M12 11v9M3 12h4M17 12h4M4 7l3 2M20 7l-3 2M4 19l3-2M20 19l-3-2"/></svg></div>
+          <span class="tag">1.4 の新機能</span>
+          <h3>ワンクリックで Jira にバグ登録</h3>
+          <p>再現手順を自動で記録し、コンソールエラー、HAR ファイル、デバイス情報、スクリーンショットを添付。ログイン用のコードやトークンは自動で伏せられます。</p>
+        </article>
+        <article class="card">
+          <div class="ico"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="12" height="10" rx="1.5"/><rect x="16" y="8" width="5" height="11" rx="1.2"/><path d="M6 19h6"/></svg></div>
+          <h3>レスポンシブとエミュレーション</h3>
+          <p>iPhone と iPad のサイズを並べて表示し、スクロールも同期。ダークモード、視差効果を減らす、RTL、大きな文字、疑似ローカライズをエミュレート。</p>
+        </article>
+        <article class="card">
+          <div class="ico"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/><path d="M15 3h6v6M3 15v6h6"/></svg></div>
+          <h3>スナップショットとカバレッジ</h3>
+          <p>コンポーネントを基準として保存し、編集後のスタイル・サイズ・テキストの変化をすべて確認。どこからも使われていない CSS ルールやデザイントークンも見つけます。</p>
+        </article>
+        <article class="card">
+          <div class="ico"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h7"/><circle cx="18" cy="16" r="3"/></svg></div>
+          <h3>コンポーネントと状態</h3>
+          <p>Angular の Signals、Lit、React のツリーと編集可能な状態。さらに、Safari にはなかったタイムトラベル付きの Redux / NgRx / Zustand アクションログも。</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section id="iphone" aria-labelledby="iphone-title">
+    <div class="wrap split">
+      <div>
+        <div class="eyebrow">iPhone</div>
+        <h2 id="iphone-title" style="margin-top:10px">Wi-Fi 経由で、Mac から iPhone をデバッグ。</h2>
+        <p>Mac で小さなリレーを動かすだけで、iPhone のコンソールとネットワークがデスクトップのブラウザに流れてきます。Mac で入力した JavaScript は iPhone 上で実行されます。</p>
+        <ul>
+          <li>ケーブルも Xcode もペアリングも不要</li>
+          <li>Web インスペクタで開けないアプリ内 WebView でも動作</li>
+          <li>iPhone 上でもワンタップでパネルを開けます</li>
+        </ul>
+      </div>
+      <pre class="code"><button class="copy" type="button">コピー</button><span class="c"># Mac 上のクローンしたリポジトリで（Node 18 以上、インストール不要）</span>
+node standalone/remote/relay.js
+
+<span class="c"># 次に iPhone で開く</span>
+http://&lt;Mac の IP&gt;:9230/demo
+
+<span class="c"># Mac で確認</span>
+http://localhost:9230</pre>
+    </div>
+  </section>
+
+  <section class="band" id="agents" aria-labelledby="agents-title">
+    <div class="wrap split">
+      <pre class="code"><button class="copy" type="button">コピー</button><span class="k">import</span> { test, expect } <span class="k">from</span> <span class="s">'./safari-devtools.fixture'</span>;
+
+test(<span class="s">'checkout has no errors'</span>, <span class="k">async</span> ({ page, devtools }) =&gt; {
+  <span class="k">await</span> devtools.mockBeforeLoad(<span class="s">'/api/coupon'</span>, { status: 410 });
+  <span class="k">await</span> page.goto(<span class="s">'/checkout'</span>);
+  expect(<span class="k">await</span> devtools.errors()).toEqual([]);
+  expect(<span class="k">await</span> devtools.tabOrder()).not.toHaveLength(0);
+});</pre>
+      <div>
+        <div class="eyebrow">テストと AI エージェント</div>
+        <h2 id="agents-title" style="margin-top:10px">Playwright や AI エージェントにも。</h2>
+        <p>パネルのすべての機能は JSON API としても使えます。WebKit 上の Playwright、本物の Safari を動かす WebDriver、小さな HTTP API、そして MCP サーバー経由で、Claude や Cursor などのエージェントがページを読み取り、操作できます。</p>
+        <ul>
+          <li>失敗時に HAR とデバッグレポートを添付する Playwright フィクスチャ</li>
+          <li>MCP ツール：コンソール、ネットワーク、監査、アクセシビリティツリー、スナップショット、バグ報告</li>
+          <li>テストからモック・ブロック・スロットリング</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="compare" aria-labelledby="compare-title">
+    <div class="wrap">
+      <div class="center">
+        <div class="eyebrow">比較</div>
+        <h2 id="compare-title" style="margin-top:10px">これまでになかったもの。</h2>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col"></th><th scope="col">Safari DevTools</th><th scope="col">Safari Web インスペクタ</th><th scope="col">Eruda / vConsole</th></tr></thead>
+          <tbody>
+            <tr><td>Mac もケーブルもなしで iPhone で動く</td><td class="y">✓</td><td class="n">✕</td><td class="y">✓</td></tr>
+            <tr><td>Safari と Chrome で同じパネル</td><td class="y">✓</td><td class="p">Safari のみ</td><td class="y">✓</td></tr>
+            <tr><td>ソースマップ対応のスタックトレース</td><td class="y">✓</td><td class="y">✓</td><td class="n">✕</td></tr>
+            <tr><td>Claude でエラーを解説</td><td class="y">✓</td><td class="n">✕</td><td class="n">✕</td></tr>
+            <tr><td>ワンクリックで Jira バグ報告</td><td class="y">✓</td><td class="n">✕</td><td class="n">✕</td></tr>
+            <tr><td>アクセシビリティツリー、タブ順、コントラスト修正</td><td class="y">✓</td><td class="p">一部</td><td class="n">✕</td></tr>
+            <tr><td>リクエストのモック・ブロック・遅延</td><td class="y">✓</td><td class="y">✓</td><td class="n">✕</td></tr>
+            <tr><td>Redux / NgRx のタイムトラベル</td><td class="y">✓</td><td class="n">✕</td><td class="n">✕</td></tr>
+            <tr><td>デザイントークンの編集とカバレッジ</td><td class="y">✓</td><td class="n">✕</td><td class="n">✕</td></tr>
+            <tr><td>Playwright フィクスチャと MCP サーバー</td><td class="y">✓</td><td class="n">✕</td><td class="n">✕</td></tr>
+            <tr><td>JavaScript のステップ実行デバッガ</td><td class="n">✕</td><td class="y">✓</td><td class="n">✕</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="center small muted" style="margin-top:14px">ページの中で動くため、HttpOnly Cookie の参照や JavaScript の一時停止はできません。その場合はブラウザ標準のツールを使ってください。</p>
+    </div>
+  </section>
+
+  <section class="band" id="install" aria-labelledby="install-title">
+    <div class="wrap">
+      <div class="center">
+        <div class="eyebrow">インストール</div>
+        <h2 id="install-title" style="margin-top:10px">1 分で導入。</h2>
+      </div>
+      <div class="tabs" role="tablist" aria-label="インストール方法">
+        <button role="tab" id="t-chrome" aria-controls="p-chrome" aria-selected="true">Chrome &amp; Edge</button>
+        <button role="tab" id="t-safari" aria-controls="p-safari" aria-selected="false">Safari</button>
+        <button role="tab" id="t-bookmarklet" aria-controls="p-bookmarklet" aria-selected="false">ブックマークレット</button>
+        <button role="tab" id="t-script" aria-controls="p-script" aria-selected="false">自分のアプリ</button>
+      </div>
+      <div class="panel" role="tabpanel" id="p-chrome" aria-labelledby="t-chrome">
+        <ol>
+          <li>拡張機能をダウンロードして解凍します。</li>
+          <li><b>chrome://extensions</b>（または edge://extensions）を開き、<b>デベロッパー モード</b>をオンにします。</li>
+          <li><b>パッケージ化されていない拡張機能を読み込む</b>をクリックし、<b>safari-devtools-chrome</b> フォルダを選びます。</li>
+          <li>どのサイトでも <span class="kbd">⌥</span> <span class="kbd">⇧</span> <span class="kbd">D</span> を押すか、アイコンをクリックします。</li>
+        </ol>
+        <div class="row"><a class="btn primary" href="/downloads/safari-devtools-chrome.zip" download>Chrome 版をダウンロード</a><a class="btn ghost" href="https://github.com/biratdatta/safari-devtools/tree/main/chrome-extension">ソースを見る</a></div>
+      </div>
+      <div class="panel" role="tabpanel" id="p-safari" aria-labelledby="t-safari" hidden>
+        <ol>
+          <li>拡張機能をダウンロードして解凍します。</li>
+          <li>Safari で<b>設定 → 詳細</b>を開き、<b>Web デベロッパ用の機能を表示</b>をオンにします。</li>
+          <li><b>設定 → デベロッパ</b>を開き、<b>一時的な拡張機能を追加…</b>をクリックして <b>safari-devtools-extension</b> フォルダを選びます。</li>
+          <li>Web サイトでの実行を許可し、どのページでも <span class="kbd">Ctrl</span> <span class="kbd">⇧</span> <span class="kbd">D</span> を押します。</li>
+        </ol>
+        <p class="small muted" style="margin:18px 0 0">一時的な拡張機能は Safari を終了すると削除されます。インストールしたままにするには、フォルダ内のスクリプトで一度 Xcode でビルドしてください。</p>
+        <div class="row"><a class="btn primary" href="/downloads/safari-devtools-safari.zip" download>Safari 版をダウンロード</a><a class="btn ghost" href="https://github.com/biratdatta/safari-devtools/tree/main/extension">ソースを見る</a></div>
+      </div>
+      <div class="panel" role="tabpanel" id="p-bookmarklet" aria-labelledby="t-bookmarklet" hidden>
+        <p class="muted" style="margin:0 0 18px">インストール不要で、拡張機能が使えない環境でも動きます。ブックマークバーにドラッグして、どのページでもクリックするだけ。</p>
+        <a class="bm" id="bookmarklet" href="#install" title="ブックマークバーにドラッグ">⇱ Safari DevTools</a>
+        <p class="small muted" style="margin:18px 0 0">iPhone の場合：任意のページをブックマークし、そのブックマークを編集してアドレスに下のコードを貼り付けます。</p>
+        <pre class="code" style="margin-top:12px"><button class="copy" type="button">コピー</button><span id="bmCode"></span></pre>
+      </div>
+      <div class="panel" role="tabpanel" id="p-script" aria-labelledby="t-script" hidden>
+        <p class="muted" style="margin:0 0 16px">開発ビルドの <code>&lt;head&gt;</code> の先頭に 1 行追加するだけ。最初の 1 行目からすべてのログとリクエストを記録します。</p>
+        <pre class="code"><button class="copy" type="button">コピー</button>&lt;script src=<span class="s">"https://cdn.jsdelivr.net/gh/biratdatta/safari-devtools@v1.5.2/standalone/safari-devtools.js"</span>&gt;&lt;/script&gt;</pre>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="video-title">
+    <div class="wrap">
+      <div class="center">
+        <div class="eyebrow">デモ</div>
+        <h2 id="video-title" style="margin-top:10px">1 分でわかる。</h2>
+      </div>
+      <div class="video"><video controls preload="none" playsinline poster="/media/poster.jpg"><source src="/media/demo.mp4" type="video/mp4">お使いのブラウザではこの動画を再生できません。 <a href="/media/demo.mp4">ダウンロード</a>.</video></div>
+    </div>
+  </section>
+
+  <section class="band" aria-labelledby="uses-title">
+    <div class="wrap">
+      <div class="center">
+        <div class="eyebrow">こんな人に</div>
+        <h2 id="uses-title" style="margin-top:10px">ひとつのツールで、いろいろな仕事を。</h2>
+      </div>
+      <div class="uses">
+        <div class="use"><b>フロントエンド開発者</b><span>Safari だけのバグ、iPhone のレイアウト、Web Components と Shadow DOM。</span></div>
+        <div class="use"><b>QA</b><span>手順・エラー・HAR・デバイス情報付きのバグ報告を Jira に登録。</span></div>
+        <div class="use"><b>デザイナー</b><span>トークンのライブ編集、グリッドのオーバーレイ、計測ツール、デザインの重ね合わせ。</span></div>
+        <div class="use"><b>アクセシビリティ</b><span>スクリーンリーダー用ツリー、タブ順、フォーカストラップ、コントラスト修正。</span></div>
+        <div class="use"><b>テスト自動化</b><span>WebKit での Playwright、本物の Safari を動かす WebDriver、ネットワークのモック。</span></div>
+        <div class="use"><b>AI エージェント</b><span>MCP サーバーで、Claude や Cursor などが実際のページを調べられます。</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="faq-title">
+    <div class="wrap">
+      <h2 id="faq-title" class="center">よくある質問</h2>
+      <div class="faq">
+        <details><summary>本当に無料ですか？</summary><p>はい。MIT ライセンスのオープンソースです。仕事で使うのも、改変して配布するのも自由です。</p></details>
+        <details><summary>データはどこかに送信されますか？</summary><p>いいえ。すべてページ内にとどまります。「Claude で解説」と Jira 報告は、あなたが自分のマシンで起動したリレーと自分のキーを通してのみ動作し、送信前にプロンプトを確認できます。ログイン用コードやトークンは事前に伏せられます。</p></details>
+        <details><summary>iPhone や iPad でも使えますか？</summary><p>はい。Safari でもアプリ内 WebView でも使えます。script タグかブックマークレットで読み込むか、リモートモードで Mac に表示できます。</p></details>
+        <details><summary>Safari の Web インスペクタではだめなのですか？</summary><p>Web インスペクタには Mac とケーブルまたはペアリングが必要で、多くのアプリ内 WebView は開けません。Safari DevTools はページの中で動き、見た目は Chrome DevTools と同じ。さらに Redux のタイムトラベル、アクセシビリティツール、AI による解説など、Safari にない機能があります。</p></details>
+        <details><summary>できないことは？</summary><p>ページの中で動くため、ブレークポイントでの JavaScript の一時停止、HttpOnly Cookie やブラウザが付けるヘッダーの参照、クロスオリジンのスタイルシートの読み取りはできません。これらはブラウザ標準のツールを使ってください。</p></details>
+        <details><summary>会社で拡張機能が禁止されています。それでも使えますか？</summary><p>たいていは使えます。ブックマークレットと script タグは拡張機能ではないため、拡張機能のポリシーは適用されません。</p></details>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>Safari DevTools · MIT ライセンス · 制作：Birat Datta</span>
+    <span><a href="https://github.com/biratdatta/safari-devtools">GitHub</a> · <a href="https://github.com/biratdatta/safari-devtools/issues">問題を報告</a></span>
+  </div>
+</footer>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  var toast = document.getElementById('toast'), tt;
+  function say(t) { toast.textContent = t; toast.classList.add('on'); clearTimeout(tt); tt = setTimeout(function () { toast.classList.remove('on'); }, 1800); }
+
+  /* ---- live showcase: the real tool running in a demo shop, scaled to fit ---- */
+  var stage = document.getElementById('stage'), frame = document.getElementById('demo');
+  function fit() { var w = stage.clientWidth; if (w) frame.style.transform = 'scale(' + (w / 1280) + ')'; }
+  function show(state, play) {
+    frame.src = '/demo/app.html?state=' + encodeURIComponent(state) + '&play=' + play;
+    document.getElementById('openDemo').href = frame.src;
+  }
+  frame.addEventListener('load', function () { var l = stage.querySelector('.loading'); if (l) l.remove(); });
+  document.querySelectorAll('.chip').forEach(function (c) {
+    c.addEventListener('click', function () {
+      document.querySelectorAll('.chip').forEach(function (o) { o.setAttribute('aria-pressed', String(o === c)); });
+      show(c.dataset.state, c.dataset.play);
+    });
+  });
+  addEventListener('resize', fit); fit();
+  // Load the demo when it scrolls near the screen (and only on screens wide enough to read it).
+  if (matchMedia('(min-width: 641px)').matches) {
+    if ('IntersectionObserver' in window) {
+      var io = new IntersectionObserver(function (es) { if (es.some(function (e) { return e.isIntersecting; })) { io.disconnect(); show('console', 0); } }, { rootMargin: '300px' });
+      io.observe(stage);
+    } else show('console', 0);
+  }
+
+  /* ---- "Try it on this page" ---- */
+  document.getElementById('tryIt').addEventListener('click', function () {
+    if (window.SafariDevTools) { window.SafariDevTools.toggle(); return; }
+    var s = document.createElement('script');
+    s.src = '/safari-devtools.js'; s.dataset.open = 'true';
+    s.onload = function () { console.log('こんにちは！このページで動いている Safari DevTools です。Elements タブを開くか、下に 1 + 1 と入力してみてください。'); say('ページの下部に開きました'); };
+    s.onerror = function () { say('ツールを読み込めませんでした'); };
+    document.head.appendChild(s);
+  });
+
+  /* ---- install tabs ---- */
+  var tabs = document.querySelectorAll('[role="tab"]');
+  function pick(id) {
+    tabs.forEach(function (t) {
+      var on = t.id === 't-' + id;
+      t.setAttribute('aria-selected', String(on));
+      document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
+    });
+  }
+  tabs.forEach(function (t, i) {
+    t.addEventListener('click', function () { pick(t.id.slice(2)); });
+    t.addEventListener('keydown', function (e) {
+      if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+      var n = tabs[(i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length]; n.focus(); n.click();
+    });
+  });
+  document.querySelectorAll('[data-tab]').forEach(function (a) { a.addEventListener('click', function () { pick(a.dataset.tab); }); });
+  // Suggest the right tab for this browser.
+  var ua = navigator.userAgent;
+  if (/Safari\//.test(ua) && !/Chrome\/|Chromium\/|Edg\//.test(ua)) pick('safari');
+
+  /* ---- bookmarklet, pointing at this site's copy of the tool ---- */
+  var src = location.origin + '/safari-devtools.js';
+  var bm = "javascript:(function(){if(window.SafariDevTools){SafariDevTools.toggle();return;}var s=document.createElement('script');s.src='" + src + "';s.dataset.open='true';s.onerror=function(){alert('このサイトは外部スクリプトをブロックしているため、Safari DevTools を読み込めませんでした。');};document.head.appendChild(s);})();";
+  document.getElementById('bookmarklet').href = bm;
+  document.getElementById('bookmarklet').addEventListener('click', function (e) { e.preventDefault(); say('ブックマークバーにドラッグしてください'); });
+  document.getElementById('bmCode').textContent = bm;
+
+  /* ---- language menu ---- */
+  var langBox = document.getElementById('lang'), langBtn = langBox.querySelector('.lang-btn'), langMenu = langBox.querySelector('.lang-menu');
+  function menu(open) { langMenu.hidden = !open; langBtn.setAttribute('aria-expanded', String(open)); }
+  langBtn.addEventListener('click', function (e) { e.stopPropagation(); menu(langMenu.hidden); });
+  document.addEventListener('click', function (e) { if (!langBox.contains(e.target)) menu(false); });
+  langBox.addEventListener('keydown', function (e) { if (e.key === 'Escape') { menu(false); langBtn.focus(); } });
+  langMenu.querySelectorAll('a').forEach(function (a) { a.addEventListener('click', function () { try { localStorage.setItem('sdtLang', a.dataset.lang); } catch (err) {} }); });
+  // On the English page, offer Chinese or Japanese once if the browser prefers it (no automatic redirect).
+  (function () {
+    if (document.documentElement.lang !== 'en') return;
+    var chosen = null; try { chosen = localStorage.getItem('sdtLang'); } catch (err) {}
+    if (chosen) return;
+    var pref = (navigator.languages || [navigator.language || '']).join(',').toLowerCase();
+    var offer = /(^|,)zh/.test(pref) ? ['/zh/', '此页面有简体中文版本。', '查看中文版', 'zh'] : /(^|,)ja/.test(pref) ? ['/ja/', 'このページには日本語版があります。', '日本語で見る', 'ja'] : null;
+    if (!offer) return;
+    var bar = document.getElementById('langSuggest');
+    bar.querySelector('span').innerHTML = '';
+    var t = document.createElement('span'); t.textContent = offer[1] + ' ';
+    var a = document.createElement('a'); a.href = offer[0]; a.textContent = offer[2] + ' →'; a.lang = offer[3];
+    a.addEventListener('click', function () { try { localStorage.setItem('sdtLang', offer[3]); } catch (err) {} });
+    bar.querySelector('span').append(t, a);
+    bar.hidden = false;
+    bar.querySelector('button').addEventListener('click', function () { bar.hidden = true; try { localStorage.setItem('sdtLang', 'en'); } catch (err) {} });
+  })();
+
+  /* ---- copy buttons ---- */
+  document.querySelectorAll('.copy').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var text = b.parentElement.textContent.slice(b.textContent.length).trim();
+      (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(function () { say('コピーしました'); }, function () {
+        var r = document.createRange(); r.selectNodeContents(b.parentElement); var sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); say('⌘C でコピー');
+      });
+    });
+  });
+})();
+</script>
+</body>
+</html>

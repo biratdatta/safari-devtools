@@ -20,4 +20,7 @@ mkdir -p site/downloads
 cp "$tmp/safari-devtools-safari.zip" "$tmp/safari-devtools-chrome.zip" site/downloads/
 rm -rf "$tmp"
 
+# Rebuild the Chinese and Japanese pages from site/index.html.
+if command -v python3 >/dev/null 2>&1; then python3 site/i18n/build.py; else echo "python3 not found: skipped site/zh and site/ja"; fi
+
 echo "Synced safari-devtools.js -> extension/, chrome-extension/, site/ and site/demo/; rebuilt site/downloads/*.zip"
