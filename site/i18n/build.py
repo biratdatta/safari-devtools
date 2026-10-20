@@ -21,6 +21,7 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SITE = os.path.dirname(HERE)
+sys.dont_write_bytecode = True  # no __pycache__ folders in the repo
 sys.path.insert(0, os.path.join(SITE, 'content'))
 import pages  # noqa: E402  articles, guides and the shared footer
 
@@ -42,9 +43,9 @@ STRINGS = [
     ('<meta property="og:locale" content="en_US">\n<meta property="og:locale:alternate" content="zh_CN">\n<meta property="og:locale:alternate" content="ja_JP">',
      '<meta property="og:locale" content="zh_CN">\n<meta property="og:locale:alternate" content="en_US">\n<meta property="og:locale:alternate" content="ja_JP">',
      '<meta property="og:locale" content="ja_JP">\n<meta property="og:locale:alternate" content="en_US">\n<meta property="og:locale:alternate" content="zh_CN">'),
-    ('content="Safari DevTools: Chrome-style DevTools inside any page"',
-     'content="Safari DevTools：在任意网页中运行的 Chrome 风格开发者工具"',
-     'content="Safari DevTools：どんなページでも動く Chrome 風 DevTools"'),
+    ('content="Safari DevTools: Chrome-style DevTools running inside a web page, showing the console with an error"',
+     'content="Safari DevTools：在网页中运行的 Chrome 风格开发者工具，控制台显示了一个错误"',
+     'content="Safari DevTools：Web ページの中で動く Chrome 風 DevTools。コンソールにエラーが表示されている"'),
     ('content="Safari DevTools: DevTools, inside the page"',
      'content="Safari DevTools：把开发者工具放进网页"',
      'content="Safari DevTools：ページの中に DevTools を"'),
@@ -313,7 +314,7 @@ STRINGS = [
     ('<p>Chrome-style DevTools inside any page, for Safari, Chrome and iPhone. Free and open source.</p>', '<p>在任意网页中运行的 Chrome 风格开发者工具，适用于 Safari、Chrome 和 iPhone。免费开源。</p>', '<p>Safari、Chrome、iPhone のどんなページでも動く Chrome 風 DevTools。無料のオープンソース。</p>'),
     ('</svg>Star on GitHub</a>', '</svg>在 GitHub 上加星</a>', '</svg>GitHub でスター</a>'),
     # ---- footer bottom line
-    ('Safari DevTools · MIT licence · Made by Birat Datta', 'Safari DevTools · MIT 许可证 · 由 Birat Datta 制作', 'Safari DevTools · MIT ライセンス · 制作：Birat Datta'),
+    ('Safari DevTools · MIT licence · Made by <a href="https://biratdatta.tech" rel="author">Birat Datta</a>', 'Safari DevTools · MIT 许可证 · 由 <a href="https://biratdatta.tech" rel="author">Birat Datta</a> 制作', 'Safari DevTools · MIT ライセンス · 制作：<a href="https://biratdatta.tech" rel="author">Birat Datta</a>'),
     ('>Report an issue</a>', '>反馈问题</a>', '>問題を報告</a>'),
 
     # ---- messages shown by the page's script
@@ -367,8 +368,8 @@ def structured_data(page, lang, base):
          'operatingSystem': 'macOS, iOS, iPadOS, Windows, Linux, Android', 'softwareVersion': VERSION,
          'isAccessibleForFree': True, 'license': REPO + '/blob/main/LICENSE',
          'offers': {'@type': 'Offer', 'price': '0', 'priceCurrency': 'USD'},
-         'downloadUrl': base + '/#install', 'image': base + '/og.jpg', 'screenshot': base + '/og.jpg',
-         'author': {'@type': 'Person', 'name': 'Birat Datta', 'url': 'https://github.com/biratdatta'},
+         'downloadUrl': base + '/#install', 'image': base + '/og-card.jpg', 'screenshot': base + '/og-card.jpg',
+         'author': {'@type': 'Person', 'name': 'Birat Datta', 'url': 'https://biratdatta.tech', 'sameAs': ['https://github.com/biratdatta']},
          'sameAs': [REPO], 'inLanguage': IN_LANGUAGE[lang]},
     ]
     if faq:

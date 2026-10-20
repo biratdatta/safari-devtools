@@ -584,7 +584,7 @@ FOOTER = '''<footer class="site-footer">
       </div>
 %(cols)s
     </div>
-    <div class="fbottom"><span>Safari DevTools · MIT licence · Made by Birat Datta</span><span><a href="/">English</a> · <a href="/zh/">简体中文</a> · <a href="/ja/">日本語</a></span></div>
+    <div class="fbottom"><span>Safari DevTools · MIT licence · Made by <a href="https://biratdatta.tech" rel="author">Birat Datta</a></span><span><a href="/">English</a> · <a href="/zh/">简体中文</a> · <a href="/ja/">日本語</a></span></div>
   </div>
 </footer>''' % {
     'repo': REPO,
@@ -610,13 +610,13 @@ def _head(base, url, title, description, ld):
 <meta property="og:title" content="%(title)s">
 <meta property="og:description" content="%(desc)s">
 <meta property="og:url" content="%(url)s">
-<meta property="og:image" content="%(base)s/og.jpg">
+<meta property="og:image" content="%(base)s/og-card.jpg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="%(title)s">
 <meta name="twitter:description" content="%(desc)s">
-<meta name="twitter:image" content="%(base)s/og.jpg">
+<meta name="twitter:image" content="%(base)s/og-card.jpg">
 <link rel="stylesheet" href="/assets/site.css">
 <link rel="stylesheet" href="/assets/footer.css">
 <script type="application/ld+json">
@@ -647,8 +647,8 @@ def render_page(base, p):
     trail = [('Home', '/')] + ([(sec['name'], '/%s/' % p['section'])] if sec else []) + [(p['nav'], '/%s/' % p['path'])]
     graph = [
         {'@type': 'TechArticle', 'headline': p['title'], 'description': p['description'], 'url': url,
-         'datePublished': UPDATED, 'dateModified': UPDATED, 'inLanguage': 'en', 'image': base + '/og.jpg',
-         'author': {'@type': 'Person', 'name': 'Birat Datta', 'url': 'https://github.com/biratdatta'},
+         'datePublished': UPDATED, 'dateModified': UPDATED, 'inLanguage': 'en', 'image': base + '/og-card.jpg',
+         'author': {'@type': 'Person', 'name': 'Birat Datta', 'url': 'https://biratdatta.tech', 'sameAs': ['https://github.com/biratdatta']},
          'publisher': {'@type': 'Organization', 'name': 'Safari DevTools', 'logo': {'@type': 'ImageObject', 'url': base + '/logo.png'}},
          'about': {'@type': 'SoftwareApplication', 'name': 'Safari DevTools', 'url': base + '/'}},
         _crumbs(base, trail),
