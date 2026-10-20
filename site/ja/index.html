@@ -4,23 +4,150 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Safari DevTools · どんなページでも動く Chrome 風 DevTools</title>
-<meta name="description" content="無料・オープンソースの Chrome 風 DevTools パネル。ページの中で動き、Safari、Chrome、iPhone に対応。Claude でエラーを解説、Jira へのバグ登録はワンクリック、アクセシビリティのチェックや API のモックも。">
+<meta name="description" content="Safari、Chrome、iPhone のどんなページでも動く、無料・オープンソースの Chrome 風 DevTools。コンソール、ネットワークのモック、アクセシビリティチェック、AI によるエラー解説。">
 <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 <link rel="icon" type="image/png" href="/favicon.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<link rel="alternate" hreflang="en" href="/">
-<link rel="alternate" hreflang="zh-Hans" href="/zh/">
-<link rel="alternate" hreflang="ja" href="/ja/">
-<link rel="alternate" hreflang="x-default" href="/">
+<link rel="canonical" href="https://devtools.biratdatta.tech/ja/">
+<link rel="alternate" hreflang="en" href="https://devtools.biratdatta.tech/">
+<link rel="alternate" hreflang="zh-Hans" href="https://devtools.biratdatta.tech/zh/">
+<link rel="alternate" hreflang="ja" href="https://devtools.biratdatta.tech/ja/">
+<link rel="alternate" hreflang="x-default" href="https://devtools.biratdatta.tech/">
 <meta property="og:type" content="website">
+<meta property="og:site_name" content="Safari DevTools">
+<meta property="og:url" content="https://devtools.biratdatta.tech/ja/">
+<meta property="og:locale" content="ja_JP">
+<meta property="og:locale:alternate" content="en_US">
+<meta property="og:locale:alternate" content="zh_CN">
 <meta property="og:title" content="Safari DevTools：ページの中に DevTools を">
 <meta property="og:description" content="Safari、Chrome、iPhone で使える Chrome 風 DevTools。無料のオープンソース。">
-<meta property="og:image" content="/og.jpg">
+<meta property="og:image" content="https://devtools.biratdatta.tech/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Safari DevTools：どんなページでも動く Chrome 風 DevTools">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Safari DevTools：ページの中に DevTools を">
 <meta name="twitter:description" content="Safari、Chrome、iPhone で使える Chrome 風 DevTools。無料のオープンソース。">
-<meta name="twitter:image" content="/og.jpg">
+<meta name="twitter:image" content="https://devtools.biratdatta.tech/og.jpg">
+<!--ld:start--><script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@graph": [
+  {
+   "@type": "WebSite",
+   "@id": "https://devtools.biratdatta.tech/#website",
+   "url": "https://devtools.biratdatta.tech/",
+   "name": "Safari DevTools",
+   "inLanguage": [
+    "en",
+    "zh-Hans",
+    "ja"
+   ]
+  },
+  {
+   "@type": "SoftwareApplication",
+   "@id": "https://devtools.biratdatta.tech/#app",
+   "name": "Safari DevTools",
+   "url": "https://devtools.biratdatta.tech/ja/",
+   "description": "Safari、Chrome、iPhone のどんなページでも動く、無料・オープンソースの Chrome 風 DevTools。コンソール、ネットワークのモック、アクセシビリティチェック、AI によるエラー解説。",
+   "applicationCategory": "DeveloperApplication",
+   "operatingSystem": "macOS, iOS, iPadOS, Windows, Linux, Android",
+   "softwareVersion": "1.5.2",
+   "isAccessibleForFree": true,
+   "license": "https://github.com/biratdatta/safari-devtools/blob/main/LICENSE",
+   "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD"
+   },
+   "downloadUrl": "https://devtools.biratdatta.tech/#install",
+   "image": "https://devtools.biratdatta.tech/og.jpg",
+   "screenshot": "https://devtools.biratdatta.tech/og.jpg",
+   "author": {
+    "@type": "Person",
+    "name": "Birat Datta",
+    "url": "https://github.com/biratdatta"
+   },
+   "sameAs": [
+    "https://github.com/biratdatta/safari-devtools"
+   ],
+   "inLanguage": "ja"
+  },
+  {
+   "@type": "FAQPage",
+   "@id": "https://devtools.biratdatta.tech/ja/#faq",
+   "inLanguage": "ja",
+   "mainEntity": [
+    {
+     "@type": "Question",
+     "name": "Mac なしで iPhone のコンソールログを見るには？",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "ブックマークレットか script タグでページに Safari DevTools を読み込めば、iPhone 上でそのままコンソールが開きます。リモートモードを使えば、同じ Wi-Fi のどのパソコンからでも iPhone のコンソールとネットワークを確認できます。"
+     }
+    },
+    {
+     "@type": "Question",
+     "name": "Eruda や vConsole の代わりになりますか？",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "はい。同じくページの中で動きますが、エラーを元のソースに対応付け、リクエストのモックやスロットリング、アクセシビリティのチェック、Redux / NgRx の状態のタイムトラベルもでき、見た目は Chrome DevTools と同じです。"
+     }
+    },
+    {
+     "@type": "Question",
+     "name": "本当に無料ですか？",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "はい。MIT ライセンスのオープンソースです。仕事で使うのも、改変して配布するのも自由です。"
+     }
+    },
+    {
+     "@type": "Question",
+     "name": "データはどこかに送信されますか？",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "いいえ。すべてページ内にとどまります。「Claude で解説」と Jira 報告は、あなたが自分のマシンで起動したリレーと自分のキーを通してのみ動作し、送信前にプロンプトを確認できます。ログイン用コードやトークンは事前に伏せられます。"
+     }
+    },
+    {
+     "@type": "Question",
+     "name": "iPhone や iPad でも使えますか？",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "はい。Safari でもアプリ内 WebView でも使えます。script タグかブックマークレットで読み込むか、リモートモードで Mac に表示できます。"
+     }
+    },
+    {
+     "@type": "Question",
+     "name": "Safari の Web インスペクタではだめなのですか？",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "Web インスペクタには Mac とケーブルまたはペアリングが必要で、多くのアプリ内 WebView は開けません。Safari DevTools はページの中で動き、見た目は Chrome DevTools と同じ。さらに Redux のタイムトラベル、アクセシビリティツール、AI による解説など、Safari にない機能があります。"
+     }
+    },
+    {
+     "@type": "Question",
+     "name": "できないことは？",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "ページの中で動くため、ブレークポイントでの JavaScript の一時停止、HttpOnly Cookie やブラウザが付けるヘッダーの参照、クロスオリジンのスタイルシートの読み取りはできません。これらはブラウザ標準のツールを使ってください。"
+     }
+    },
+    {
+     "@type": "Question",
+     "name": "会社で拡張機能が禁止されています。それでも使えますか？",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "たいていは使えます。ブックマークレットと script タグは拡張機能ではないため、拡張機能のポリシーは適用されません。"
+     }
+    }
+   ]
+  }
+ ]
+}
+</script><!--ld:end-->
 <style>
 /* Layout: one centred column (max 1080px) of alternating white / soft-grey bands, product first. */
 :root{
@@ -82,6 +209,7 @@ h3{font-size:21px;line-height:1.25;font-weight:600}
 /* hero */
 .hero{padding-block:88px 40px;text-align:center}
 .hero h1{margin-top:14px}
+.h1-brand{display:block;font-size:clamp(17px,2vw,21px);font-weight:600;letter-spacing:0;color:var(--ink2);margin-bottom:10px}
 .hero .lead{margin:22px auto 0}
 .ctas{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:34px}
 .works{margin-top:22px;font-size:14px;color:var(--ink3)}
@@ -239,7 +367,7 @@ footer a{color:var(--ink2)}
   <section class="hero">
     <div class="wrap">
       <div class="eyebrow">無料 · オープンソース · バージョン 1.5</div>
-      <h1>DevTools を、ページの中に。</h1>
+      <h1><span class="h1-brand">Safari DevTools</span>DevTools を、ページの中に。</h1>
       <p class="lead">Chrome 風の DevTools パネルが、どんな Web ページの中でもそのまま動きます。Safari でも Chrome でも、iPhone でも。ケーブルも Xcode も設定も不要です。</p>
       <div class="ctas">
         <a class="btn primary" href="#install" data-tab="chrome">Chrome に追加</a>
@@ -484,6 +612,8 @@ test(<span class="s">'checkout has no errors'</span>, <span class="k">async</spa
     <div class="wrap">
       <h2 id="faq-title" class="center">よくある質問</h2>
       <div class="faq">
+        <details><summary>Mac なしで iPhone のコンソールログを見るには？</summary><p>ブックマークレットか script タグでページに Safari DevTools を読み込めば、iPhone 上でそのままコンソールが開きます。リモートモードを使えば、同じ Wi-Fi のどのパソコンからでも iPhone のコンソールとネットワークを確認できます。</p></details>
+        <details><summary>Eruda や vConsole の代わりになりますか？</summary><p>はい。同じくページの中で動きますが、エラーを元のソースに対応付け、リクエストのモックやスロットリング、アクセシビリティのチェック、Redux / NgRx の状態のタイムトラベルもでき、見た目は Chrome DevTools と同じです。</p></details>
         <details><summary>本当に無料ですか？</summary><p>はい。MIT ライセンスのオープンソースです。仕事で使うのも、改変して配布するのも自由です。</p></details>
         <details><summary>データはどこかに送信されますか？</summary><p>いいえ。すべてページ内にとどまります。「Claude で解説」と Jira 報告は、あなたが自分のマシンで起動したリレーと自分のキーを通してのみ動作し、送信前にプロンプトを確認できます。ログイン用コードやトークンは事前に伏せられます。</p></details>
         <details><summary>iPhone や iPad でも使えますか？</summary><p>はい。Safari でもアプリ内 WebView でも使えます。script タグかブックマークレットで読み込むか、リモートモードで Mac に表示できます。</p></details>

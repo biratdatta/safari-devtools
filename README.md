@@ -15,6 +15,8 @@
   <b><a href="docs/safari-devtools-1.5-demo.mp4">▶ Watch the 1-minute demo (with sound)</a></b> · <a href="docs/safari-devtools-1.5-demo-vertical.mp4">vertical version for phones</a>
 </p>
 
+**Website:** [devtools.biratdatta.tech](https://devtools.biratdatta.tech) · [简体中文](https://devtools.biratdatta.tech/zh/) · [日本語](https://devtools.biratdatta.tech/ja/)
+
 It's one dependency-free JavaScript file, plus an optional Safari extension that adds it to every website.
 
 ## Before vs after

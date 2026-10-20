@@ -4,23 +4,150 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Safari DevTools · 在任意网页中运行的 Chrome 风格开发者工具</title>
-<meta name="description" content="免费开源、Chrome 风格的开发者工具面板，直接运行在网页中，支持 Safari、Chrome 和 iPhone。用 Claude 解释报错，一键提交 Jira 缺陷，检查无障碍，模拟 API。">
+<meta name="description" content="免费开源的 Chrome 风格开发者工具，可在 Safari、Chrome 和 iPhone 的任意网页中运行。控制台、网络模拟、无障碍检查，以及 AI 报错解释。">
 <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 <link rel="icon" type="image/png" href="/favicon.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<link rel="alternate" hreflang="en" href="/">
-<link rel="alternate" hreflang="zh-Hans" href="/zh/">
-<link rel="alternate" hreflang="ja" href="/ja/">
-<link rel="alternate" hreflang="x-default" href="/">
+<link rel="canonical" href="https://devtools.biratdatta.tech/zh/">
+<link rel="alternate" hreflang="en" href="https://devtools.biratdatta.tech/">
+<link rel="alternate" hreflang="zh-Hans" href="https://devtools.biratdatta.tech/zh/">
+<link rel="alternate" hreflang="ja" href="https://devtools.biratdatta.tech/ja/">
+<link rel="alternate" hreflang="x-default" href="https://devtools.biratdatta.tech/">
 <meta property="og:type" content="website">
+<meta property="og:site_name" content="Safari DevTools">
+<meta property="og:url" content="https://devtools.biratdatta.tech/zh/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:locale:alternate" content="en_US">
+<meta property="og:locale:alternate" content="ja_JP">
 <meta property="og:title" content="Safari DevTools：把开发者工具放进网页">
 <meta property="og:description" content="适用于 Safari、Chrome 和 iPhone 的 Chrome 风格开发者工具。免费开源。">
-<meta property="og:image" content="/og.jpg">
+<meta property="og:image" content="https://devtools.biratdatta.tech/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Safari DevTools：在任意网页中运行的 Chrome 风格开发者工具">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Safari DevTools：把开发者工具放进网页">
 <meta name="twitter:description" content="适用于 Safari、Chrome 和 iPhone 的 Chrome 风格开发者工具。免费开源。">
-<meta name="twitter:image" content="/og.jpg">
+<meta name="twitter:image" content="https://devtools.biratdatta.tech/og.jpg">
+<!--ld:start--><script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@graph": [
+  {
+   "@type": "WebSite",
+   "@id": "https://devtools.biratdatta.tech/#website",
+   "url": "https://devtools.biratdatta.tech/",
+   "name": "Safari DevTools",
+   "inLanguage": [
+    "en",
+    "zh-Hans",
+    "ja"
+   ]
+  },
+  {
+   "@type": "SoftwareApplication",
+   "@id": "https://devtools.biratdatta.tech/#app",
+   "name": "Safari DevTools",
+   "url": "https://devtools.biratdatta.tech/zh/",
+   "description": "免费开源的 Chrome 风格开发者工具，可在 Safari、Chrome 和 iPhone 的任意网页中运行。控制台、网络模拟、无障碍检查，以及 AI 报错解释。",
+   "applicationCategory": "DeveloperApplication",
+   "operatingSystem": "macOS, iOS, iPadOS, Windows, Linux, Android",
+   "softwareVersion": "1.5.2",
+   "isAccessibleForFree": true,
+   "license": "https://github.com/biratdatta/safari-devtools/blob/main/LICENSE",
+   "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD"
+   },
+   "downloadUrl": "https://devtools.biratdatta.tech/#install",
+   "image": "https://devtools.biratdatta.tech/og.jpg",
+   "screenshot": "https://devtools.biratdatta.tech/og.jpg",
+   "author": {
+    "@type": "Person",
+    "name": "Birat Datta",
+    "url": "https://github.com/biratdatta"
+   },
+   "sameAs": [
+    "https://github.com/biratdatta/safari-devtools"
+   ],
+   "inLanguage": "zh-Hans"
+  },
+  {
+   "@type": "FAQPage",
+   "@id": "https://devtools.biratdatta.tech/zh/#faq",
+   "inLanguage": "zh-Hans",
+   "mainEntity": [
+    {
+     "@type": "Question",
+     "name": "没有 Mac，怎么查看 iPhone 上的控制台日志？",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "用书签小工具或 script 标签在页面上加载 Safari DevTools，完整的控制台就会直接在手机上打开。也可以启动远程模式，在同一 Wi-Fi 下的任意电脑上查看手机的控制台和网络请求。"
+     }
+    },
+    {
+     "@type": "Question",
+     "name": "它能替代 Eruda 或 vConsole 吗？",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "可以。它和它们一样运行在页面内部，但还能把报错映射到原始源码、模拟和限速请求、检查无障碍、对 Redux 和 NgRx 状态进行时间旅行，而且外观和 Chrome 开发者工具一样。"
+     }
+    },
+    {
+     "@type": "Question",
+     "name": "真的免费吗？",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "是的。它基于 MIT 许可证开源，可以在工作中使用、修改和发布。"
+     }
+    },
+    {
+     "@type": "Question",
+     "name": "它会把我的数据发送到别处吗？",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "不会。所有内容都留在页面中。“用 Claude 解释”和 Jira 报告只会通过你在自己电脑上启动的中继、使用你自己的密钥运行，发送前你能看到提示词。登录验证码和令牌会先被隐藏。"
+     }
+    },
+    {
+     "@type": "Question",
+     "name": "支持 iPhone 和 iPad 吗？",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "支持，Safari 和应用内 WebView 都可以。通过 script 标签或书签小工具加载，或用远程模式把它显示在 Mac 上。"
+     }
+    },
+    {
+     "@type": "Question",
+     "name": "为什么不直接用 Safari 的 Web 检查器？",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "Web 检查器需要 Mac、数据线或配对，而且打不开大多数应用内 WebView。Safari DevTools 直接运行在页面里，外观和 Chrome 开发者工具一样，还提供了 Safari 没有的功能，比如 Redux 时间旅行、无障碍工具和 AI 解释。"
+     }
+    },
+    {
+     "@type": "Question",
+     "name": "它做不到什么？",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "它运行在页面内部，所以无法在断点处暂停 JavaScript，看不到 HttpOnly Cookie 或浏览器自动添加的请求头，也读不了跨域样式表。这些请使用浏览器自带的工具。"
+     }
+    },
+    {
+     "@type": "Question",
+     "name": "公司禁止安装扩展，还能用吗？",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "通常可以。书签小工具和 script 标签都不是扩展，扩展相关的策略对它们不适用。"
+     }
+    }
+   ]
+  }
+ ]
+}
+</script><!--ld:end-->
 <style>
 /* Layout: one centred column (max 1080px) of alternating white / soft-grey bands, product first. */
 :root{
@@ -82,6 +209,7 @@ h3{font-size:21px;line-height:1.25;font-weight:600}
 /* hero */
 .hero{padding-block:88px 40px;text-align:center}
 .hero h1{margin-top:14px}
+.h1-brand{display:block;font-size:clamp(17px,2vw,21px);font-weight:600;letter-spacing:0;color:var(--ink2);margin-bottom:10px}
 .hero .lead{margin:22px auto 0}
 .ctas{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:34px}
 .works{margin-top:22px;font-size:14px;color:var(--ink3)}
@@ -239,7 +367,7 @@ footer a{color:var(--ink2)}
   <section class="hero">
     <div class="wrap">
       <div class="eyebrow">免费 · 开源 · 版本 1.5</div>
-      <h1>把开发者工具，放进网页里。</h1>
+      <h1><span class="h1-brand">Safari DevTools</span>把开发者工具，放进网页里。</h1>
       <p class="lead">一个 Chrome 风格的开发者工具面板，直接在任意网页中运行，支持 Safari、Chrome 和你的 iPhone。无需数据线、无需 Xcode、无需任何配置。</p>
       <div class="ctas">
         <a class="btn primary" href="#install" data-tab="chrome">添加到 Chrome</a>
@@ -484,6 +612,8 @@ test(<span class="s">'checkout has no errors'</span>, <span class="k">async</spa
     <div class="wrap">
       <h2 id="faq-title" class="center">常见问题</h2>
       <div class="faq">
+        <details><summary>没有 Mac，怎么查看 iPhone 上的控制台日志？</summary><p>用书签小工具或 script 标签在页面上加载 Safari DevTools，完整的控制台就会直接在手机上打开。也可以启动远程模式，在同一 Wi-Fi 下的任意电脑上查看手机的控制台和网络请求。</p></details>
+        <details><summary>它能替代 Eruda 或 vConsole 吗？</summary><p>可以。它和它们一样运行在页面内部，但还能把报错映射到原始源码、模拟和限速请求、检查无障碍、对 Redux 和 NgRx 状态进行时间旅行，而且外观和 Chrome 开发者工具一样。</p></details>
         <details><summary>真的免费吗？</summary><p>是的。它基于 MIT 许可证开源，可以在工作中使用、修改和发布。</p></details>
         <details><summary>它会把我的数据发送到别处吗？</summary><p>不会。所有内容都留在页面中。“用 Claude 解释”和 Jira 报告只会通过你在自己电脑上启动的中继、使用你自己的密钥运行，发送前你能看到提示词。登录验证码和令牌会先被隐藏。</p></details>
         <details><summary>支持 iPhone 和 iPad 吗？</summary><p>支持，Safari 和应用内 WebView 都可以。通过 script 标签或书签小工具加载，或用远程模式把它显示在 Mac 上。</p></details>

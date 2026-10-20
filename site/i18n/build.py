@@ -8,6 +8,10 @@ Builds the translated pages of the website from the English one:
 Run it after changing site/index.html:   python3 site/i18n/build.py
 (./sync.sh runs it for you.)
 
+It also keeps the SEO pieces in step: structured data (JSON-LD, built from each page's own text), canonical URLs,
+sitemap.xml and robots.txt. When you move to a custom domain, run it once with the new address:
+    python3 site/i18n/build.py --site-url https://devtools.example.com
+
 Each entry below is an exact piece of the English page and its translations. If a piece is no longer found
 on the English page, the build stops and says which one, so translations never silently go stale.
 To add a language, add a column to STRINGS and an entry to LANGS.
@@ -30,9 +34,15 @@ STRINGS = [
     ('<title>Safari DevTools · Chrome-style DevTools inside any page</title>',
      '<title>Safari DevTools · 在任意网页中运行的 Chrome 风格开发者工具</title>',
      '<title>Safari DevTools · どんなページでも動く Chrome 風 DevTools</title>'),
-    ('content="A free, open-source, Chrome-style DevTools panel that runs inside the page, in Safari, Chrome and on iPhone. Explain errors with Claude, file Jira bugs in one click, check accessibility, mock APIs."',
-     'content="免费开源、Chrome 风格的开发者工具面板，直接运行在网页中，支持 Safari、Chrome 和 iPhone。用 Claude 解释报错，一键提交 Jira 缺陷，检查无障碍，模拟 API。"',
-     'content="無料・オープンソースの Chrome 風 DevTools パネル。ページの中で動き、Safari、Chrome、iPhone に対応。Claude でエラーを解説、Jira へのバグ登録はワンクリック、アクセシビリティのチェックや API のモックも。"'),
+    ('content="Free, open-source Chrome-style DevTools that run inside any page in Safari, Chrome and on iPhone. Console, network mocking, accessibility checks, AI error help."',
+     'content="免费开源的 Chrome 风格开发者工具，可在 Safari、Chrome 和 iPhone 的任意网页中运行。控制台、网络模拟、无障碍检查，以及 AI 报错解释。"',
+     'content="Safari、Chrome、iPhone のどんなページでも動く、無料・オープンソースの Chrome 風 DevTools。コンソール、ネットワークのモック、アクセシビリティチェック、AI によるエラー解説。"'),
+    ('<meta property="og:locale" content="en_US">\n<meta property="og:locale:alternate" content="zh_CN">\n<meta property="og:locale:alternate" content="ja_JP">',
+     '<meta property="og:locale" content="zh_CN">\n<meta property="og:locale:alternate" content="en_US">\n<meta property="og:locale:alternate" content="ja_JP">',
+     '<meta property="og:locale" content="ja_JP">\n<meta property="og:locale:alternate" content="en_US">\n<meta property="og:locale:alternate" content="zh_CN">'),
+    ('content="Safari DevTools: Chrome-style DevTools inside any page"',
+     'content="Safari DevTools：在任意网页中运行的 Chrome 风格开发者工具"',
+     'content="Safari DevTools：どんなページでも動く Chrome 風 DevTools"'),
     ('content="Safari DevTools: DevTools, inside the page"',
      'content="Safari DevTools：把开发者工具放进网页"',
      'content="Safari DevTools：ページの中に DevTools を"'),
@@ -53,7 +63,7 @@ STRINGS = [
 
     # ---- hero
     ('Free · Open source · Version 1.5', '免费 · 开源 · 版本 1.5', '無料 · オープンソース · バージョン 1.5'),
-    ('<h1>DevTools, inside the page.</h1>', '<h1>把开发者工具，放进网页里。</h1>', '<h1>DevTools を、ページの中に。</h1>'),
+    ('</span>DevTools, inside the page.</h1>', '</span>把开发者工具，放进网页里。</h1>', '</span>DevTools を、ページの中に。</h1>'),
     ('A Chrome-style DevTools panel that runs right inside any web page, in Safari, Chrome and on your iPhone. No cable, no Xcode, no setup.',
      '一个 Chrome 风格的开发者工具面板，直接在任意网页中运行，支持 Safari、Chrome 和你的 iPhone。无需数据线、无需 Xcode、无需任何配置。',
      'Chrome 風の DevTools パネルが、どんな Web ページの中でもそのまま動きます。Safari でも Chrome でも、iPhone でも。ケーブルも Xcode も設定も不要です。'),
@@ -236,6 +246,14 @@ STRINGS = [
 
     # ---- FAQ
     ('<h2 id="faq-title" class="center">Questions</h2>', '<h2 id="faq-title" class="center">常见问题</h2>', '<h2 id="faq-title" class="center">よくある質問</h2>'),
+    ('<summary>How do I see console logs on an iPhone without a Mac?</summary>', '<summary>没有 Mac，怎么查看 iPhone 上的控制台日志？</summary>', '<summary>Mac なしで iPhone のコンソールログを見るには？</summary>'),
+    ("Load Safari DevTools on the page with the bookmarklet or a script tag, and the full console opens right on the phone. Or start remote mode and watch the phone's console and network from any computer on the same Wi-Fi.",
+     '用书签小工具或 script 标签在页面上加载 Safari DevTools，完整的控制台就会直接在手机上打开。也可以启动远程模式，在同一 Wi-Fi 下的任意电脑上查看手机的控制台和网络请求。',
+     'ブックマークレットか script タグでページに Safari DevTools を読み込めば、iPhone 上でそのままコンソールが開きます。リモートモードを使えば、同じ Wi-Fi のどのパソコンからでも iPhone のコンソールとネットワークを確認できます。'),
+    ('<summary>Is it an alternative to Eruda or vConsole?</summary>', '<summary>它能替代 Eruda 或 vConsole 吗？</summary>', '<summary>Eruda や vConsole の代わりになりますか？</summary>'),
+    ('Yes. Like them it runs inside the page, but it also maps errors to your original source, mocks and throttles requests, checks accessibility, time-travels Redux and NgRx state, and looks like Chrome DevTools.',
+     '可以。它和它们一样运行在页面内部，但还能把报错映射到原始源码、模拟和限速请求、检查无障碍、对 Redux 和 NgRx 状态进行时间旅行，而且外观和 Chrome 开发者工具一样。',
+     'はい。同じくページの中で動きますが、エラーを元のソースに対応付け、リクエストのモックやスロットリング、アクセシビリティのチェック、Redux / NgRx の状態のタイムトラベルもでき、見た目は Chrome DevTools と同じです。'),
     ('<summary>Is it really free?</summary>', '<summary>真的免费吗？</summary>', '<summary>本当に無料ですか？</summary>'),
     ("Yes. It's open source under the MIT licence. Use it at work, change it, ship it.",
      '是的。它基于 MIT 许可证开源，可以在工作中使用、修改和发布。',
@@ -280,28 +298,109 @@ STRINGS = [
 ]
 
 
+import json
+import re
+import datetime
+
+VERSION = '1.5.2'
+REPO = 'https://github.com/biratdatta/safari-devtools'
+OG_LOCALE = {'en': 'en_US', 'zh': 'zh_CN', 'ja': 'ja_JP'}
+IN_LANGUAGE = {'en': 'en', 'zh': 'zh-Hans', 'ja': 'ja'}
+
+
+def site_url(src):
+    m = re.search(r'<link rel="canonical" href="(https?://[^"]+?)/?">', src)
+    if not m:
+        sys.exit('site/index.html needs <link rel="canonical" href="https://your-site/">')
+    return m.group(1).rstrip('/')
+
+
+def structured_data(page, lang, base):
+    """JSON-LD from the page itself, so it always matches what visitors see in that language."""
+    def meta(name):
+        m = re.search(r'<meta name="%s" content="([^"]*)">' % name, page)
+        return m.group(1) if m else ''
+    def text(html):
+        t = re.sub(r'<[^>]+>', '', html)
+        return t.replace('&amp;', '&').replace('&lt;', '<').replace('&gt;', '>').replace('&quot;', '"').strip()
+    url = base + ('/' if lang == 'en' else '/%s/' % lang)
+    faq = [{'@type': 'Question', 'name': text(q), 'acceptedAnswer': {'@type': 'Answer', 'text': text(a)}}
+           for q, a in re.findall(r'<details><summary>(.*?)</summary><p>(.*?)</p></details>', page)]
+    graph = [
+        {'@type': 'WebSite', '@id': base + '/#website', 'url': base + '/', 'name': 'Safari DevTools',
+         'inLanguage': ['en', 'zh-Hans', 'ja']},
+        {'@type': 'SoftwareApplication', '@id': base + '/#app', 'name': 'Safari DevTools', 'url': url,
+         'description': meta('description'), 'applicationCategory': 'DeveloperApplication',
+         'operatingSystem': 'macOS, iOS, iPadOS, Windows, Linux, Android', 'softwareVersion': VERSION,
+         'isAccessibleForFree': True, 'license': REPO + '/blob/main/LICENSE',
+         'offers': {'@type': 'Offer', 'price': '0', 'priceCurrency': 'USD'},
+         'downloadUrl': base + '/#install', 'image': base + '/og.jpg', 'screenshot': base + '/og.jpg',
+         'author': {'@type': 'Person', 'name': 'Birat Datta', 'url': 'https://github.com/biratdatta'},
+         'sameAs': [REPO], 'inLanguage': IN_LANGUAGE[lang]},
+    ]
+    if faq:
+        graph.append({'@type': 'FAQPage', '@id': url + '#faq', 'inLanguage': IN_LANGUAGE[lang], 'mainEntity': faq})
+    data = json.dumps({'@context': 'https://schema.org', '@graph': graph}, ensure_ascii=False, indent=1)
+    return '<!--ld:start--><script type="application/ld+json">\n' + data.replace('</', '<\\/') + '\n</script><!--ld:end-->'
+
+
+def with_ld(page, lang, base):
+    return re.sub(r'<!--ld:start-->[\s\S]*?<!--ld:end-->', lambda m: structured_data(page, lang, base), page)
+
+
 def build():
     src_path = os.path.join(SITE, 'index.html')
     src = open(src_path, encoding='utf-8').read()
+
+    # --site-url https://example.com : switch every absolute URL (and the sitemap) to a new domain.
+    if '--site-url' in sys.argv:
+        new = sys.argv[sys.argv.index('--site-url') + 1].rstrip('/')
+        src = src.replace(site_url(src), new)
+    base = site_url(src)
+
     missing = [en for en, _, _ in STRINGS if en not in src]
     if missing:
         print('These English pieces are no longer on site/index.html. Update site/i18n/build.py:\n')
         for m in missing:
             print('  - ' + (m if len(m) < 110 else m[:107] + '...'))
         sys.exit(1)
+
+    # English page: refresh its structured data in place.
+    src = with_ld(src, 'en', base)
+    with open(src_path, 'w', encoding='utf-8') as f:
+        f.write(src)
+    print('Updated site/index.html  (canonical %s/)' % base)
+
     for col, (code, meta) in enumerate(LANGS.items(), start=1):
         out = src
         for row in STRINGS:
             out = out.replace(row[0], row[col])
+        # This page's own address.
+        out = out.replace('<link rel="canonical" href="%s/">' % base, '<link rel="canonical" href="%s/%s/">' % (base, meta['dir']))
+        out = out.replace('<meta property="og:url" content="%s/">' % base, '<meta property="og:url" content="%s/%s/">' % (base, meta['dir']))
         # The language menu: mark this language as the current page.
         out = out.replace('data-lang="en" aria-current="page"', 'data-lang="en"')
         out = out.replace('data-lang="%s">' % code, 'data-lang="%s" aria-current="page">' % code)
+        out = with_ld(out, code, base)
         target = os.path.join(SITE, meta['dir'], 'index.html')
         os.makedirs(os.path.dirname(target), exist_ok=True)
         with open(target, 'w', encoding='utf-8') as f:
             f.write(out)
         left = [w for w in ('Get it free', 'Install', 'Features', 'Questions') if ('>' + w + '<') in out]
         print('Built %-22s %s' % (os.path.relpath(target, os.path.dirname(SITE)), ('(still English: ' + ', '.join(left) + ')') if left else ''))
+
+    # Sitemap with language alternates, and robots.txt pointing to it.
+    today = datetime.date.today().isoformat()
+    pages = [('en', base + '/'), ('zh-Hans', base + '/zh/'), ('ja', base + '/ja/')]
+    alts = ''.join('    <xhtml:link rel="alternate" hreflang="%s" href="%s"/>\n' % (h, u) for h, u in pages) + \
+        '    <xhtml:link rel="alternate" hreflang="x-default" href="%s/"/>\n' % base
+    urls = ''.join('  <url>\n    <loc>%s</loc>\n    <lastmod>%s</lastmod>\n%s  </url>\n' % (u, today, alts) for _, u in pages)
+    with open(os.path.join(SITE, 'sitemap.xml'), 'w', encoding='utf-8') as f:
+        f.write('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" '
+                'xmlns:xhtml="http://www.w3.org/1999/xhtml">\n' + urls + '</urlset>\n')
+    with open(os.path.join(SITE, 'robots.txt'), 'w', encoding='utf-8') as f:
+        f.write('User-agent: *\nAllow: /\nDisallow: /demo/\n\nSitemap: %s/sitemap.xml\n' % base)
+    print('Wrote site/sitemap.xml and site/robots.txt')
 
 
 if __name__ == '__main__':
