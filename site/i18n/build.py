@@ -9,7 +9,7 @@ Run it after changing site/index.html:   python3 site/i18n/build.py
 (./sync.sh runs it for you.)
 
 It also keeps the SEO pieces in step: structured data (JSON-LD, built from each page's own text), canonical URLs,
-sitemap.xml and robots.txt. When you move to a custom domain, run it once with the new address:
+sitemap.xml, robots.txt, and llms.txt / llms-full.txt for AI assistants. When you move to a custom domain, run it once with the new address:
     python3 site/i18n/build.py --site-url https://devtools.example.com
 
 Each entry below is an exact piece of the English page and its translations. If a piece is no longer found
@@ -401,6 +401,78 @@ def build():
     with open(os.path.join(SITE, 'robots.txt'), 'w', encoding='utf-8') as f:
         f.write('User-agent: *\nAllow: /\nDisallow: /demo/\n\nSitemap: %s/sitemap.xml\n' % base)
     print('Wrote site/sitemap.xml and site/robots.txt')
+    write_llms(base)
+
+
+LLMS = """# Safari DevTools
+
+> Free, open-source (MIT) Chrome-style DevTools panel that runs inside any web page, in Safari, Chrome, Edge and on iPhone/iPad (including in-app WebViews). One dependency-free JavaScript file, plus browser extensions for Safari and Chrome. Current version: {version}.
+
+Safari DevTools gives Safari and iOS the debugging tools developers expect from Chrome DevTools, without a Mac, cable or Xcode. It is loaded into a page by a browser extension, a bookmarklet or a `<script>` tag, and shows a docked panel with: Console (source-mapped stack traces, autocomplete, live expressions, console.table), Elements (DOM through shadow roots, live CSS with design-token suggestions, grid/flex overlays, measure tool, Changes tab), Sources, Network (fetch/XHR/WebSocket/SSE, mock/block/delay rules, 3G/offline throttling, HAR export), Storage, Components (Angular signals, Lit, React; Redux/NgRx/Zustand time travel), Issues, Performance, Tokens, Assets, Audit, Accessibility (accessibility tree, tab-order overlay, focus tracker, contrast fixer using design tokens), Coverage (unused CSS and tokens), Snapshots (visual regression for components) and Device (emulation of dark mode, reduced motion, RTL, text size, pseudo-localisation; side-by-side iPhone/iPad preview).
+
+It also has "Explain with Claude" for errors and one-click Jira bug reports (both run through a local relay with the user's own keys; sign-in codes and tokens are redacted), remote mode to stream an iPhone's console and network to a Mac over Wi-Fi, and an automation API exposed to Playwright, WebDriver, an HTTP API and an MCP server for AI agents.
+
+Key facts:
+- Install: Chrome/Edge extension (load unpacked), Safari extension (Add Temporary Extension, or build with Xcode), bookmarklet, or `<script src="https://cdn.jsdelivr.net/gh/biratdatta/safari-devtools@v{version}/standalone/safari-devtools.js"></script>`.
+- Shortcuts: Ctrl+Shift+D or Alt+Shift+D toggles the panel; Ctrl+Shift+C or Alt+Shift+C picks an element; Ctrl+Shift+P opens the command palette.
+- JavaScript API: `window.SafariDevTools` (show, hide, toggle, inspect) and `window.SafariDevTools.automation` (JSON methods such as logs, errors, network, har, mock, block, throttle, audit, a11yTree, tabOrder, contrast, coverage, emulate, snapshot, compareSnapshot, bugReport; call `help()` for the full list).
+- Limits: it runs inside the page, so it cannot pause JavaScript at breakpoints, see HttpOnly cookies or browser-added headers, or read cross-origin stylesheets.
+- Privacy: nothing leaves the page unless the user starts the optional relay for Claude or Jira.
+- Languages of the website: English, Simplified Chinese ({base}/zh/), Japanese ({base}/ja/).
+
+## Docs
+
+- [Website]({base}/): overview, live demo, install steps, comparison and FAQ
+- [Full documentation for LLMs]({base}/llms-full.txt): all READMEs in one Markdown file
+- [Project README]({repo}/blob/main/README.md): features, comparison with Safari Web Inspector and Eruda/vConsole, changelog
+- [Tool guide]({repo}/blob/main/standalone/README.md): every panel, remote mode, Claude and Jira setup, automation, shortcuts, limits
+- [Bookmarklet]({repo}/blob/main/standalone/bookmarklet.md): use it where extensions are not allowed
+- [Chrome extension]({repo}/blob/main/chrome-extension/README.md): install and troubleshooting for Chrome and Edge
+- [Safari extension]({repo}/blob/main/extension/README.md): install with Safari or Xcode
+
+## Automation and AI agents
+
+- [Playwright fixture]({repo}/blob/main/standalone/playwright/safari-devtools.fixture.ts): typed `devtools` fixture for WebKit and Chromium tests
+- [MCP server]({repo}/blob/main/standalone/remote/mcp.js): tools such as get_console, get_network, run_js, audit_page, inspect_element, mock_request, accessibility_tree, check_contrast, css_coverage, emulate, compare_snapshot, bug_report, explain_error_context
+- [Relay and HTTP API]({repo}/blob/main/standalone/remote/relay.js): /api/devices, /api/logs, /api/network, /api/eval, /api/call; optional /ai/explain and /jira/create
+
+## Optional
+
+- [Source code]({repo}): GitHub repository
+- [The tool itself]({base}/safari-devtools.js): the single JavaScript file
+- [Licence]({repo}/blob/main/LICENSE): MIT
+"""
+
+FULL_SOURCES = [
+    ('README.md', 'Project overview'),
+    ('standalone/README.md', 'Tool guide'),
+    ('standalone/bookmarklet.md', 'Bookmarklet'),
+    ('chrome-extension/README.md', 'Chrome extension'),
+    ('extension/README.md', 'Safari extension'),
+]
+
+
+def write_llms(base):
+    """llms.txt (a map for AI assistants) and llms-full.txt (all docs in one file), see llmstxt.org."""
+    repo_root = os.path.dirname(SITE)
+    llms = LLMS.format(base=base, repo=REPO, version=VERSION)
+    with open(os.path.join(SITE, 'llms.txt'), 'w', encoding='utf-8') as f:
+        f.write(llms)
+    parts = [llms.split('\n## Docs')[0].rstrip() + '\n']
+    for path, title in FULL_SOURCES:
+        full = os.path.join(repo_root, path)
+        if not os.path.exists(full):
+            continue
+        md = open(full, encoding='utf-8').read()
+        md = re.sub(r'<p align="center">[\s\S]*?</p>\s*', '', md)          # badges and hero images
+        md = re.sub(r'<table>[\s\S]*?</table>\s*', '', md)                  # screenshot grids
+        md = re.sub(r'!\[[^\]]*\]\([^)]*\)\s*', '', md)                     # inline images
+        md = re.sub(r'\]\((?!https?://|#|mailto:)([^)]+)\)', lambda m: '](%s/blob/main/%s)' % (REPO, os.path.normpath(os.path.join(os.path.dirname(path), m.group(1))).replace(os.sep, '/')), md)
+        md = re.sub(r'^(#{1,5}) ', lambda m: '#' + m.group(1) + ' ', md, flags=re.M)  # nest under the file heading
+        parts.append('\n---\n\n# %s\n\nSource: %s/blob/main/%s\n\n%s' % (title, REPO, path, md.strip() + '\n'))
+    with open(os.path.join(SITE, 'llms-full.txt'), 'w', encoding='utf-8') as f:
+        f.write('\n'.join(parts))
+    print('Wrote site/llms.txt and site/llms-full.txt')
 
 
 if __name__ == '__main__':

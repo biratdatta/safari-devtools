@@ -1,0 +1,37 @@
+# Safari DevTools
+
+> Free, open-source (MIT) Chrome-style DevTools panel that runs inside any web page, in Safari, Chrome, Edge and on iPhone/iPad (including in-app WebViews). One dependency-free JavaScript file, plus browser extensions for Safari and Chrome. Current version: 1.5.2.
+
+Safari DevTools gives Safari and iOS the debugging tools developers expect from Chrome DevTools, without a Mac, cable or Xcode. It is loaded into a page by a browser extension, a bookmarklet or a `<script>` tag, and shows a docked panel with: Console (source-mapped stack traces, autocomplete, live expressions, console.table), Elements (DOM through shadow roots, live CSS with design-token suggestions, grid/flex overlays, measure tool, Changes tab), Sources, Network (fetch/XHR/WebSocket/SSE, mock/block/delay rules, 3G/offline throttling, HAR export), Storage, Components (Angular signals, Lit, React; Redux/NgRx/Zustand time travel), Issues, Performance, Tokens, Assets, Audit, Accessibility (accessibility tree, tab-order overlay, focus tracker, contrast fixer using design tokens), Coverage (unused CSS and tokens), Snapshots (visual regression for components) and Device (emulation of dark mode, reduced motion, RTL, text size, pseudo-localisation; side-by-side iPhone/iPad preview).
+
+It also has "Explain with Claude" for errors and one-click Jira bug reports (both run through a local relay with the user's own keys; sign-in codes and tokens are redacted), remote mode to stream an iPhone's console and network to a Mac over Wi-Fi, and an automation API exposed to Playwright, WebDriver, an HTTP API and an MCP server for AI agents.
+
+Key facts:
+- Install: Chrome/Edge extension (load unpacked), Safari extension (Add Temporary Extension, or build with Xcode), bookmarklet, or `<script src="https://cdn.jsdelivr.net/gh/biratdatta/safari-devtools@v1.5.2/standalone/safari-devtools.js"></script>`.
+- Shortcuts: Ctrl+Shift+D or Alt+Shift+D toggles the panel; Ctrl+Shift+C or Alt+Shift+C picks an element; Ctrl+Shift+P opens the command palette.
+- JavaScript API: `window.SafariDevTools` (show, hide, toggle, inspect) and `window.SafariDevTools.automation` (JSON methods such as logs, errors, network, har, mock, block, throttle, audit, a11yTree, tabOrder, contrast, coverage, emulate, snapshot, compareSnapshot, bugReport; call `help()` for the full list).
+- Limits: it runs inside the page, so it cannot pause JavaScript at breakpoints, see HttpOnly cookies or browser-added headers, or read cross-origin stylesheets.
+- Privacy: nothing leaves the page unless the user starts the optional relay for Claude or Jira.
+- Languages of the website: English, Simplified Chinese (https://devtools.biratdatta.tech/zh/), Japanese (https://devtools.biratdatta.tech/ja/).
+
+## Docs
+
+- [Website](https://devtools.biratdatta.tech/): overview, live demo, install steps, comparison and FAQ
+- [Full documentation for LLMs](https://devtools.biratdatta.tech/llms-full.txt): all READMEs in one Markdown file
+- [Project README](https://github.com/biratdatta/safari-devtools/blob/main/README.md): features, comparison with Safari Web Inspector and Eruda/vConsole, changelog
+- [Tool guide](https://github.com/biratdatta/safari-devtools/blob/main/standalone/README.md): every panel, remote mode, Claude and Jira setup, automation, shortcuts, limits
+- [Bookmarklet](https://github.com/biratdatta/safari-devtools/blob/main/standalone/bookmarklet.md): use it where extensions are not allowed
+- [Chrome extension](https://github.com/biratdatta/safari-devtools/blob/main/chrome-extension/README.md): install and troubleshooting for Chrome and Edge
+- [Safari extension](https://github.com/biratdatta/safari-devtools/blob/main/extension/README.md): install with Safari or Xcode
+
+## Automation and AI agents
+
+- [Playwright fixture](https://github.com/biratdatta/safari-devtools/blob/main/standalone/playwright/safari-devtools.fixture.ts): typed `devtools` fixture for WebKit and Chromium tests
+- [MCP server](https://github.com/biratdatta/safari-devtools/blob/main/standalone/remote/mcp.js): tools such as get_console, get_network, run_js, audit_page, inspect_element, mock_request, accessibility_tree, check_contrast, css_coverage, emulate, compare_snapshot, bug_report, explain_error_context
+- [Relay and HTTP API](https://github.com/biratdatta/safari-devtools/blob/main/standalone/remote/relay.js): /api/devices, /api/logs, /api/network, /api/eval, /api/call; optional /ai/explain and /jira/create
+
+## Optional
+
+- [Source code](https://github.com/biratdatta/safari-devtools): GitHub repository
+- [The tool itself](https://devtools.biratdatta.tech/safari-devtools.js): the single JavaScript file
+- [Licence](https://github.com/biratdatta/safari-devtools/blob/main/LICENSE): MIT

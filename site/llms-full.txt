@@ -1,0 +1,520 @@
+# Safari DevTools
+
+> Free, open-source (MIT) Chrome-style DevTools panel that runs inside any web page, in Safari, Chrome, Edge and on iPhone/iPad (including in-app WebViews). One dependency-free JavaScript file, plus browser extensions for Safari and Chrome. Current version: 1.5.2.
+
+Safari DevTools gives Safari and iOS the debugging tools developers expect from Chrome DevTools, without a Mac, cable or Xcode. It is loaded into a page by a browser extension, a bookmarklet or a `<script>` tag, and shows a docked panel with: Console (source-mapped stack traces, autocomplete, live expressions, console.table), Elements (DOM through shadow roots, live CSS with design-token suggestions, grid/flex overlays, measure tool, Changes tab), Sources, Network (fetch/XHR/WebSocket/SSE, mock/block/delay rules, 3G/offline throttling, HAR export), Storage, Components (Angular signals, Lit, React; Redux/NgRx/Zustand time travel), Issues, Performance, Tokens, Assets, Audit, Accessibility (accessibility tree, tab-order overlay, focus tracker, contrast fixer using design tokens), Coverage (unused CSS and tokens), Snapshots (visual regression for components) and Device (emulation of dark mode, reduced motion, RTL, text size, pseudo-localisation; side-by-side iPhone/iPad preview).
+
+It also has "Explain with Claude" for errors and one-click Jira bug reports (both run through a local relay with the user's own keys; sign-in codes and tokens are redacted), remote mode to stream an iPhone's console and network to a Mac over Wi-Fi, and an automation API exposed to Playwright, WebDriver, an HTTP API and an MCP server for AI agents.
+
+Key facts:
+- Install: Chrome/Edge extension (load unpacked), Safari extension (Add Temporary Extension, or build with Xcode), bookmarklet, or `<script src="https://cdn.jsdelivr.net/gh/biratdatta/safari-devtools@v1.5.2/standalone/safari-devtools.js"></script>`.
+- Shortcuts: Ctrl+Shift+D or Alt+Shift+D toggles the panel; Ctrl+Shift+C or Alt+Shift+C picks an element; Ctrl+Shift+P opens the command palette.
+- JavaScript API: `window.SafariDevTools` (show, hide, toggle, inspect) and `window.SafariDevTools.automation` (JSON methods such as logs, errors, network, har, mock, block, throttle, audit, a11yTree, tabOrder, contrast, coverage, emulate, snapshot, compareSnapshot, bugReport; call `help()` for the full list).
+- Limits: it runs inside the page, so it cannot pause JavaScript at breakpoints, see HttpOnly cookies or browser-added headers, or read cross-origin stylesheets.
+- Privacy: nothing leaves the page unless the user starts the optional relay for Claude or Jira.
+- Languages of the website: English, Simplified Chinese (https://devtools.biratdatta.tech/zh/), Japanese (https://devtools.biratdatta.tech/ja/).
+
+
+---
+
+# Project overview
+
+Source: https://github.com/biratdatta/safari-devtools/blob/main/README.md
+
+## Safari DevTools
+
+**The best in-page DevTools for Safari and iPhone, and it works in Chrome too.** It's a Chrome-style debugging panel that lives right inside the page. It works in Safari on Mac, iPhone and iPad, including in-app WebViews, with no cable, Xcode or Mac pairing, and in Chrome, Edge and other Chromium browsers on desktop and Android, with an extension for each. It also gives your tests and AI agents the same view of the page through Playwright, WebDriver, an HTTP API and MCP.
+
+**Website:** [devtools.biratdatta.tech](https://devtools.biratdatta.tech) · [简体中文](https://devtools.biratdatta.tech/zh/) · [日本語](https://devtools.biratdatta.tech/ja/)
+
+It's one dependency-free JavaScript file, plus an optional Safari extension that adds it to every website.
+
+### Before vs after
+
+| You want to… | Before: Safari on its own | Now: with Safari DevTools |
+|---|---|---|
+| See console errors on an iPhone | Plug the phone into a Mac, enable Web Inspector on both, open Develop → device → page | Press **Ctrl+Shift+D** on the page, or stream it to your Mac over Wi-Fi |
+| Debug a page inside an app's WebView | Only possible if the app marks its WebView inspectable | Works anywhere you can load one script |
+| Find where a minified error came from | Open Sources and step through the source map | The Console shows `UserService.loadUser (user.service.ts:42)`, and the link opens that line |
+| Test what happens when an API fails or is slow | Set up local overrides or a proxy | Right-click the request → **Mock**, **Block** or **Delay**, or pick **Slow 3G / Offline** |
+| Turn CSS tweaks back into source code | Retype each change into your `.scss` | **Changes** tab → **Copy as CSS** (it keeps `@media` blocks) |
+| Check a web component's API | Dig through the shadow DOM by hand | **Component** pane: properties, slots, `::part()` hooks and the CSS variables it reads |
+| Compare the page with the Figma design | Take screenshots and flip between them | **Design overlay** with opacity and difference blend, plus **⌥+hover** to measure |
+| Catch iPhone-only layout bugs | Find them on a real device, one at a time | **Audit** flags inputs that cause zoom, `100vh`, broken sticky, safe-area misses, sideways scroll and more |
+| Time-travel through Redux / NgRx state in Safari | Not possible: Safari has no Redux DevTools extension | **Components → Store**: action log, diff, Jump and Dispatch |
+| Understand an unfamiliar error | Copy the stack, find the source, paste both into a chat | **✨ Explain** on the error sends the original source, recent requests and logs to Claude |
+| File a good bug report | Screenshot, retype steps, export a HAR, copy the console | 🐞 **Report a bug**: steps, errors, HAR, device info and screenshot, filed in Jira in one click |
+| See what VoiceOver gets | Turn on VoiceOver and listen | **Accessibility** tab: role, name and state for every element (through shadow DOM), tab order overlay, focus tracker |
+| Fix low contrast | Guess a darker colour, re-check | **Contrast**: nearest passing colour from your design tokens, one click to apply |
+| Catch unintended CSS changes in a component | Compare screenshots by eye | **Snapshots**: save a baseline, then see every style, size, position and text change |
+| Test dark mode, RTL, big text and long translations | Change system settings or the code | **Emulation** toggles, including pseudo-localisation, plus a side-by-side iPhone/iPad **responsive preview** |
+| Let tests or AI agents read the page | Not available | `SafariDevTools.automation` JSON API, a Playwright fixture, WebDriver, an HTTP API and an **MCP server** |
+
+### How it compares
+
+| | **Safari DevTools** | Safari Web Inspector | Eruda / vConsole |
+|---|:---:|:---:|:---:|
+| Same panel in Safari and Chrome (extension for both) | ✅ | Safari only | ✅ |
+| Runs on iPhone with no Mac or cable | ✅ | ❌ | ✅ |
+| Works in third-party app WebViews | ✅ | Only if inspectable | ✅ |
+| Console with source-mapped stack traces | ✅ | ✅ | ❌ |
+| Elements, styles and shadow DOM | ✅ | ✅ | Partial |
+| Web-component inspector (props, slots, parts, CSS vars) | ✅ | Partial | ❌ |
+| Live CSS with design-token autocomplete | ✅ | Partial | ❌ |
+| CSS changes as a copyable diff | ✅ | ✅ | ❌ |
+| Grid and flex overlays | ✅ | ✅ | ❌ |
+| Figma-style measure tool and design overlay | ✅ | ❌ | ❌ |
+| Design-token editor (all `--variables`) | ✅ | ❌ | ❌ |
+| Mock, block or delay requests | ✅ | ✅ | ❌ |
+| WebSocket and EventSource messages | ✅ | ✅ | ❌ |
+| Safari/iPhone pitfalls and accessibility audit (through shadow DOM) | ✅ | Partial | ❌ |
+| Fonts, images and animations inspectors | ✅ | Partial | ❌ |
+| Angular, Lit and React component inspector | ✅ | ❌ | ❌ |
+| Redux / NgRx store log with time travel | ✅ | ❌ | ❌ |
+| Live expressions, snippets and command palette | ✅ | Partial | Partial |
+| "Explain this error" with Claude (source + requests as context) | ✅ | ❌ | ❌ |
+| One-click Jira bug report (steps, HAR, errors, screenshot) | ✅ | ❌ | ❌ |
+| Accessibility tree through shadow DOM, tab-order overlay, focus tracker | ✅ | Partial | ❌ |
+| Contrast fixer using your design tokens | ✅ | ❌ | ❌ |
+| Visual regression snapshots of components | ✅ | ❌ | ❌ |
+| CSS coverage and unused design tokens | ✅ | ❌ | ❌ |
+| Emulate dark mode, reduced motion, RTL, text size, pseudo-localisation | ✅ | Partial | ❌ |
+| Side-by-side iPhone/iPad responsive preview | ✅ | Partial | ❌ |
+| Remote debugging over Wi-Fi from any browser | ✅ | Pairing required | ❌ |
+| Playwright fixture, JSON API and MCP server for AI agents | ✅ | ❌ | ❌ |
+| Step-through JavaScript debugger | ❌ | ✅ | ❌ |
+| HttpOnly cookies and browser-level request headers | ❌ | ✅ | ❌ |
+
+Safari DevTools runs inside the page, which is what makes it work on any device and in any WebView. For step-through debugging and browser-internal data, keep Safari's Web Inspector alongside it: the two complement each other. (Comparison as of October 2026. Built-in tools change, so corrections are welcome.)
+
+### What's new
+
+| Version | Highlights |
+|---|---|
+| **1.5** | **Chrome DevTools look**: Chrome's current light and dark colours, tab bar with a » overflow menu and a device-toolbar button, error and warning icons, a "Default levels" menu and live-expression eye in the Console, `== $0` on the selected element, Chrome-style Network table. Fixes: works on sites that swap their document at load, opens inside full-window frames (claude.ai artifacts, CodePen, Storybook), never breaks a page's own `addEventListener`, Trusted Types support, and sign-in codes and tokens are blanked in bug reports. |
+| **1.4** | Works in **Chrome, Edge and other Chromium browsers** (new Chrome extension, Chromium Playwright projects), **✨ Explain this error** with Claude, one-click **Jira bug reports** (auto steps, HAR, screenshot), **Accessibility** tab (tree through shadow DOM, tab-order overlay, focus tracker, contrast fixer with design tokens), visual-regression **Snapshots**, CSS **Coverage**, **emulation** (dark/light, reduced motion, RTL, text size, pseudo-localisation, colour blindness) and a side-by-side **responsive preview** |
+| **1.3** | **Components** tab (Angular signals, Lit and React trees, and a Redux/NgRx store with time travel), **Issues** tab, **live expressions**, **preserve log**, Chrome's console helpers, real `console.table`, **Snippets** and a **command palette** |
+| **1.2** | **Changes** tab (CSS diff → copy as CSS or patch), **grid and flex overlays**, **⌥+hover measure tool**, **design overlay** with difference blend, and the **Assets** tab (rendered fonts and fallbacks, oversized or blurry images, an animation slow-motion and scrubber) |
+| **1.1** | Automation API, Playwright fixture (WebKit desktop and iPhone), WebDriver script for real Safari, relay HTTP API and **MCP server** for AI agents |
+| **1.0** | Console, Elements (Styles, Computed, Listeners, Component), Sources with source maps, Network with mocking and throttling, Storage, Performance, Tokens, Audit, Device, remote mode for iPhone, and the Safari extension |
+
+### Screenshots
+
+### Features
+
+| Panel | Highlights |
+|---|---|
+| **Console** | Logs, errors and rejections. Source-mapped stack traces show original names, like `UserService.loadUser (user.service.ts:42)`. The REPL has autocomplete, history, `$0`, `$()`, `$$()` and `copy()`. |
+| **Elements** | DOM tree including shadow roots, a picker, and find by text, selector or XPath. Copy a node's selector, JS path, XPath or HTML. DOM breakpoints log the call stack. |
+| **Styles · Listeners · Component** | Live CSS with token autocomplete, plus inherited, `:host` and user-agent rules. See every event listener and where it was added. For web components: properties, slots, `::part()` and the CSS variables they read, with Lit and Angular details. |
+| **Sources** | Original files from source maps, with search across all files. |
+| **Network** | fetch, XHR, WebSocket and SSE. **Mock, block or delay** requests, throttle to 3G or offline, copy as fetch or cURL, replay requests, and export a HAR file. |
+| **Storage** | Local storage, session storage and cookies, with editing. |
+| **Components** | Angular (signals and inputs), Lit and React component trees with editable state, plus a **Redux/NgRx/Zustand store log with time travel**. Safari has no Redux DevTools, so this provides it. |
+| **Issues** | CSP violations, mixed content, deprecated APIs, scroll-blocking listeners, and failed loads and requests, in one place. |
+| **Console power-ups** | Live expressions, preserving the log across reloads, real `console.table`, `monitorEvents`, `monitor`, `debug`, `getEventListeners`, Snippets per site, and a **⌘K / Ctrl+Shift+P command palette**. |
+| **Changes** | Every CSS edit you made in the panel as a before/after diff, with copy as CSS (for `.scss`) or as a diff, and revert. |
+| **Assets** | Fonts that actually rendered (and fallbacks), oversized or blurry images, and animations you can pause, scrub and slow down. |
+| **Explain & report** | **✨ Explain** on any error asks Claude for the cause and a fix, using the original source, recent requests and logs. 🐞 **Report a bug** files a Jira issue with auto-captured steps, errors, HAR, device info and a screenshot. |
+| **Accessibility** | Accessibility tree (role, name, states) through shadow DOM, a numbered **tab-order overlay**, a **focus tracker** that flags focus escaping dialogs or getting lost, and a **contrast fixer** that suggests the nearest passing colour from your tokens. |
+| **Snapshots · Coverage** | Save a component as a baseline and get every style, layout and text difference after a change. Find CSS rules and design tokens that nothing on the page uses. |
+| **Performance** | Web Vitals where Safari supports them, live FPS and DOM-size graphs, long tasks and a memory-leak check. |
+| **Tokens** | Every `--css-variable` on the page, grouped, with live overrides you can copy as CSS. |
+| **Audit** | Safari and iPhone pitfalls, plus accessibility checks that reach into shadow DOM. |
+| **Device** | **Emulation** (dark/light, reduced motion, RTL, text size, pseudo-localisation, colour-vision filters), a side-by-side **iPhone/iPad responsive preview**, a design overlay that compares the page with a Figma export (opacity, scale, difference blend), plus the safe-area and viewport overlay, a touch visualiser and outline-all-elements. |
+| **Layout and measuring** | Grid and flex overlays (lines, numbers, gaps, direction), and ⌥+hover distance measuring as in Figma. |
+| **Remote mode** | Debug an iPhone from your Mac over Wi-Fi: `node standalone/remote/relay.js`. |
+| **Automation** | `SafariDevTools.automation` JSON API, a Playwright fixture (WebKit desktop and iPhone), WebDriver for real Safari, and an HTTP API plus an **MCP server** for AI agents. See [standalone/README.md](https://github.com/biratdatta/safari-devtools/blob/main/standalone/README.md#automation-playwright-real-safari-and-ai-agents). |
+
+Extras: light and dark themes, docking to the bottom or right, a debug-report export, and settings remembered per site.
+
+Shortcuts: **Ctrl+Shift+D** shows or hides the panel, and **Ctrl+Shift+C** picks an element.
+
+### Use it
+
+#### Option 1a: Safari extension (works on every site)
+
+1. Download this repo: green **Code** button → **Download ZIP**, then unzip it.
+2. Safari → Settings → Advanced → tick **Show features for web developers**.
+3. Safari → Settings → **Developer** → **Add Temporary Extension…** → select the **`extension`** folder.
+4. Settings → **Extensions** → tick **Safari DevTools**, then **Edit Websites…** → **Allow**.
+5. Reload any page and press **Ctrl+Shift+D**, or click the `</>` toolbar icon.
+
+Temporary extensions are removed when Safari quits. To install it permanently, build it with Xcode; see [`extension/README.md`](https://github.com/biratdatta/safari-devtools/blob/main/extension/README.md).
+
+#### Option 1b: Chrome extension (Chrome, Edge, Brave, Arc, Opera)
+
+1. Download this repo and unzip it, as above.
+2. Open `chrome://extensions` (or `edge://extensions`) and switch on **Developer mode** (top right).
+3. Click **Load unpacked** and select the **`chrome-extension`** folder.
+4. Pin it from the puzzle-piece menu. Reload any page and press **Alt+Shift+D** (or click the icon).
+
+In Chrome the tool loads as a "main world" content script before the page's own code, so it also works on sites whose Content-Security-Policy blocks injected scripts. Change the shortcut at `chrome://extensions/shortcuts`. Needs Chrome 111 or later.
+
+#### Option 1c: Bookmarklet (any browser, no install)
+
+If an extension isn't allowed on a site (for example a work Chrome policy), use the bookmarklet in [`standalone/bookmarklet.md`](https://github.com/biratdatta/safari-devtools/blob/main/standalone/bookmarklet.md). It loads the panel into the current page with one click.
+
+#### Option 2: Script tag (your own app)
+
+Add this as the first thing in `<head>`, in development builds only:
+
+```html
+<script src="https://cdn.jsdelivr.net/gh/biratdatta/safari-devtools@main/standalone/safari-devtools.js"></script>
+```
+
+#### Option 3: Try the demo
+
+Open [`standalone/demo.html`](https://github.com/biratdatta/safari-devtools/blob/main/standalone/demo.html) in Safari or Chrome.
+
+### Repo layout
+
+```
+standalone/   safari-devtools.js (the tool), demo.html, docs, remote/ (relay + viewer for iPhone debugging)
+extension/          Safari Web Extension (manifest, content script, icons, Xcode build script)
+chrome-extension/   Chrome / Edge extension (Manifest V3, service worker, MAIN-world content script)
+docs/               demo videos (16:9 and 9:16), GIF and screenshots used in this README
+site/               the website (static, deployed by Cloudflare Pages from this folder)
+sync.sh             copies safari-devtools.js into both extensions and the website, and rebuilds the download zips
+```
+
+`safari-devtools.js` is the same file in all three folders, and `content.js` / `background.js` are shared by both extensions. Edit `standalone/safari-devtools.js` (or `extension/`'s shared files), then run `./sync.sh`.
+
+### Limits
+
+These come from running inside the page instead of inside the browser:
+
+- HttpOnly cookies, browser-added request headers and cross-origin stylesheets aren't visible.
+- There's no step-through JavaScript debugger. DOM breakpoints log a stack trace instead and can trigger the browser's own debugger (Web Inspector or Chrome DevTools).
+- Sites with a strict Content-Security-Policy may block the injected script.
+
+### License
+
+MIT. See [LICENSE](https://github.com/biratdatta/safari-devtools/blob/main/LICENSE).
+
+
+---
+
+# Tool guide
+
+Source: https://github.com/biratdatta/safari-devtools/blob/main/standalone/README.md
+
+## Safari DevTools
+
+**The best in-page DevTools for Safari and iPhone, and it works in Chrome too.** A Chrome-style panel that runs inside the page, so it works in any Safari (Mac, iPhone, iPad and in-app WebViews) with no cable or Xcode, and in Chrome, Edge and other Chromium browsers (desktop and Android). It's one dependency-free file, `safari-devtools.js`, and its UI is isolated in a Shadow DOM so it never clashes with your page's CSS. See the [main README](https://github.com/biratdatta/safari-devtools/blob/main/README.md#how-it-compares) for how it compares with Safari's Web Inspector, Eruda and vConsole.
+
+### Panels
+
+| Panel | What you get |
+|---|---|
+| **Console** | Every error has an **✨ Explain** button: it collects the error, the source-mapped stack, the original source around the failing line, recent requests and console output, and asks Claude for the cause and a fix (or opens the prompt in Claude.ai). Logs, warnings, errors and unhandled rejections, with `%c` styling, groups, `count` and `time`. Repeated messages collapse into a counter, and objects open as expandable trees. Error stack traces are **source-mapped**, so minified names like `at o` become `UserService.loadUser (user.service.ts:42)`. The REPL has **autocomplete** for globals and object properties (Tab or → to accept), history on ↑/↓, and `$0`, `$()`, `$$()`, `copy()`, `clear()` and `inspect()`. |
+| **Elements** | Live DOM tree including shadow roots, a box-model highlight and an element picker (Ctrl+Shift+C). **Find** (⌘F) matches text, CSS selectors (piercing shadow roots) or XPath. Right-click a node to copy its selector, JS path, XPath or outerHTML, edit it as HTML, hide it, delete it or store it as a global. **DOM breakpoints** fire on subtree, attribute or removal changes and log the call stack, optionally pausing in Web Inspector. |
+| **Styles · Computed · Listeners · Component** | **Layout** lists every grid and flex container. Click the `grid`/`flex` badge next to a tag in the tree to overlay grid lines with numbers, gaps, flex items and direction on the page. **Styles** shows matched, `:host`, user-agent and inherited rules with overrides struck through, and live editing with suggestions for properties, keywords and your `var(--tokens)`. **Computed** has the box model. **Listeners** lists every event listener on the element and its ancestors, with where it was added, and lets you remove one. **Component** is for web components: properties (editable), observed attributes, slots, `::part()` hooks and the CSS variables it reads, plus Lit and Angular component details. |
+| **Console extras** | **Live expressions** (pinned JS values that update continuously), **Preserve log** across reloads and navigations, real `console.table()` tables, and Chrome's console helpers: `monitorEvents(el, 'mouse')`, `unmonitorEvents`, `monitor(fn)` / `unmonitor`, `debug(fn)` / `undebug`, `getEventListeners(el)`, `keys()`, `values()`, `table()` and `dir()`. |
+| **Components** | A **component tree** for Angular (dev builds; properties, `@Input`s and **signals**, editable, then `ng.applyChanges()`), Lit and other web components (reactive properties and state, editable) and React 16–19 (props, plus editable state hooks and class state). **Store**: an action log with **time travel** for Redux Toolkit, NgRx (`StoreDevtoolsModule` / `provideStoreDevtools`) and Zustand devtools. Safari DevTools provides the Redux DevTools extension API that Safari lacks, so these connect automatically. Each action shows its payload, the changed keys and the state after it, with Jump and Dispatch. |
+| **Issues** | CSP violations, mixed content, deprecated APIs (`document.write`, sync XHR, `unload` listeners, `document.domain`), non-passive scroll listeners, failed resource loads and failed requests, grouped and counted as they happen. |
+| **Sources** | Original files from source maps, plus the scripts as served. Has **Snippets**, reusable scripts saved per site (Ctrl/⌘+Enter to run), **search across all files**, and opens at the exact line from any Console link. |
+| **Network** | `fetch`, XHR, **WebSocket** and **EventSource** traffic (with a Messages view), with a waterfall, headers, payload, JSON preview and timing. **Rules** let you block a URL, mock a response (status, headers, body) or add a delay, matching by text, `*` wildcards or `/regex/`. **Throttling** offers Fast 4G, Fast 3G, Slow 3G and Offline. Right-click a request to copy it as fetch or cURL, copy the response, mock it, block it or replay it. |
+| **Storage** | Local storage, session storage and cookies: add, edit, rename, delete and filter, with a JSON preview. |
+| **Changes** | Every CSS edit you make in the panel (rule values, added or disabled properties, inline styles and token overrides), shown as a red/green before-and-after diff. **Copy as CSS** to paste into your `.css`/`.scss` (with `@media` wrappers kept), **copy as diff**, download a `.css` file, or revert one rule or everything. |
+| **Assets** | **Fonts:** the font each piece of text actually renders in, flagging when the first font in the CSS stack wasn't available and the browser fell back; also each `@font-face` and whether it loaded. **Images:** displayed size compared with the file's real size at your screen density, highlighting oversized images (with the bytes you'd save), blurry low-res images, images missing width/height, below-the-fold images that aren't lazy-loaded, and heavy PNG/JPEG files. **Animations:** every running CSS animation, transition and `element.animate()`, with pause/play, a scrubber and global slow-motion (0.5×, 0.25×, 0.1×). |
+| **Performance** | FCP, LCP, CLS, INP and TTFB where Safari supports them, a live FPS graph, a DOM-size graph, long tasks, the biggest layout shifts, page-load timings, and a **memory leak check** for removed elements still held in memory. |
+| **Tokens** | Every CSS custom property on the page (including inside components), grouped by prefix with its current value, where it's defined and how often it's used. Click a value to override it live across the page, then copy your overrides as CSS. |
+| **Audit** | Scans the page, including shadow DOM, for **Safari and iPhone issues** (inputs under 16px that cause zoom, `100vh`, sticky inside overflow, fixed inside a transform, missing `viewport-fit`, autoplay rules, horizontal scroll, small tap targets…) and **accessibility issues** (missing alt text, labels and accessible names, low contrast, click handlers that can't be reached by keyboard, duplicate ids, heading order…). |
+| **Accessibility** | **Tree:** the role, accessible name (and where it comes from) and states of every element, as VoiceOver gets them, including inside shadow DOM and slots; elements with no name are flagged. **Tab order:** every focusable element in keyboard order, and an on-page overlay with numbered badges and the path between them; positive `tabindex` is flagged. **Focus tracker:** logs each focus change and flags focus that escapes an open dialog or is lost to `<body>`. **Contrast:** pick any text to see its ratio against the real background (AA/AAA, large-text aware) and the **nearest passing colours from your design tokens**, or the nearest passing shade of the same hue, with one-click Apply (recorded in Changes). |
+| **Coverage** | CSS rules that match nothing on the current page (per stylesheet, including shadow roots), rules inside inactive `@media` blocks, and **design tokens that are declared but never used**. Copy the list as a report. |
+| **Snapshots** | **Visual regression for components:** select an element and save it as a baseline (layout, text and ~40 key computed styles for each element inside). After a change, Compare lists added/removed elements, moved or resized boxes, and style and text changes, and outlines them on the page. Export/import baselines as JSON to share or use in Playwright. |
+| **Device** | **Emulation:** dark/light colour scheme, reduced motion, RTL, text size 125–200%, **pseudo-localisation** (accented, ~35% longer text in brackets, to catch truncation before translating) and colour-vision deficiency filters. **Responsive preview:** the page at iPhone SE, iPhone 15, iPhone 15 Pro Max, iPad mini, iPad Air and iPad landscape side by side, with zoom and synced scrolling. A **design overlay**: drop, paste (⌘V) or choose a Figma/Sketch export, set its opacity and export scale (1×–4×), nudge it with the arrow keys, and switch on *difference* blend so any mismatch lights up. Also viewport, visual viewport, the measured `100vh`/`svh`/`lvh`/`dvh` and safe-area insets, plus toggles for a **safe-area and viewport overlay**, a **touch visualiser** (taps, swipes, long-press and multi-touch, drawn on screen) and **outline all elements**. |
+
+From the **⋯ menu**, you can switch between light, dark and auto themes, dock the panel to the bottom or right, **export a debug report** (JSON) or a **HAR** file, and start **remote mode**, open the **responsive preview**, or **report a bug**. The 🐞 button builds a bug report with auto-captured steps to reproduce (clicks, changes and navigation; typed values are never recorded), console errors, failed requests, device info, a HAR file, the debug report and an optional screenshot, and files it in **Jira** in one click (or copy it as Jira text). Settings are remembered per site.
+
+### Use it
+
+**In your own app (best: it captures everything from the first line):**
+
+```html
+<script src="/path/to/safari-devtools.js"></script>   <!-- first thing in <head> -->
+```
+
+Optional attributes:
+- `data-open="true"` opens the panel on load.
+- `data-launcher="false"` hides the floating button.
+- `data-remote="http://<mac-ip>:9230"` starts remote mode.
+
+**Try it now:** open `demo.html` in Safari or Chrome. Keep it in the same folder as the script.
+
+**On every site:** use the browser extension. Safari: `safari-devtools-extension/`. Chrome, Edge, Brave or Arc: `chrome://extensions` → **Developer mode** → **Load unpacked** → the `safari-devtools-chrome/` folder (see the main README).
+
+### Remote mode: debug an iPhone from your Mac
+
+Remote mode streams the phone's console, errors and network to your Mac, and runs code you type on the Mac on the phone. It needs no cable and works on the same Wi-Fi.
+
+```bash
+node remote/relay.js          # on your Mac (Node 16+, no install needed)
+```
+
+It prints your Mac's address. Then:
+
+1. **Try it:** open `http://<mac-ip>:9230/demo` on the iPhone.
+2. **Use it in your own page:** load the tool from the relay:
+   `<script src="http://<mac-ip>:9230/safari-devtools.js" data-remote="http://<mac-ip>:9230"></script>`.
+   If your page already loads the tool, add `?sdt-remote=http://<mac-ip>:9230` to its URL instead.
+3. **Watch it:** open `http://localhost:9230` on the Mac to see the logs and requests, and to run JavaScript on the phone.
+
+Safari won't let an `https://` page talk to an `http://` relay, because that's mixed content. Use it with local `http://` dev servers, or put the relay behind https.
+
+### Explain with Claude and Jira bug reports
+
+Both run through the relay on your Mac, so your API key and Jira token never reach the page or the phone.
+
+```bash
+ANTHROPIC_API_KEY=sk-ant-... \
+JIRA_URL=https://your-team.atlassian.net JIRA_EMAIL=you@company.com JIRA_TOKEN=... JIRA_PROJECT=WEB \
+node remote/relay.js
+```
+
+- `SDT_MODEL` picks the Claude model (default `claude-sonnet-5-5`); `JIRA_ISSUE_TYPE` defaults to `Bug`. Create a Jira API token at id.atlassian.com → Security → API tokens.
+- Without a relay you can still use **Open in Claude.ai**, **Copy prompt**, **Copy as Jira text** and **Download attachments**.
+- These endpoints spend money or create tickets, so without `SDT_TOKEN` the relay only accepts them from this Mac **and** from local pages (`localhost`, `127.0.0.1`, `*.local`, `*.test`). Add other dev sites with `SDT_ORIGINS=https://staging.example.com`. For a phone or another machine, start the relay with `SDT_TOKEN=...` and enter the token in the relay field of the Explain or Report dialog.
+- The prompt is shown before anything is sent, so you can remove anything private. Screenshots use Safari's screen-sharing prompt on the Mac; iOS has no screen capture API, so attach one by hand there.
+
+### Automation: Playwright, real Safari and AI agents
+
+Everything the panel shows is also available as JSON through `window.SafariDevTools.automation`, so tests and agents can use it. Call `.help()` for the list of methods.
+
+```js
+const A = SafariDevTools.automation;
+A.errors();                                   // console errors (with source-mapped locations)
+A.network({ url: '/api', failed: true, bodies: true });
+A.mock('/api/user', { status: 500, body: { error: 'down' } });   // also block(), delay(), throttle('slow3g')
+A.audit({ severity: 'error' });               // Safari + accessibility issues, with CSS selectors
+A.styles('user-card >>> .label');             // ">>>" goes into shadow roots
+A.listeners('#buy'); A.component('user-card'); A.tokens(); A.perf(); A.report();
+await A.waitForLog('ready'); await A.waitForRequest('/api/user');
+```
+
+**Playwright (Safari's WebKit engine, desktop and iPhone).** See `playwright/`. The fixture injects the tool before the page's own scripts. It adds a typed `devtools` object to every test, and attaches a debug report and a HAR file when a test fails.
+
+```ts
+import { test, expect } from './safari-devtools.fixture';
+test('checkout survives an API outage', async ({ page, devtools }) => {
+  await devtools.mockBeforeLoad('/api/cart', { status: 503 });
+  await page.goto('/checkout');
+  expect(await devtools.errors()).toEqual([]);
+});
+```
+
+To set it up, run `cd playwright && npm run setup`, then `npm test`. Playwright drives WebKit, the engine Safari uses, not the Safari app itself.
+
+**Real Safari (WebDriver).** `playwright/real-safari.mjs` drives the actual Safari app through `safaridriver`, injects the tool and reads its data. It needs a one-time setup:
+
+1. In Safari → Settings → Developer, tick **Allow remote automation**.
+2. Run `safaridriver --enable` in Terminal.
+
+**AI agents and other tools (remote).** The relay (`node remote/relay.js`) has a JSON API for any connected page, including an iPhone:
+
+| Endpoint | What it does |
+|---|---|
+| `GET /api/devices` | Connected pages (URL, user agent, viewport) |
+| `GET /api/logs?level=error&text=…` | Console messages |
+| `GET /api/network` | Requests |
+| `POST /api/eval` `{ "code": "document.title" }` | Run JavaScript on the device and get the result |
+| `POST /api/call` `{ "action": "audit", "args": [] }` | Call any automation method |
+
+By default these endpoints only answer requests from your Mac. To allow other machines, start the relay with `SDT_TOKEN=secret node remote/relay.js` and send `Authorization: Bearer secret`.
+
+**MCP server (Claude, Cursor and other MCP clients).** `remote/mcp.js` exposes the same features as tools. They include `get_console`, `get_network`, `run_js`, `audit_page`, `inspect_element`, `mock_request`, `set_throttling`, `get_design_tokens`, `get_performance`, `debug_report`, and from 1.4 `accessibility_tree`, `tab_order`, `check_contrast`, `css_coverage`, `emulate`, `save_snapshot`, `compare_snapshot`, `bug_report` and `explain_error_context`.
+
+```bash
+claude mcp add safari-devtools -- node /path/to/remote/mcp.js        # Claude Code
+```
+
+For Claude Desktop, add `"safari-devtools": { "command": "node", "args": ["/path/to/remote/mcp.js"] }` under `mcpServers`. Start the relay first. Set `SDT_RELAY` or `SDT_TOKEN` if you changed the defaults.
+
+### Shortcuts
+
+- **Ctrl+Shift+D** or **Alt+Shift+D** (⌥⇧D): show or hide the panel. In Chrome on Windows/Linux use Alt+Shift+D, because Chrome keeps Ctrl+Shift+D for itself
+- **Ctrl+Shift+C** or **Alt+Shift+C**: inspect an element (Esc cancels). In Chrome on Windows/Linux, Ctrl+Shift+C opens Chrome's own inspector, so use Alt+Shift+C
+- **Ctrl+Shift+P** (or **⌘K** inside the panel): **command palette**. Jump to any panel, action, snippet or source file, or type `#id`, `.class` or `<tag` to find elements
+- **⌘F / Ctrl+F** in Elements: find
+- **Hold ⌥ (Option) and hover** with the panel open: measure the distance from the selected element to the one under the mouse, as in Figma
+- **Ctrl+L** in the Console: clear it
+- **Tab / →** in the Console: accept an autocomplete suggestion
+
+### JavaScript API
+
+```js
+SafariDevTools.show(); SafariDevTools.hide(); SafariDevTools.toggle();
+SafariDevTools.inspect(document.querySelector('header'));
+SafariDevTools.clear();
+```
+
+### Limits of an in-page tool
+
+Page scripts can't see some things the browser's own DevTools can:
+
+- HttpOnly cookies and browser-added request headers (Cookie, User-Agent) aren't visible.
+- Cross-origin stylesheets can't be read.
+- Native resource loads (images, scripts, CSS) show timing only, and rules and throttling apply to `fetch`/XHR only.
+- There's no step-through JS debugger. DOM breakpoints can trigger `debugger;`, which pauses only when Safari's Web Inspector is open.
+- Safari doesn't expose long tasks, layout shifts or JS heap size to pages, so those show as unsupported.
+- The leak check relies on garbage-collection timing, so treat it as a hint.
+
+
+---
+
+# Bookmarklet
+
+Source: https://github.com/biratdatta/safari-devtools/blob/main/standalone/bookmarklet.md
+
+## Bookmarklet
+
+Use this when the browser extension can't run on a site, for example when a work Chrome policy
+blocks extensions on company domains. A bookmarklet runs as part of the page, so extension
+policies don't apply to it.
+
+1. Show the bookmarks bar (Chrome: ⌘⇧B, Safari: ⌘⇧B).
+2. Right-click it → **Add page…** (Chrome) / **Add Bookmark** (Safari).
+3. Name it **DevTools** and paste this as the URL:
+
+```
+javascript:(function(){if(window.SafariDevTools){SafariDevTools.toggle();return;}var s=document.createElement('script');s.src='https://cdn.jsdelivr.net/gh/biratdatta/safari-devtools@v1.5.2/standalone/safari-devtools.js';s.dataset.open='true';s.onerror=function(){alert('Safari DevTools could not load: this site blocks outside scripts (Content-Security-Policy).');};document.head.appendChild(s);})();
+```
+
+Click it on any page to open or close the panel. It loads after the page, so logs and requests
+from before the click aren't captured; reload and click again early if you need them.
+
+The URL pins version `v1.5.2`. After you publish a new version, create a matching git tag
+(`git tag v1.4.2 && git push --tags`) and update the number in the bookmark.
+
+
+---
+
+# Chrome extension
+
+Source: https://github.com/biratdatta/safari-devtools/blob/main/chrome-extension/README.md
+
+## Safari DevTools: Chrome extension
+
+The same in-page DevTools panel as the Safari extension, for **Chrome, Edge, Brave, Arc, Opera** and other Chromium browsers (Chrome 111+).
+
+### Install (1 minute)
+
+1. Open `chrome://extensions` (Edge: `edge://extensions`).
+2. Switch on **Developer mode** (top right).
+3. Click **Load unpacked** and pick this folder.
+4. Pin the extension from the puzzle-piece menu, reload any page, and press **Alt+Shift+D** or click the icon.
+
+### If the panel doesn't appear
+
+- Click the icon again: in Chrome it loads the tool on demand, even in tabs that were open before you installed or reloaded the extension.
+- A red **!** on the icon means Chrome refused; hover it for the reason. Chrome never lets extensions run on `chrome://` pages, the New Tab page or the Chrome Web Store.
+- For local `file://` pages: `chrome://extensions` → Safari DevTools → **Details** → turn on **Allow access to file URLs**.
+- Make sure you loaded **this** folder. The Safari folder (`safari-devtools-extension`) shows a manifest error in Chrome.
+
+Pages whose real content is in a full-window frame (claude.ai artifacts, CodePen, StackBlitz, Storybook) get the panel inside that frame, so you see the app's own console, network and elements. It loads when you click, so messages from before the click aren't captured there.
+
+Permissions: `scripting` plus access to all sites are used only to load the panel into the page, or into its main frame, when you click the icon.
+
+### Shortcuts
+
+- **Alt+Shift+D** (⌥⇧D on Mac): show or hide the panel. Change it at `chrome://extensions/shortcuts`.
+- **Alt+Shift+C**: pick an element. (Ctrl+Shift+C is Chrome's own inspector on Windows/Linux.)
+- **Ctrl+Shift+P**: command palette.
+
+### How it differs from the Safari build
+
+| | Chrome | Safari |
+|---|---|---|
+| How the tool loads | `"world": "MAIN"` content script, before the page's code | `content.js` injects it into the page |
+| Pages with a strict Content-Security-Policy | Works | May be blocked |
+| Background | `service_worker` | `background.scripts` |
+| Screenshot in bug reports | Offers the current tab first | System window picker |
+
+`content.js`, `background.js` and `safari-devtools.js` are the same files as in the Safari extension. In the repo, run `./sync.sh` after editing them.
+
+### What's inside
+
+```
+manifest.json        Manifest V3 for Chromium
+sdt-config.js        sets window.__SDT_CONFIG__ (launcher off, source = extension)
+safari-devtools.js   the tool, loaded in the page's MAIN world
+content.js           toolbar/shortcut messages -> the page (shared with Safari)
+background.js        toolbar button / Alt+Shift+D (shared with Safari)
+images/              icons
+```
+
+To publish it on the Chrome Web Store, zip this folder and upload it from the Chrome Web Store developer dashboard (one-time $5 registration).
+
+
+---
+
+# Safari extension
+
+Source: https://github.com/biratdatta/safari-devtools/blob/main/extension/README.md
+
+## Safari DevTools: Safari extension
+
+This puts the same Chrome-style DevTools panel (Console, Elements/CSS, Network, Storage) on every website you open in Safari. You don't need to add any script tags or bookmarklets.
+
+- **Toolbar button**: click it to show or hide the panel.
+- **Ctrl+Shift+D**: show or hide the panel. **Ctrl+Shift+C**: pick an element to inspect.
+- The panel loads before each page's own code, so logs and requests from page load are captured too.
+
+### Install (about 5 minutes, once)
+
+You need a Mac with **Xcode** installed (free from the Mac App Store). Open it once after installing so it finishes setup.
+
+**1. Create the Xcode project.** Open Terminal in this folder and run:
+
+```bash
+chmod +x build-xcode-project.sh
+./build-xcode-project.sh          # add --ios to also build for iPhone/iPad
+```
+
+Xcode opens with a new project named **Safari DevTools**.
+
+**2. Sign it with your Apple ID.** In Xcode:
+
+1. Click the blue project icon at the top of the left sidebar.
+2. For **each target** (the app and the extension), open **Signing & Capabilities** and pick your **Team**. A free "Personal Team" from your Apple ID works. If you haven't added your Apple ID yet, use Xcode → Settings → Accounts.
+
+**3. Build and run.** Press **⌘R**. A small "Safari DevTools" app opens, which installs the extension, and you can then close the app.
+
+**4. Turn it on in Safari**
+
+1. **Safari → Settings → Advanced:** tick **Show features for web developers**.
+2. **Safari → Settings → Developer:** tick **Allow unsigned extensions**. On older Safari versions this is **Develop menu → Allow Unsigned Extensions**. You only need this step if Xcode signed the extension without a Team.
+3. **Safari → Settings → Extensions:** tick **Safari DevTools**.
+4. Click **Edit Websites…** (or the extension's toolbar icon) and set it to **Allow on every website**.
+
+Reload any page, then click the toolbar icon. The panel appears.
+
+### Updating the tool
+
+The Xcode project points at the files in this folder. After you change `safari-devtools.js` (or anything here), press **⌘R** in Xcode again and reload the page in Safari.
+
+### Troubleshooting
+
+| Problem | Fix |
+|---|---|
+| Extension isn't listed in Safari Settings | Run the app from Xcode again (⌘R) and restart Safari. |
+| Extension disappears after quitting Safari | Unsigned extensions reset each launch. Pick a Team in Signing & Capabilities so it stays installed. |
+| Toolbar icon does nothing on a page | Give it access to that site (toolbar icon → *Always Allow on This Website*) and reload. Safari's own pages (Settings, Start Page) never allow extensions. |
+| Panel doesn't appear on one specific site | That site's Content-Security-Policy may block injected scripts. Use Safari's Web Inspector there. |
+| You want the floating round button back | In `content.js`, change `s.dataset.launcher = 'false'` to `'true'`. |
+
+### Sharing it with others
+
+To give other people a signed build, or to publish it on the Mac App Store, you need the **Apple Developer Program** ($99/year). Use Xcode → Product → Archive, then distribute. Without that, others can build it themselves by following the steps above.
+
+### What's inside
+
+```
+manifest.json            extension definition (Manifest V3)
+content.js               runs on every page; injects safari-devtools.js into the page
+background.js            toolbar button → toggles the panel
+safari-devtools.js       the DevTools panel itself (same file as the standalone version)
+images/                  app and toolbar icons
+build-xcode-project.sh   wraps the folder into an Xcode project
+```
