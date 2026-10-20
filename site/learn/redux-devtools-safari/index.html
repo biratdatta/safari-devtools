@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Redux DevTools in Safari (and NgRx, Zustand) · Safari DevTools</title>
+<meta name="description" content="Safari has no Redux DevTools extension. Safari DevTools provides the same API, so Redux Toolkit, NgRx and Zustand connect, with an action log and time travel.">
+<link rel="canonical" href="https://devtools.biratdatta.tech/learn/redux-devtools-safari/">
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="alternate" type="text/markdown" title="LLM-friendly summary" href="/llms.txt">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Safari DevTools">
+<meta property="og:title" content="Redux DevTools in Safari (and NgRx, Zustand)">
+<meta property="og:description" content="Safari has no Redux DevTools extension. Safari DevTools provides the same API, so Redux Toolkit, NgRx and Zustand connect, with an action log and time travel.">
+<meta property="og:url" content="https://devtools.biratdatta.tech/learn/redux-devtools-safari/">
+<meta property="og:image" content="https://devtools.biratdatta.tech/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Redux DevTools in Safari (and NgRx, Zustand)">
+<meta name="twitter:description" content="Safari has no Redux DevTools extension. Safari DevTools provides the same API, so Redux Toolkit, NgRx and Zustand connect, with an action log and time travel.">
+<meta name="twitter:image" content="https://devtools.biratdatta.tech/og.jpg">
+<link rel="stylesheet" href="/assets/site.css">
+<link rel="stylesheet" href="/assets/footer.css">
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@graph": [
+  {
+   "@type": "TechArticle",
+   "headline": "Redux DevTools in Safari (and NgRx, Zustand)",
+   "description": "Safari has no Redux DevTools extension. Safari DevTools provides the same API, so Redux Toolkit, NgRx and Zustand connect, with an action log and time travel.",
+   "url": "https://devtools.biratdatta.tech/learn/redux-devtools-safari/",
+   "datePublished": "2026-10-20",
+   "dateModified": "2026-10-20",
+   "inLanguage": "en",
+   "image": "https://devtools.biratdatta.tech/og.jpg",
+   "author": {
+    "@type": "Person",
+    "name": "Birat Datta",
+    "url": "https://github.com/biratdatta"
+   },
+   "publisher": {
+    "@type": "Organization",
+    "name": "Safari DevTools",
+    "logo": {
+     "@type": "ImageObject",
+     "url": "https://devtools.biratdatta.tech/logo.png"
+    }
+   },
+   "about": {
+    "@type": "SoftwareApplication",
+    "name": "Safari DevTools",
+    "url": "https://devtools.biratdatta.tech/"
+   }
+  },
+  {
+   "@type": "BreadcrumbList",
+   "itemListElement": [
+    {
+     "@type": "ListItem",
+     "position": 1,
+     "name": "Home",
+     "item": "https://devtools.biratdatta.tech/"
+    },
+    {
+     "@type": "ListItem",
+     "position": 2,
+     "name": "Learn",
+     "item": "https://devtools.biratdatta.tech/learn/"
+    },
+    {
+     "@type": "ListItem",
+     "position": 3,
+     "name": "Redux DevTools in Safari",
+     "item": "https://devtools.biratdatta.tech/learn/redux-devtools-safari/"
+    }
+   ]
+  }
+ ]
+}
+</script>
+</head>
+<body>
+<header class="nav"><div class="wrap">
+  <a class="brand" href="/"><img src="/logo.png" alt="" width="26" height="26">Safari DevTools</a>
+  <nav aria-label="Site"><a href="/#features">Features</a><a href="/compare/">Compare</a><a href="/learn/">Learn</a><a href="/guides/">Guides</a><a href="https://github.com/biratdatta/safari-devtools">GitHub</a></nav>
+  <a class="btn primary small" href="/#install">Get it free</a>
+</div></header>
+<main class="article">
+<nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> <span aria-hidden="true">›</span> <a href="/learn/">Learn</a></nav>
+<h1>Redux DevTools in Safari (and NgRx, Zustand)</h1>
+<p class="meta">Updated 2026-10-20 · 2 min read</p>
+<p class="lead">The Redux DevTools extension exists for Chrome and Firefox, but not for Safari or iPhone. Safari DevTools fills that gap.</p>
+<h2>How it works</h2>
+<p>Safari DevTools provides <code>window.__REDUX_DEVTOOLS_EXTENSION__</code> and <code>window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__</code>, the same hooks the official extension uses. Libraries that look for the extension connect to Safari DevTools instead, with no code changes.</p>
+<div class="tw"><table><thead><tr><th scope="col">Library</th><th scope="col">What to do</th></tr></thead><tbody><tr><td>Redux Toolkit</td><td>Nothing. <code>configureStore</code> enables DevTools by default in development.</td></tr><tr><td>Plain Redux</td><td>Use <code>window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__</code> to compose your enhancers, as the Redux docs describe.</td></tr><tr><td>NgRx</td><td>Add <code>provideStoreDevtools()</code> (or <code>StoreDevtoolsModule.instrument()</code>).</td></tr><tr><td>Zustand</td><td>Wrap your store with the <code>devtools</code> middleware.</td></tr></tbody></table></div>
+<h2>What you get</h2>
+<p>Open <b>Components → Store</b> to see every action with its payload, which keys changed, and the full state after it. <b>Jump</b> to any earlier action to time-travel the UI, or <b>Dispatch</b> a new action by hand.</p>
+<h2>One requirement: load it first</h2>
+<p>Stores look for the extension when they're created, so Safari DevTools must load before your app. The browser extensions do this automatically. With a script tag, put it first in <code>&lt;head&gt;</code>. The bookmarklet loads too late for store connection; use it for everything else.</p>
+
+<div class="cta"><div><b>Try Safari DevTools</b><span>Free and open source. Works in Safari, Chrome and on iPhone.</span></div>
+<div class="btns"><a class="btn primary" href="/#install">Install</a><a class="btn ghost" href="/#demo">Live demo</a></div></div>
+<section class="related"><h2>Related</h2><ul><li><a href="/learn/debug-shadow-dom-safari/">Debugging web components and shadow DOM in Safari<small>Inspect shadow roots, slots, ::part() hooks and the CSS variables a web component reads,…</small></a></li><li><a href="/compare/chrome-devtools/">Safari DevTools vs Chrome DevTools<small>Chrome DevTools is the gold standard on desktop and Android but can&#x27;t attach to iPhone.…</small></a></li><li><a href="/guides/install-safari/">Install Safari DevTools in Safari on Mac<small>Add the Safari DevTools extension to Safari as a temporary extension in a minute, or…</small></a></li></ul></section>
+</main>
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="fgrid">
+      <div class="fbrand">
+        <a class="brand" href="/"><img src="/logo.png" alt="" width="30" height="30">Safari DevTools</a>
+        <p>Chrome-style DevTools inside any page, for Safari, Chrome and iPhone. Free and open source.</p>
+        <a class="fstar" href="https://github.com/biratdatta/safari-devtools"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.2l2 4.3 4.7.6-3.4 3.2.9 4.6L8 11.6l-4.2 2.3.9-4.6L1.3 6.1 6 5.5z"/></svg>Star on GitHub</a>
+      </div>
+      <nav class="fcol" aria-label="Product"><h2>Product</h2><ul><li><a href="/#demo">Live demo</a></li><li><a href="/#features">Features</a></li><li><a href="/#install">Install</a></li><li><a href="/#faq">FAQ</a></li><li><a href="https://github.com/biratdatta/safari-devtools#whats-new">Changelog</a></li></ul></nav>
+      <nav class="fcol" aria-label="Compare"><h2>Compare</h2><ul><li><a href="/compare/safari-web-inspector/">vs Safari Web Inspector</a></li><li><a href="/compare/eruda/">vs Eruda</a></li><li><a href="/compare/vconsole/">vs vConsole</a></li><li><a href="/compare/chrome-devtools/">vs Chrome DevTools</a></li><li><a href="/compare/eruda-alternatives/">Eruda alternatives</a></li></ul></nav>
+      <nav class="fcol" aria-label="Learn"><h2>Learn</h2><ul><li><a href="/learn/iphone-console-without-mac/">iPhone console without a Mac</a></li><li><a href="/learn/debug-safari-on-iphone/">Debug Safari on iPhone</a></li><li><a href="/learn/debug-ios-webviews/">Debug iOS WebViews</a></li><li><a href="/learn/mock-api-in-browser/">Mock APIs in the browser</a></li><li><a href="/learn/safari-accessibility-testing/">Accessibility testing in Safari</a></li><li><a href="/learn/redux-devtools-safari/">Redux DevTools in Safari</a></li><li><a href="/learn/safari-css-bugs/">Safari-only CSS bugs</a></li><li><a href="/learn/debug-shadow-dom-safari/">Shadow DOM in Safari</a></li></ul></nav>
+      <nav class="fcol" aria-label="Support"><h2>Support</h2><ul><li><a href="/guides/install-chrome/">Install on Chrome</a></li><li><a href="/guides/install-safari/">Install on Safari</a></li><li><a href="/guides/remote-iphone/">iPhone remote mode</a></li><li><a href="/guides/claude-and-jira/">Claude &amp; Jira setup</a></li><li><a href="https://github.com/biratdatta/safari-devtools/issues">Report an issue</a></li><li><a href="/privacy/">Privacy</a></li></ul></nav>
+    </div>
+    <div class="fbottom"><span>Safari DevTools · MIT licence · Made by Birat Datta</span><span><a href="/">English</a> · <a href="/zh/">简体中文</a> · <a href="/ja/">日本語</a></span></div>
+  </div>
+</footer>
+</body>
+</html>

@@ -30,6 +30,32 @@ Key facts:
 - [MCP server](https://github.com/biratdatta/safari-devtools/blob/main/standalone/remote/mcp.js): tools such as get_console, get_network, run_js, audit_page, inspect_element, mock_request, accessibility_tree, check_contrast, css_coverage, emulate, compare_snapshot, bug_report, explain_error_context
 - [Relay and HTTP API](https://github.com/biratdatta/safari-devtools/blob/main/standalone/remote/relay.js): /api/devices, /api/logs, /api/network, /api/eval, /api/call; optional /ai/explain and /jira/create
 
+## Comparisons
+
+- [Safari DevTools vs Safari Web Inspector](https://devtools.biratdatta.tech/compare/safari-web-inspector/): Safari's Web Inspector needs a Mac and a cable or pairing. Safari DevTools runs inside the page. When to use each, and what each can't do.
+- [Safari DevTools vs Eruda](https://devtools.biratdatta.tech/compare/eruda/): Eruda and Safari DevTools both put a console inside the page. How they differ on source maps, request mocking, accessibility, Redux and setup.
+- [Safari DevTools vs vConsole](https://devtools.biratdatta.tech/compare/vconsole/): vConsole is Tencent's lightweight in-page console, popular in WeChat. How it compares with Safari DevTools for debugging iPhone and mobile web pages.
+- [Safari DevTools vs Chrome DevTools](https://devtools.biratdatta.tech/compare/chrome-devtools/): Chrome DevTools is the gold standard on desktop and Android but can't attach to iPhone. Where Safari DevTools fits, and what Chrome still does better.
+- [Eruda alternatives for mobile debugging](https://devtools.biratdatta.tech/compare/eruda-alternatives/): The main alternatives to Eruda for debugging pages on iPhone and Android: Safari DevTools, vConsole, Safari Web Inspector and Chrome remote debugging.
+
+## Guides and how-tos
+
+- [How to see console logs on iPhone without a Mac](https://devtools.biratdatta.tech/learn/iphone-console-without-mac/): Three ways to read console logs and errors from Safari on iPhone without a Mac or cable: a bookmarklet, a script tag, or remote mode over Wi-Fi.
+- [How to debug Safari on iPhone: every method compared](https://devtools.biratdatta.tech/learn/debug-safari-on-iphone/): All the ways to debug a web page in Safari on iPhone and iPad: Web Inspector, an in-page panel, remote mode and automated tests, with what each needs.
+- [How to debug WKWebView and in-app browsers on iOS](https://devtools.biratdatta.tech/learn/debug-ios-webviews/): Debug web content inside iOS apps: make WKWebView inspectable, or inject an in-page DevTools panel. Tips for React Native, Capacitor and Android too.
+- [How to mock, block and slow down API calls in the browser](https://devtools.biratdatta.tech/learn/mock-api-in-browser/): Test error states, empty states and slow networks without a proxy: mock responses, block requests and throttle to 3G from an in-page DevTools panel.
+- [Accessibility testing in Safari: tree, tab order and contrast](https://devtools.biratdatta.tech/learn/safari-accessibility-testing/): Check what VoiceOver gets, walk the tab order, catch focus escaping dialogs and fix low-contrast text with colours from your design tokens, in Safari.
+- [Redux DevTools in Safari (and NgRx, Zustand)](https://devtools.biratdatta.tech/learn/redux-devtools-safari/): Safari has no Redux DevTools extension. Safari DevTools provides the same API, so Redux Toolkit, NgRx and Zustand connect, with an action log and time travel.
+- [Safari-only CSS bugs on iPhone, and how to fix them](https://devtools.biratdatta.tech/learn/safari-css-bugs/): The iPhone Safari layout bugs behind most bug reports: input zoom, 100vh, safe areas, sticky inside overflow, fixed inside transforms, autoplay and tap targets.
+- [Debugging web components and shadow DOM in Safari](https://devtools.biratdatta.tech/learn/debug-shadow-dom-safari/): Inspect shadow roots, slots, ::part() hooks and the CSS variables a web component reads, edit properties live, and search across shadow boundaries.
+
+## Setup
+
+- [Install Safari DevTools in Chrome and Edge](https://devtools.biratdatta.tech/guides/install-chrome/): Install the Safari DevTools extension in Chrome, Edge, Brave or Arc in about a minute, open it with Alt+Shift+D, and fix common problems.
+- [Install Safari DevTools in Safari on Mac](https://devtools.biratdatta.tech/guides/install-safari/): Add the Safari DevTools extension to Safari as a temporary extension in a minute, or build it once with Xcode to keep it installed. Includes troubleshooting.
+- [Remote mode: debug an iPhone from your computer over Wi-Fi](https://devtools.biratdatta.tech/guides/remote-iphone/): Stream an iPhone page's console and network to your computer and run JavaScript on the phone with a small Node relay. No cable or Xcode; works on Windows.
+- [Set up "Explain with Claude" and Jira bug reports](https://devtools.biratdatta.tech/guides/claude-and-jira/): Turn on AI error explanations with Claude and one-click Jira bug reports, using a local relay that keeps your API key and Jira token on your machine.
+
 ## Optional
 
 - [Source code](https://github.com/biratdatta/safari-devtools): GitHub repository

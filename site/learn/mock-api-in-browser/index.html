@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>How to mock, block and slow down API calls in the browser</title>
+<meta name="description" content="Test error states, empty states and slow networks without a proxy: mock responses, block requests and throttle to 3G from an in-page DevTools panel.">
+<link rel="canonical" href="https://devtools.biratdatta.tech/learn/mock-api-in-browser/">
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="alternate" type="text/markdown" title="LLM-friendly summary" href="/llms.txt">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Safari DevTools">
+<meta property="og:title" content="How to mock, block and slow down API calls in the browser">
+<meta property="og:description" content="Test error states, empty states and slow networks without a proxy: mock responses, block requests and throttle to 3G from an in-page DevTools panel.">
+<meta property="og:url" content="https://devtools.biratdatta.tech/learn/mock-api-in-browser/">
+<meta property="og:image" content="https://devtools.biratdatta.tech/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="How to mock, block and slow down API calls in the browser">
+<meta name="twitter:description" content="Test error states, empty states and slow networks without a proxy: mock responses, block requests and throttle to 3G from an in-page DevTools panel.">
+<meta name="twitter:image" content="https://devtools.biratdatta.tech/og.jpg">
+<link rel="stylesheet" href="/assets/site.css">
+<link rel="stylesheet" href="/assets/footer.css">
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@graph": [
+  {
+   "@type": "TechArticle",
+   "headline": "How to mock, block and slow down API calls in the browser",
+   "description": "Test error states, empty states and slow networks without a proxy: mock responses, block requests and throttle to 3G from an in-page DevTools panel.",
+   "url": "https://devtools.biratdatta.tech/learn/mock-api-in-browser/",
+   "datePublished": "2026-10-20",
+   "dateModified": "2026-10-20",
+   "inLanguage": "en",
+   "image": "https://devtools.biratdatta.tech/og.jpg",
+   "author": {
+    "@type": "Person",
+    "name": "Birat Datta",
+    "url": "https://github.com/biratdatta"
+   },
+   "publisher": {
+    "@type": "Organization",
+    "name": "Safari DevTools",
+    "logo": {
+     "@type": "ImageObject",
+     "url": "https://devtools.biratdatta.tech/logo.png"
+    }
+   },
+   "about": {
+    "@type": "SoftwareApplication",
+    "name": "Safari DevTools",
+    "url": "https://devtools.biratdatta.tech/"
+   }
+  },
+  {
+   "@type": "BreadcrumbList",
+   "itemListElement": [
+    {
+     "@type": "ListItem",
+     "position": 1,
+     "name": "Home",
+     "item": "https://devtools.biratdatta.tech/"
+    },
+    {
+     "@type": "ListItem",
+     "position": 2,
+     "name": "Learn",
+     "item": "https://devtools.biratdatta.tech/learn/"
+    },
+    {
+     "@type": "ListItem",
+     "position": 3,
+     "name": "Mock APIs in the browser",
+     "item": "https://devtools.biratdatta.tech/learn/mock-api-in-browser/"
+    }
+   ]
+  }
+ ]
+}
+</script>
+</head>
+<body>
+<header class="nav"><div class="wrap">
+  <a class="brand" href="/"><img src="/logo.png" alt="" width="26" height="26">Safari DevTools</a>
+  <nav aria-label="Site"><a href="/#features">Features</a><a href="/compare/">Compare</a><a href="/learn/">Learn</a><a href="/guides/">Guides</a><a href="https://github.com/biratdatta/safari-devtools">GitHub</a></nav>
+  <a class="btn primary small" href="/#install">Get it free</a>
+</div></header>
+<main class="article">
+<nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> <span aria-hidden="true">›</span> <a href="/learn/">Learn</a></nav>
+<h1>How to mock, block and slow down API calls in the browser</h1>
+<p class="meta">Updated 2026-10-20 · 2 min read</p>
+<p class="lead">Most bugs hide in the paths you rarely see: the API returns a 500, the response is empty, or the network is slow. Safari DevTools lets you force those cases right in the page, in Safari, Chrome or on iPhone.</p>
+<h2>Mock a response in two clicks</h2>
+<ol>
+<li>Open the <b>Network</b> tab and find the request.</li>
+<li>Right-click it and choose <b>Mock</b>. Edit the status, headers and body, then reload or repeat the action.</li>
+</ol>
+<p>Mocked requests are tagged <b>mock</b> in the list, so you always know what's real.</p>
+<h2>Rules: mock, block or delay by URL</h2>
+<p>Under <b>Rules</b>, match requests by text, a <code>*</code> wildcard or a <code>/regex/</code>, optionally by method, and choose an action:</p>
+<ul>
+<li><b>Mock:</b> return your own status, headers and body.</li>
+<li><b>Block:</b> make the request fail, to test error handling.</li>
+<li><b>Delay:</b> add latency to one endpoint, to test spinners and race conditions.</li>
+</ul>
+<p>Rules are saved per site, so they survive reloads.</p>
+<h2>Throttle the whole page</h2>
+<p>Pick <b>Fast 4G</b>, <b>Fast 3G</b>, <b>Slow 3G</b> or <b>Offline</b> from the throttling menu to see how the page behaves on a poor connection.</p>
+<h2>From the console or your tests</h2>
+<pre><code>// in the console, or from any script
+SafariDevTools.automation.mock('/api/cart', { status: 500, body: { error: 'down' } });
+SafariDevTools.automation.throttle('slow3g');
+
+// in Playwright, before the page loads
+await devtools.mockBeforeLoad('/api/coupon', { status: 410, body: { error: 'Coupon expired' } });</code></pre>
+<div class="note"><p>Mocking covers <code>fetch</code> and <code>XMLHttpRequest</code>. It runs in the page, so it can't change requests made by the browser itself, such as images or form posts that navigate away.</p></div>
+
+<div class="cta"><div><b>Try Safari DevTools</b><span>Free and open source. Works in Safari, Chrome and on iPhone.</span></div>
+<div class="btns"><a class="btn primary" href="/#install">Install</a><a class="btn ghost" href="/#demo">Live demo</a></div></div>
+<section class="related"><h2>Related</h2><ul><li><a href="/learn/debug-safari-on-iphone/">How to debug Safari on iPhone: every method compared<small>All the ways to debug a web page in Safari on iPhone and iPad: Web Inspector, an in-page…</small></a></li><li><a href="/compare/chrome-devtools/">Safari DevTools vs Chrome DevTools<small>Chrome DevTools is the gold standard on desktop and Android but can&#x27;t attach to iPhone.…</small></a></li><li><a href="/guides/install-chrome/">Install Safari DevTools in Chrome and Edge<small>Install the Safari DevTools extension in Chrome, Edge, Brave or Arc in about a minute,…</small></a></li></ul></section>
+</main>
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="fgrid">
+      <div class="fbrand">
+        <a class="brand" href="/"><img src="/logo.png" alt="" width="30" height="30">Safari DevTools</a>
+        <p>Chrome-style DevTools inside any page, for Safari, Chrome and iPhone. Free and open source.</p>
+        <a class="fstar" href="https://github.com/biratdatta/safari-devtools"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.2l2 4.3 4.7.6-3.4 3.2.9 4.6L8 11.6l-4.2 2.3.9-4.6L1.3 6.1 6 5.5z"/></svg>Star on GitHub</a>
+      </div>
+      <nav class="fcol" aria-label="Product"><h2>Product</h2><ul><li><a href="/#demo">Live demo</a></li><li><a href="/#features">Features</a></li><li><a href="/#install">Install</a></li><li><a href="/#faq">FAQ</a></li><li><a href="https://github.com/biratdatta/safari-devtools#whats-new">Changelog</a></li></ul></nav>
+      <nav class="fcol" aria-label="Compare"><h2>Compare</h2><ul><li><a href="/compare/safari-web-inspector/">vs Safari Web Inspector</a></li><li><a href="/compare/eruda/">vs Eruda</a></li><li><a href="/compare/vconsole/">vs vConsole</a></li><li><a href="/compare/chrome-devtools/">vs Chrome DevTools</a></li><li><a href="/compare/eruda-alternatives/">Eruda alternatives</a></li></ul></nav>
+      <nav class="fcol" aria-label="Learn"><h2>Learn</h2><ul><li><a href="/learn/iphone-console-without-mac/">iPhone console without a Mac</a></li><li><a href="/learn/debug-safari-on-iphone/">Debug Safari on iPhone</a></li><li><a href="/learn/debug-ios-webviews/">Debug iOS WebViews</a></li><li><a href="/learn/mock-api-in-browser/">Mock APIs in the browser</a></li><li><a href="/learn/safari-accessibility-testing/">Accessibility testing in Safari</a></li><li><a href="/learn/redux-devtools-safari/">Redux DevTools in Safari</a></li><li><a href="/learn/safari-css-bugs/">Safari-only CSS bugs</a></li><li><a href="/learn/debug-shadow-dom-safari/">Shadow DOM in Safari</a></li></ul></nav>
+      <nav class="fcol" aria-label="Support"><h2>Support</h2><ul><li><a href="/guides/install-chrome/">Install on Chrome</a></li><li><a href="/guides/install-safari/">Install on Safari</a></li><li><a href="/guides/remote-iphone/">iPhone remote mode</a></li><li><a href="/guides/claude-and-jira/">Claude &amp; Jira setup</a></li><li><a href="https://github.com/biratdatta/safari-devtools/issues">Report an issue</a></li><li><a href="/privacy/">Privacy</a></li></ul></nav>
+    </div>
+    <div class="fbottom"><span>Safari DevTools · MIT licence · Made by Birat Datta</span><span><a href="/">English</a> · <a href="/zh/">简体中文</a> · <a href="/ja/">日本語</a></span></div>
+  </div>
+</footer>
+</body>
+</html>

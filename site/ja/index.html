@@ -10,6 +10,7 @@
 <link rel="icon" type="image/png" href="/favicon.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="alternate" type="text/markdown" title="LLM-friendly summary" href="/llms.txt">
+<link rel="stylesheet" href="/assets/footer.css">
 <link rel="canonical" href="https://devtools.biratdatta.tech/ja/">
 <link rel="alternate" hreflang="en" href="https://devtools.biratdatta.tech/">
 <link rel="alternate" hreflang="zh-Hans" href="https://devtools.biratdatta.tech/zh/">
@@ -305,10 +306,6 @@ summary::after{content:"+";font-weight:400;color:var(--ink3);font-size:22px;line
 details[open] summary::after{content:"−"}
 details p{color:var(--ink2);margin:12px 0 0}
 
-/* footer */
-footer{padding-block:40px 60px;border-top:1px solid var(--hair);font-size:13px;color:var(--ink3)}
-footer .wrap{display:flex;gap:18px;flex-wrap:wrap;justify-content:space-between;align-items:center}
-footer a{color:var(--ink2)}
 
 /* Chinese and Japanese: native fonts, no negative tracking, roomier line height, phrase-aware line breaks */
 :lang(zh) body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans CJK SC","Noto Sans SC",sans-serif;letter-spacing:0}
@@ -379,7 +376,7 @@ footer a{color:var(--ink2)}
     </div>
   </section>
 
-  <section class="show" aria-labelledby="show-title">
+  <section class="show" id="demo" aria-labelledby="show-title">
     <div class="wrap">
       <h2 id="show-title" class="center" style="font-size:clamp(22px,3vw,28px);font-weight:600;margin-bottom:22px">本物のパネルです。自由に触ってみてください。</h2>
       <div class="chips" role="group" aria-label="機能を表示">
@@ -609,7 +606,7 @@ test(<span class="s">'checkout has no errors'</span>, <span class="k">async</spa
     </div>
   </section>
 
-  <section aria-labelledby="faq-title">
+  <section id="faq" aria-labelledby="faq-title">
     <div class="wrap">
       <h2 id="faq-title" class="center">よくある質問</h2>
       <div class="faq">
@@ -626,12 +623,22 @@ test(<span class="s">'checkout has no errors'</span>, <span class="k">async</spa
   </section>
 </main>
 
-<footer>
+<!--footer:start--><footer class="site-footer">
   <div class="wrap">
-    <span>Safari DevTools · MIT ライセンス · 制作：Birat Datta</span>
-    <span><a href="https://github.com/biratdatta/safari-devtools">GitHub</a> · <a href="https://github.com/biratdatta/safari-devtools/issues">問題を報告</a></span>
+    <div class="fgrid">
+      <div class="fbrand">
+        <a class="brand" href="/"><img src="/logo.png" alt="" width="30" height="30">Safari DevTools</a>
+        <p>Safari、Chrome、iPhone のどんなページでも動く Chrome 風 DevTools。無料のオープンソース。</p>
+        <a class="fstar" href="https://github.com/biratdatta/safari-devtools"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.2l2 4.3 4.7.6-3.4 3.2.9 4.6L8 11.6l-4.2 2.3.9-4.6L1.3 6.1 6 5.5z"/></svg>GitHub でスター</a>
+      </div>
+      <nav class="fcol" aria-label="製品"><h2>製品</h2><ul><li><a href="/#demo">ライブデモ</a></li><li><a href="/#features">機能</a></li><li><a href="/#install">インストール</a></li><li><a href="/#faq">よくある質問</a></li><li><a href="https://github.com/biratdatta/safari-devtools#whats-new">変更履歴</a></li></ul></nav>
+      <nav class="fcol" aria-label="比較"><h2>比較</h2><ul><li><a href="/compare/safari-web-inspector/">Safari Web インスペクタとの比較</a></li><li><a href="/compare/eruda/">Eruda との比較</a></li><li><a href="/compare/vconsole/">vConsole との比較</a></li><li><a href="/compare/chrome-devtools/">Chrome DevTools との比較</a></li><li><a href="/compare/eruda-alternatives/">Eruda の代替ツール</a></li></ul></nav>
+      <nav class="fcol" aria-label="学ぶ"><h2>学ぶ</h2><ul><li><a href="/learn/iphone-console-without-mac/">Mac なしで iPhone のコンソール</a></li><li><a href="/learn/debug-safari-on-iphone/">iPhone の Safari をデバッグ</a></li><li><a href="/learn/debug-ios-webviews/">iOS の WebView をデバッグ</a></li><li><a href="/learn/mock-api-in-browser/">ブラウザで API をモック</a></li><li><a href="/learn/safari-accessibility-testing/">Safari でアクセシビリティテスト</a></li><li><a href="/learn/redux-devtools-safari/">Safari で Redux DevTools</a></li><li><a href="/learn/safari-css-bugs/">Safari 特有の CSS バグ</a></li><li><a href="/learn/debug-shadow-dom-safari/">Safari で Shadow DOM</a></li></ul></nav>
+      <nav class="fcol" aria-label="サポート"><h2>サポート</h2><ul><li><a href="/guides/install-chrome/">Chrome にインストール</a></li><li><a href="/guides/install-safari/">Safari にインストール</a></li><li><a href="/guides/remote-iphone/">iPhone のリモートモード</a></li><li><a href="/guides/claude-and-jira/">Claude と Jira の設定</a></li><li><a href="https://github.com/biratdatta/safari-devtools/issues">問題を報告</a></li><li><a href="/privacy/">プライバシー</a></li></ul></nav>
+    </div>
+    <div class="fbottom"><span>Safari DevTools · MIT ライセンス · 制作：Birat Datta</span><span><a href="/">English</a> · <a href="/zh/">简体中文</a> · <a href="/ja/">日本語</a></span></div>
   </div>
-</footer>
+</footer><!--footer:end-->
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 

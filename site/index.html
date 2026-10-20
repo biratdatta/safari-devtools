@@ -10,6 +10,7 @@
 <link rel="icon" type="image/png" href="/favicon.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="alternate" type="text/markdown" title="LLM-friendly summary" href="/llms.txt">
+<link rel="stylesheet" href="/assets/footer.css">
 <link rel="canonical" href="https://devtools.biratdatta.tech/">
 <link rel="alternate" hreflang="en" href="https://devtools.biratdatta.tech/">
 <link rel="alternate" hreflang="zh-Hans" href="https://devtools.biratdatta.tech/zh/">
@@ -305,10 +306,6 @@ summary::after{content:"+";font-weight:400;color:var(--ink3);font-size:22px;line
 details[open] summary::after{content:"−"}
 details p{color:var(--ink2);margin:12px 0 0}
 
-/* footer */
-footer{padding-block:40px 60px;border-top:1px solid var(--hair);font-size:13px;color:var(--ink3)}
-footer .wrap{display:flex;gap:18px;flex-wrap:wrap;justify-content:space-between;align-items:center}
-footer a{color:var(--ink2)}
 
 /* Chinese and Japanese: native fonts, no negative tracking, roomier line height, phrase-aware line breaks */
 :lang(zh) body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans CJK SC","Noto Sans SC",sans-serif;letter-spacing:0}
@@ -379,7 +376,7 @@ footer a{color:var(--ink2)}
     </div>
   </section>
 
-  <section class="show" aria-labelledby="show-title">
+  <section class="show" id="demo" aria-labelledby="show-title">
     <div class="wrap">
       <h2 id="show-title" class="center" style="font-size:clamp(22px,3vw,28px);font-weight:600;margin-bottom:22px">This is the real panel. Click around.</h2>
       <div class="chips" role="group" aria-label="Show a feature">
@@ -609,7 +606,7 @@ test(<span class="s">'checkout has no errors'</span>, <span class="k">async</spa
     </div>
   </section>
 
-  <section aria-labelledby="faq-title">
+  <section id="faq" aria-labelledby="faq-title">
     <div class="wrap">
       <h2 id="faq-title" class="center">Questions</h2>
       <div class="faq">
@@ -626,12 +623,22 @@ test(<span class="s">'checkout has no errors'</span>, <span class="k">async</spa
   </section>
 </main>
 
-<footer>
+<!--footer:start--><footer class="site-footer">
   <div class="wrap">
-    <span>Safari DevTools · MIT licence · Made by Birat Datta</span>
-    <span><a href="https://github.com/biratdatta/safari-devtools">GitHub</a> · <a href="https://github.com/biratdatta/safari-devtools/issues">Report an issue</a></span>
+    <div class="fgrid">
+      <div class="fbrand">
+        <a class="brand" href="/"><img src="/logo.png" alt="" width="30" height="30">Safari DevTools</a>
+        <p>Chrome-style DevTools inside any page, for Safari, Chrome and iPhone. Free and open source.</p>
+        <a class="fstar" href="https://github.com/biratdatta/safari-devtools"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.2l2 4.3 4.7.6-3.4 3.2.9 4.6L8 11.6l-4.2 2.3.9-4.6L1.3 6.1 6 5.5z"/></svg>Star on GitHub</a>
+      </div>
+      <nav class="fcol" aria-label="Product"><h2>Product</h2><ul><li><a href="/#demo">Live demo</a></li><li><a href="/#features">Features</a></li><li><a href="/#install">Install</a></li><li><a href="/#faq">FAQ</a></li><li><a href="https://github.com/biratdatta/safari-devtools#whats-new">Changelog</a></li></ul></nav>
+      <nav class="fcol" aria-label="Compare"><h2>Compare</h2><ul><li><a href="/compare/safari-web-inspector/">vs Safari Web Inspector</a></li><li><a href="/compare/eruda/">vs Eruda</a></li><li><a href="/compare/vconsole/">vs vConsole</a></li><li><a href="/compare/chrome-devtools/">vs Chrome DevTools</a></li><li><a href="/compare/eruda-alternatives/">Eruda alternatives</a></li></ul></nav>
+      <nav class="fcol" aria-label="Learn"><h2>Learn</h2><ul><li><a href="/learn/iphone-console-without-mac/">iPhone console without a Mac</a></li><li><a href="/learn/debug-safari-on-iphone/">Debug Safari on iPhone</a></li><li><a href="/learn/debug-ios-webviews/">Debug iOS WebViews</a></li><li><a href="/learn/mock-api-in-browser/">Mock APIs in the browser</a></li><li><a href="/learn/safari-accessibility-testing/">Accessibility testing in Safari</a></li><li><a href="/learn/redux-devtools-safari/">Redux DevTools in Safari</a></li><li><a href="/learn/safari-css-bugs/">Safari-only CSS bugs</a></li><li><a href="/learn/debug-shadow-dom-safari/">Shadow DOM in Safari</a></li></ul></nav>
+      <nav class="fcol" aria-label="Support"><h2>Support</h2><ul><li><a href="/guides/install-chrome/">Install on Chrome</a></li><li><a href="/guides/install-safari/">Install on Safari</a></li><li><a href="/guides/remote-iphone/">iPhone remote mode</a></li><li><a href="/guides/claude-and-jira/">Claude &amp; Jira setup</a></li><li><a href="https://github.com/biratdatta/safari-devtools/issues">Report an issue</a></li><li><a href="/privacy/">Privacy</a></li></ul></nav>
+    </div>
+    <div class="fbottom"><span>Safari DevTools · MIT licence · Made by Birat Datta</span><span><a href="/">English</a> · <a href="/zh/">简体中文</a> · <a href="/ja/">日本語</a></span></div>
   </div>
-</footer>
+</footer><!--footer:end-->
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 

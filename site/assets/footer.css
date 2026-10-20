@@ -1,0 +1,19 @@
+/* Site footer (home page and articles) */
+.site-footer{background:var(--bg2);border-top:1px solid var(--hair);padding-block:64px 40px;font-size:15px}
+.site-footer .wrap{max-width:1180px;margin:0 auto;padding-inline:22px}
+.fgrid{display:grid;grid-template-columns:1.4fr repeat(4,minmax(0,1fr));gap:36px}
+@media (max-width:980px){.fgrid{grid-template-columns:repeat(2,minmax(0,1fr))}.fbrand{grid-column:1/-1}}
+@media (max-width:520px){.fgrid{grid-template-columns:1fr}}
+.fbrand .brand{display:inline-flex;align-items:center;gap:10px;color:var(--ink);font-weight:600;font-size:18px}
+.fbrand .brand:hover{text-decoration:none}
+.fbrand .brand img{width:30px;height:30px;border-radius:8px}
+.fbrand p{color:var(--ink2);margin:14px 0 18px;max-width:34ch;line-height:1.5}
+.fstar{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:980px;padding:8px 14px;color:var(--ink);font-weight:600;font-size:14px;background:var(--card)}
+.fstar:hover{text-decoration:none;border-color:var(--ink3)}
+.fstar svg{width:16px;height:16px;fill:currentColor}
+.fcol h2{font-size:14px;font-weight:600;color:var(--ink2);letter-spacing:0;margin:4px 0 14px}
+.fcol ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:11px}
+.fcol a{color:var(--ink);line-height:1.35}
+.fcol a:hover{color:var(--accent);text-decoration:none}
+.fbottom{margin-top:48px;padding-top:22px;border-top:1px solid var(--hair);display:flex;gap:16px;flex-wrap:wrap;justify-content:space-between;color:var(--ink3);font-size:13px}
+.fbottom a{color:var(--ink2)}

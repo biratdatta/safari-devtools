@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Remote mode: debug an iPhone from your computer over Wi-Fi</title>
+<meta name="description" content="Stream an iPhone page&#x27;s console and network to your computer and run JavaScript on the phone with a small Node relay. No cable or Xcode; works on Windows.">
+<link rel="canonical" href="https://devtools.biratdatta.tech/guides/remote-iphone/">
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="alternate" type="text/markdown" title="LLM-friendly summary" href="/llms.txt">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Safari DevTools">
+<meta property="og:title" content="Remote mode: debug an iPhone from your computer over Wi-Fi">
+<meta property="og:description" content="Stream an iPhone page&#x27;s console and network to your computer and run JavaScript on the phone with a small Node relay. No cable or Xcode; works on Windows.">
+<meta property="og:url" content="https://devtools.biratdatta.tech/guides/remote-iphone/">
+<meta property="og:image" content="https://devtools.biratdatta.tech/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Remote mode: debug an iPhone from your computer over Wi-Fi">
+<meta name="twitter:description" content="Stream an iPhone page&#x27;s console and network to your computer and run JavaScript on the phone with a small Node relay. No cable or Xcode; works on Windows.">
+<meta name="twitter:image" content="https://devtools.biratdatta.tech/og.jpg">
+<link rel="stylesheet" href="/assets/site.css">
+<link rel="stylesheet" href="/assets/footer.css">
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@graph": [
+  {
+   "@type": "TechArticle",
+   "headline": "Remote mode: debug an iPhone from your computer over Wi-Fi",
+   "description": "Stream an iPhone page's console and network to your computer and run JavaScript on the phone with a small Node relay. No cable or Xcode; works on Windows.",
+   "url": "https://devtools.biratdatta.tech/guides/remote-iphone/",
+   "datePublished": "2026-10-20",
+   "dateModified": "2026-10-20",
+   "inLanguage": "en",
+   "image": "https://devtools.biratdatta.tech/og.jpg",
+   "author": {
+    "@type": "Person",
+    "name": "Birat Datta",
+    "url": "https://github.com/biratdatta"
+   },
+   "publisher": {
+    "@type": "Organization",
+    "name": "Safari DevTools",
+    "logo": {
+     "@type": "ImageObject",
+     "url": "https://devtools.biratdatta.tech/logo.png"
+    }
+   },
+   "about": {
+    "@type": "SoftwareApplication",
+    "name": "Safari DevTools",
+    "url": "https://devtools.biratdatta.tech/"
+   }
+  },
+  {
+   "@type": "BreadcrumbList",
+   "itemListElement": [
+    {
+     "@type": "ListItem",
+     "position": 1,
+     "name": "Home",
+     "item": "https://devtools.biratdatta.tech/"
+    },
+    {
+     "@type": "ListItem",
+     "position": 2,
+     "name": "Guides",
+     "item": "https://devtools.biratdatta.tech/guides/"
+    },
+    {
+     "@type": "ListItem",
+     "position": 3,
+     "name": "iPhone remote mode",
+     "item": "https://devtools.biratdatta.tech/guides/remote-iphone/"
+    }
+   ]
+  }
+ ]
+}
+</script>
+</head>
+<body>
+<header class="nav"><div class="wrap">
+  <a class="brand" href="/"><img src="/logo.png" alt="" width="26" height="26">Safari DevTools</a>
+  <nav aria-label="Site"><a href="/#features">Features</a><a href="/compare/">Compare</a><a href="/learn/">Learn</a><a href="/guides/">Guides</a><a href="https://github.com/biratdatta/safari-devtools">GitHub</a></nav>
+  <a class="btn primary small" href="/#install">Get it free</a>
+</div></header>
+<main class="article">
+<nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> <span aria-hidden="true">›</span> <a href="/guides/">Guides</a></nav>
+<h1>Remote mode: debug an iPhone from your computer over Wi-Fi</h1>
+<p class="meta">Updated 2026-10-20 · 2 min read</p>
+<p class="lead">Remote mode connects a page on your phone to a viewer on your computer. You see the phone's console and network live, and anything you type runs on the phone.</p>
+<h2>1. Start the relay</h2>
+<p>You need Node 18 or later on the computer. There's nothing else to install.</p>
+<pre><code>git clone https://github.com/biratdatta/safari-devtools
+cd safari-devtools
+node standalone/remote/relay.js</code></pre>
+<p>It prints your computer's address on the network, for example <code>http://192.168.1.20:9230</code>.</p>
+<h2>2. Connect the phone</h2>
+<p>The phone must be on the same Wi-Fi. To try it, open <code>http://&lt;computer-ip&gt;:9230/demo</code> on the phone. For your own page, either load the tool from the relay:</p>
+<pre><code>&lt;script src="http://&lt;computer-ip&gt;:9230/safari-devtools.js" data-remote="http://&lt;computer-ip&gt;:9230"&gt;&lt;/script&gt;</code></pre>
+<p>or, if the page already loads Safari DevTools, add <code>?sdt-remote=http://&lt;computer-ip&gt;:9230</code> to its address.</p>
+<h2>3. Watch on the computer</h2>
+<p>Open <code>http://localhost:9230</code>. Pick the device, then read logs and requests as they happen and type JavaScript to run on the phone.</p>
+<h2>Security</h2>
+<ul>
+<li>The viewer and the control API only answer requests from the computer itself, unless you start the relay with a token: <code>SDT_TOKEN=some-secret node standalone/remote/relay.js</code>.</li>
+<li>Only run the relay on networks you trust.</li>
+</ul>
+<h2>HTTPS pages</h2>
+<p>Safari blocks an <code>https://</code> page from talking to an <code>http://</code> relay (mixed content). Use remote mode with your local <code>http://</code> development server, or put the relay behind HTTPS.</p>
+<h2>For automation and AI agents</h2>
+<p>The relay also exposes an HTTP API (<code>/api/devices</code>, <code>/api/logs</code>, <code>/api/network</code>, <code>/api/eval</code>, <code>/api/call</code>) and an MCP server, so tests and agents like Claude or Cursor can read and drive the page on the phone.</p>
+
+<div class="cta"><div><b>Try Safari DevTools</b><span>Free and open source. Works in Safari, Chrome and on iPhone.</span></div>
+<div class="btns"><a class="btn primary" href="/#install">Install</a><a class="btn ghost" href="/#demo">Live demo</a></div></div>
+<section class="related"><h2>Related</h2><ul><li><a href="/learn/iphone-console-without-mac/">How to see console logs on iPhone without a Mac<small>Three ways to read console logs and errors from Safari on iPhone without a Mac or cable:…</small></a></li><li><a href="/guides/claude-and-jira/">Set up &quot;Explain with Claude&quot; and Jira bug reports<small>Turn on AI error explanations with Claude and one-click Jira bug reports, using a local…</small></a></li><li><a href="/learn/debug-ios-webviews/">How to debug WKWebView and in-app browsers on iOS<small>Debug web content inside iOS apps: make WKWebView inspectable, or inject an in-page…</small></a></li></ul></section>
+</main>
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="fgrid">
+      <div class="fbrand">
+        <a class="brand" href="/"><img src="/logo.png" alt="" width="30" height="30">Safari DevTools</a>
+        <p>Chrome-style DevTools inside any page, for Safari, Chrome and iPhone. Free and open source.</p>
+        <a class="fstar" href="https://github.com/biratdatta/safari-devtools"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.2l2 4.3 4.7.6-3.4 3.2.9 4.6L8 11.6l-4.2 2.3.9-4.6L1.3 6.1 6 5.5z"/></svg>Star on GitHub</a>
+      </div>
+      <nav class="fcol" aria-label="Product"><h2>Product</h2><ul><li><a href="/#demo">Live demo</a></li><li><a href="/#features">Features</a></li><li><a href="/#install">Install</a></li><li><a href="/#faq">FAQ</a></li><li><a href="https://github.com/biratdatta/safari-devtools#whats-new">Changelog</a></li></ul></nav>
+      <nav class="fcol" aria-label="Compare"><h2>Compare</h2><ul><li><a href="/compare/safari-web-inspector/">vs Safari Web Inspector</a></li><li><a href="/compare/eruda/">vs Eruda</a></li><li><a href="/compare/vconsole/">vs vConsole</a></li><li><a href="/compare/chrome-devtools/">vs Chrome DevTools</a></li><li><a href="/compare/eruda-alternatives/">Eruda alternatives</a></li></ul></nav>
+      <nav class="fcol" aria-label="Learn"><h2>Learn</h2><ul><li><a href="/learn/iphone-console-without-mac/">iPhone console without a Mac</a></li><li><a href="/learn/debug-safari-on-iphone/">Debug Safari on iPhone</a></li><li><a href="/learn/debug-ios-webviews/">Debug iOS WebViews</a></li><li><a href="/learn/mock-api-in-browser/">Mock APIs in the browser</a></li><li><a href="/learn/safari-accessibility-testing/">Accessibility testing in Safari</a></li><li><a href="/learn/redux-devtools-safari/">Redux DevTools in Safari</a></li><li><a href="/learn/safari-css-bugs/">Safari-only CSS bugs</a></li><li><a href="/learn/debug-shadow-dom-safari/">Shadow DOM in Safari</a></li></ul></nav>
+      <nav class="fcol" aria-label="Support"><h2>Support</h2><ul><li><a href="/guides/install-chrome/">Install on Chrome</a></li><li><a href="/guides/install-safari/">Install on Safari</a></li><li><a href="/guides/remote-iphone/">iPhone remote mode</a></li><li><a href="/guides/claude-and-jira/">Claude &amp; Jira setup</a></li><li><a href="https://github.com/biratdatta/safari-devtools/issues">Report an issue</a></li><li><a href="/privacy/">Privacy</a></li></ul></nav>
+    </div>
+    <div class="fbottom"><span>Safari DevTools · MIT licence · Made by Birat Datta</span><span><a href="/">English</a> · <a href="/zh/">简体中文</a> · <a href="/ja/">日本語</a></span></div>
+  </div>
+</footer>
+</body>
+</html>

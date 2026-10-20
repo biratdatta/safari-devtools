@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Install Safari DevTools in Safari on Mac · Safari DevTools</title>
+<meta name="description" content="Add the Safari DevTools extension to Safari as a temporary extension in a minute, or build it once with Xcode to keep it installed. Includes troubleshooting.">
+<link rel="canonical" href="https://devtools.biratdatta.tech/guides/install-safari/">
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="alternate" type="text/markdown" title="LLM-friendly summary" href="/llms.txt">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Safari DevTools">
+<meta property="og:title" content="Install Safari DevTools in Safari on Mac">
+<meta property="og:description" content="Add the Safari DevTools extension to Safari as a temporary extension in a minute, or build it once with Xcode to keep it installed. Includes troubleshooting.">
+<meta property="og:url" content="https://devtools.biratdatta.tech/guides/install-safari/">
+<meta property="og:image" content="https://devtools.biratdatta.tech/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Install Safari DevTools in Safari on Mac">
+<meta name="twitter:description" content="Add the Safari DevTools extension to Safari as a temporary extension in a minute, or build it once with Xcode to keep it installed. Includes troubleshooting.">
+<meta name="twitter:image" content="https://devtools.biratdatta.tech/og.jpg">
+<link rel="stylesheet" href="/assets/site.css">
+<link rel="stylesheet" href="/assets/footer.css">
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@graph": [
+  {
+   "@type": "TechArticle",
+   "headline": "Install Safari DevTools in Safari on Mac",
+   "description": "Add the Safari DevTools extension to Safari as a temporary extension in a minute, or build it once with Xcode to keep it installed. Includes troubleshooting.",
+   "url": "https://devtools.biratdatta.tech/guides/install-safari/",
+   "datePublished": "2026-10-20",
+   "dateModified": "2026-10-20",
+   "inLanguage": "en",
+   "image": "https://devtools.biratdatta.tech/og.jpg",
+   "author": {
+    "@type": "Person",
+    "name": "Birat Datta",
+    "url": "https://github.com/biratdatta"
+   },
+   "publisher": {
+    "@type": "Organization",
+    "name": "Safari DevTools",
+    "logo": {
+     "@type": "ImageObject",
+     "url": "https://devtools.biratdatta.tech/logo.png"
+    }
+   },
+   "about": {
+    "@type": "SoftwareApplication",
+    "name": "Safari DevTools",
+    "url": "https://devtools.biratdatta.tech/"
+   }
+  },
+  {
+   "@type": "BreadcrumbList",
+   "itemListElement": [
+    {
+     "@type": "ListItem",
+     "position": 1,
+     "name": "Home",
+     "item": "https://devtools.biratdatta.tech/"
+    },
+    {
+     "@type": "ListItem",
+     "position": 2,
+     "name": "Guides",
+     "item": "https://devtools.biratdatta.tech/guides/"
+    },
+    {
+     "@type": "ListItem",
+     "position": 3,
+     "name": "Install on Safari",
+     "item": "https://devtools.biratdatta.tech/guides/install-safari/"
+    }
+   ]
+  }
+ ]
+}
+</script>
+</head>
+<body>
+<header class="nav"><div class="wrap">
+  <a class="brand" href="/"><img src="/logo.png" alt="" width="26" height="26">Safari DevTools</a>
+  <nav aria-label="Site"><a href="/#features">Features</a><a href="/compare/">Compare</a><a href="/learn/">Learn</a><a href="/guides/">Guides</a><a href="https://github.com/biratdatta/safari-devtools">GitHub</a></nav>
+  <a class="btn primary small" href="/#install">Get it free</a>
+</div></header>
+<main class="article">
+<nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> <span aria-hidden="true">›</span> <a href="/guides/">Guides</a></nav>
+<h1>Install Safari DevTools in Safari on Mac</h1>
+<p class="meta">Updated 2026-10-20 · 2 min read</p>
+<p class="lead">There are two ways to add the extension to Safari: a quick temporary install, or a one-time Xcode build that stays installed.</p>
+<h2>Quick: temporary extension</h2>
+<ol>
+<li><a href="/downloads/safari-devtools-safari.zip">Download the Safari extension</a> and unzip it.</li>
+<li>In Safari, open <b>Settings → Advanced</b> and turn on <b>Show features for web developers</b>.</li>
+<li>Open <b>Settings → Developer</b>, click <b>Add Temporary Extension…</b> and choose the <b>safari-devtools-extension</b> folder.</li>
+<li>In <b>Settings → Extensions</b>, turn on Safari DevTools and allow it on websites.</li>
+</ol>
+<p>Temporary extensions are removed when Safari quits; add it again next time.</p>
+<h2>Permanent: build with Xcode</h2>
+<ol>
+<li>Install Xcode from the Mac App Store and open it once.</li>
+<li>In Terminal, inside the extension folder, run <code>./build-xcode-project.sh</code> (add <code>--ios</code> to build for iPhone and iPad too).</li>
+<li>In Xcode, pick your <b>Team</b> under Signing &amp; Capabilities for each target (a free Personal Team works), then press <span class="kbd">⌘</span> <span class="kbd">R</span>.</li>
+<li>Turn the extension on in <b>Safari → Settings → Extensions</b> and allow it on every website.</li>
+</ol>
+<h2>Use it</h2>
+<p>Press <span class="kbd">Ctrl</span> <span class="kbd">⇧</span> <span class="kbd">D</span> on any page, or click the toolbar button.</p>
+<h2>Troubleshooting</h2>
+<ul>
+<li><b>Not listed in Settings:</b> run the app from Xcode again and restart Safari.</li>
+<li><b>Disappears after quitting Safari:</b> it was added as a temporary or unsigned extension. Pick a Team in Xcode so it stays.</li>
+<li><b>Does nothing on a page:</b> allow it for that site from the toolbar icon. Safari's own pages never allow extensions.</li>
+</ul>
+
+<div class="cta"><div><b>Try Safari DevTools</b><span>Free and open source. Works in Safari, Chrome and on iPhone.</span></div>
+<div class="btns"><a class="btn primary" href="/#install">Install</a><a class="btn ghost" href="/#demo">Live demo</a></div></div>
+<section class="related"><h2>Related</h2><ul><li><a href="/guides/install-chrome/">Install Safari DevTools in Chrome and Edge<small>Install the Safari DevTools extension in Chrome, Edge, Brave or Arc in about a minute,…</small></a></li><li><a href="/guides/remote-iphone/">Remote mode: debug an iPhone from your computer over Wi-Fi<small>Stream an iPhone page&#x27;s console and network to your computer and run JavaScript on the…</small></a></li><li><a href="/compare/safari-web-inspector/">Safari DevTools vs Safari Web Inspector<small>Safari&#x27;s Web Inspector needs a Mac and a cable or pairing. Safari DevTools runs inside…</small></a></li></ul></section>
+</main>
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="fgrid">
+      <div class="fbrand">
+        <a class="brand" href="/"><img src="/logo.png" alt="" width="30" height="30">Safari DevTools</a>
+        <p>Chrome-style DevTools inside any page, for Safari, Chrome and iPhone. Free and open source.</p>
+        <a class="fstar" href="https://github.com/biratdatta/safari-devtools"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.2l2 4.3 4.7.6-3.4 3.2.9 4.6L8 11.6l-4.2 2.3.9-4.6L1.3 6.1 6 5.5z"/></svg>Star on GitHub</a>
+      </div>
+      <nav class="fcol" aria-label="Product"><h2>Product</h2><ul><li><a href="/#demo">Live demo</a></li><li><a href="/#features">Features</a></li><li><a href="/#install">Install</a></li><li><a href="/#faq">FAQ</a></li><li><a href="https://github.com/biratdatta/safari-devtools#whats-new">Changelog</a></li></ul></nav>
+      <nav class="fcol" aria-label="Compare"><h2>Compare</h2><ul><li><a href="/compare/safari-web-inspector/">vs Safari Web Inspector</a></li><li><a href="/compare/eruda/">vs Eruda</a></li><li><a href="/compare/vconsole/">vs vConsole</a></li><li><a href="/compare/chrome-devtools/">vs Chrome DevTools</a></li><li><a href="/compare/eruda-alternatives/">Eruda alternatives</a></li></ul></nav>
+      <nav class="fcol" aria-label="Learn"><h2>Learn</h2><ul><li><a href="/learn/iphone-console-without-mac/">iPhone console without a Mac</a></li><li><a href="/learn/debug-safari-on-iphone/">Debug Safari on iPhone</a></li><li><a href="/learn/debug-ios-webviews/">Debug iOS WebViews</a></li><li><a href="/learn/mock-api-in-browser/">Mock APIs in the browser</a></li><li><a href="/learn/safari-accessibility-testing/">Accessibility testing in Safari</a></li><li><a href="/learn/redux-devtools-safari/">Redux DevTools in Safari</a></li><li><a href="/learn/safari-css-bugs/">Safari-only CSS bugs</a></li><li><a href="/learn/debug-shadow-dom-safari/">Shadow DOM in Safari</a></li></ul></nav>
+      <nav class="fcol" aria-label="Support"><h2>Support</h2><ul><li><a href="/guides/install-chrome/">Install on Chrome</a></li><li><a href="/guides/install-safari/">Install on Safari</a></li><li><a href="/guides/remote-iphone/">iPhone remote mode</a></li><li><a href="/guides/claude-and-jira/">Claude &amp; Jira setup</a></li><li><a href="https://github.com/biratdatta/safari-devtools/issues">Report an issue</a></li><li><a href="/privacy/">Privacy</a></li></ul></nav>
+    </div>
+    <div class="fbottom"><span>Safari DevTools · MIT licence · Made by Birat Datta</span><span><a href="/">English</a> · <a href="/zh/">简体中文</a> · <a href="/ja/">日本語</a></span></div>
+  </div>
+</footer>
+</body>
+</html>

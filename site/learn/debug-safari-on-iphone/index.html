@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>How to debug Safari on iPhone: every method compared</title>
+<meta name="description" content="All the ways to debug a web page in Safari on iPhone and iPad: Web Inspector, an in-page panel, remote mode and automated tests, with what each needs.">
+<link rel="canonical" href="https://devtools.biratdatta.tech/learn/debug-safari-on-iphone/">
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="alternate" type="text/markdown" title="LLM-friendly summary" href="/llms.txt">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Safari DevTools">
+<meta property="og:title" content="How to debug Safari on iPhone: every method compared">
+<meta property="og:description" content="All the ways to debug a web page in Safari on iPhone and iPad: Web Inspector, an in-page panel, remote mode and automated tests, with what each needs.">
+<meta property="og:url" content="https://devtools.biratdatta.tech/learn/debug-safari-on-iphone/">
+<meta property="og:image" content="https://devtools.biratdatta.tech/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="How to debug Safari on iPhone: every method compared">
+<meta name="twitter:description" content="All the ways to debug a web page in Safari on iPhone and iPad: Web Inspector, an in-page panel, remote mode and automated tests, with what each needs.">
+<meta name="twitter:image" content="https://devtools.biratdatta.tech/og.jpg">
+<link rel="stylesheet" href="/assets/site.css">
+<link rel="stylesheet" href="/assets/footer.css">
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@graph": [
+  {
+   "@type": "TechArticle",
+   "headline": "How to debug Safari on iPhone: every method compared",
+   "description": "All the ways to debug a web page in Safari on iPhone and iPad: Web Inspector, an in-page panel, remote mode and automated tests, with what each needs.",
+   "url": "https://devtools.biratdatta.tech/learn/debug-safari-on-iphone/",
+   "datePublished": "2026-10-20",
+   "dateModified": "2026-10-20",
+   "inLanguage": "en",
+   "image": "https://devtools.biratdatta.tech/og.jpg",
+   "author": {
+    "@type": "Person",
+    "name": "Birat Datta",
+    "url": "https://github.com/biratdatta"
+   },
+   "publisher": {
+    "@type": "Organization",
+    "name": "Safari DevTools",
+    "logo": {
+     "@type": "ImageObject",
+     "url": "https://devtools.biratdatta.tech/logo.png"
+    }
+   },
+   "about": {
+    "@type": "SoftwareApplication",
+    "name": "Safari DevTools",
+    "url": "https://devtools.biratdatta.tech/"
+   }
+  },
+  {
+   "@type": "BreadcrumbList",
+   "itemListElement": [
+    {
+     "@type": "ListItem",
+     "position": 1,
+     "name": "Home",
+     "item": "https://devtools.biratdatta.tech/"
+    },
+    {
+     "@type": "ListItem",
+     "position": 2,
+     "name": "Learn",
+     "item": "https://devtools.biratdatta.tech/learn/"
+    },
+    {
+     "@type": "ListItem",
+     "position": 3,
+     "name": "Debug Safari on iPhone",
+     "item": "https://devtools.biratdatta.tech/learn/debug-safari-on-iphone/"
+    }
+   ]
+  }
+ ]
+}
+</script>
+</head>
+<body>
+<header class="nav"><div class="wrap">
+  <a class="brand" href="/"><img src="/logo.png" alt="" width="26" height="26">Safari DevTools</a>
+  <nav aria-label="Site"><a href="/#features">Features</a><a href="/compare/">Compare</a><a href="/learn/">Learn</a><a href="/guides/">Guides</a><a href="https://github.com/biratdatta/safari-devtools">GitHub</a></nav>
+  <a class="btn primary small" href="/#install">Get it free</a>
+</div></header>
+<main class="article">
+<nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> <span aria-hidden="true">›</span> <a href="/learn/">Learn</a></nav>
+<h1>How to debug Safari on iPhone: every method compared</h1>
+<p class="meta">Updated 2026-10-20 · 2 min read</p>
+<p class="lead">There's no DevTools button in iPhone Safari. You have four ways to debug a page, depending on what equipment you have and what you need to see.</p>
+<div class="tw"><table><thead><tr><th scope="col">Method</th><th scope="col">You need</th><th scope="col">Best for</th></tr></thead><tbody><tr><td>Safari Web Inspector</td><td>A Mac, plus a cable or network pairing</td><td>Breakpoints, profiling, exact network detail</td></tr><tr><td>Safari DevTools on the phone</td><td>Nothing, or a bookmark</td><td>Console, elements, CSS, network, accessibility, right on the device</td></tr><tr><td>Safari DevTools remote mode</td><td>Any computer with Node on the same Wi-Fi</td><td>Reading logs and running code comfortably from your desk</td></tr><tr><td>Automated tests (Playwright WebKit)</td><td>A test setup</td><td>Catching Safari bugs in CI before users do</td></tr></tbody></table></div>
+<h2>1. Web Inspector (Mac)</h2>
+<p>Turn on <b>Web Inspector</b> in the iPhone's Safari settings (Settings → Apps → Safari → Advanced), enable <b>Show features for web developers</b> in Safari on the Mac, connect the phone and pick the page from the <b>Develop</b> menu.</p>
+<h2>2. An in-page panel</h2>
+<p>Load Safari DevTools with a <a href="/#install">bookmarklet or script tag</a> and the full panel opens on the phone: console, elements with live CSS, network with mocking, storage, accessibility and more. No Mac required.</p>
+<h2>3. Remote mode</h2>
+<p>Run the small relay on your computer and watch the phone's console and network in your desktop browser. See the <a href="/guides/remote-iphone/">remote mode guide</a>.</p>
+<h2>4. Catch it in tests</h2>
+<p>Playwright's WebKit engine is the same engine Safari uses. The Safari DevTools Playwright fixture adds console, network, accessibility and snapshot checks to those tests:</p>
+<pre><code>test('checkout has no errors', async ({ page, devtools }) =&gt; {
+  await page.goto('/checkout');
+  expect(await devtools.errors()).toEqual([]);
+});</code></pre>
+<h2>Common Safari-only bugs to check first</h2>
+<p>Inputs zooming the page, <code>100vh</code> hidden behind the toolbar, missing safe-area padding and broken sticky headers cause many iPhone-only reports. See <a href="/learn/safari-css-bugs/">Safari-only CSS bugs and fixes</a>.</p>
+
+<div class="cta"><div><b>Try Safari DevTools</b><span>Free and open source. Works in Safari, Chrome and on iPhone.</span></div>
+<div class="btns"><a class="btn primary" href="/#install">Install</a><a class="btn ghost" href="/#demo">Live demo</a></div></div>
+<section class="related"><h2>Related</h2><ul><li><a href="/learn/iphone-console-without-mac/">How to see console logs on iPhone without a Mac<small>Three ways to read console logs and errors from Safari on iPhone without a Mac or cable:…</small></a></li><li><a href="/compare/safari-web-inspector/">Safari DevTools vs Safari Web Inspector<small>Safari&#x27;s Web Inspector needs a Mac and a cable or pairing. Safari DevTools runs inside…</small></a></li><li><a href="/learn/safari-css-bugs/">Safari-only CSS bugs on iPhone, and how to fix them<small>The iPhone Safari layout bugs behind most bug reports: input zoom, 100vh, safe areas,…</small></a></li></ul></section>
+</main>
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="fgrid">
+      <div class="fbrand">
+        <a class="brand" href="/"><img src="/logo.png" alt="" width="30" height="30">Safari DevTools</a>
+        <p>Chrome-style DevTools inside any page, for Safari, Chrome and iPhone. Free and open source.</p>
+        <a class="fstar" href="https://github.com/biratdatta/safari-devtools"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.2l2 4.3 4.7.6-3.4 3.2.9 4.6L8 11.6l-4.2 2.3.9-4.6L1.3 6.1 6 5.5z"/></svg>Star on GitHub</a>
+      </div>
+      <nav class="fcol" aria-label="Product"><h2>Product</h2><ul><li><a href="/#demo">Live demo</a></li><li><a href="/#features">Features</a></li><li><a href="/#install">Install</a></li><li><a href="/#faq">FAQ</a></li><li><a href="https://github.com/biratdatta/safari-devtools#whats-new">Changelog</a></li></ul></nav>
+      <nav class="fcol" aria-label="Compare"><h2>Compare</h2><ul><li><a href="/compare/safari-web-inspector/">vs Safari Web Inspector</a></li><li><a href="/compare/eruda/">vs Eruda</a></li><li><a href="/compare/vconsole/">vs vConsole</a></li><li><a href="/compare/chrome-devtools/">vs Chrome DevTools</a></li><li><a href="/compare/eruda-alternatives/">Eruda alternatives</a></li></ul></nav>
+      <nav class="fcol" aria-label="Learn"><h2>Learn</h2><ul><li><a href="/learn/iphone-console-without-mac/">iPhone console without a Mac</a></li><li><a href="/learn/debug-safari-on-iphone/">Debug Safari on iPhone</a></li><li><a href="/learn/debug-ios-webviews/">Debug iOS WebViews</a></li><li><a href="/learn/mock-api-in-browser/">Mock APIs in the browser</a></li><li><a href="/learn/safari-accessibility-testing/">Accessibility testing in Safari</a></li><li><a href="/learn/redux-devtools-safari/">Redux DevTools in Safari</a></li><li><a href="/learn/safari-css-bugs/">Safari-only CSS bugs</a></li><li><a href="/learn/debug-shadow-dom-safari/">Shadow DOM in Safari</a></li></ul></nav>
+      <nav class="fcol" aria-label="Support"><h2>Support</h2><ul><li><a href="/guides/install-chrome/">Install on Chrome</a></li><li><a href="/guides/install-safari/">Install on Safari</a></li><li><a href="/guides/remote-iphone/">iPhone remote mode</a></li><li><a href="/guides/claude-and-jira/">Claude &amp; Jira setup</a></li><li><a href="https://github.com/biratdatta/safari-devtools/issues">Report an issue</a></li><li><a href="/privacy/">Privacy</a></li></ul></nav>
+    </div>
+    <div class="fbottom"><span>Safari DevTools · MIT licence · Made by Birat Datta</span><span><a href="/">English</a> · <a href="/zh/">简体中文</a> · <a href="/ja/">日本語</a></span></div>
+  </div>
+</footer>
+</body>
+</html>

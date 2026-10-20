@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>How to see console logs on iPhone without a Mac</title>
+<meta name="description" content="Three ways to read console logs and errors from Safari on iPhone without a Mac or cable: a bookmarklet, a script tag, or remote mode over Wi-Fi.">
+<link rel="canonical" href="https://devtools.biratdatta.tech/learn/iphone-console-without-mac/">
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="alternate" type="text/markdown" title="LLM-friendly summary" href="/llms.txt">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Safari DevTools">
+<meta property="og:title" content="How to see console logs on iPhone without a Mac">
+<meta property="og:description" content="Three ways to read console logs and errors from Safari on iPhone without a Mac or cable: a bookmarklet, a script tag, or remote mode over Wi-Fi.">
+<meta property="og:url" content="https://devtools.biratdatta.tech/learn/iphone-console-without-mac/">
+<meta property="og:image" content="https://devtools.biratdatta.tech/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="How to see console logs on iPhone without a Mac">
+<meta name="twitter:description" content="Three ways to read console logs and errors from Safari on iPhone without a Mac or cable: a bookmarklet, a script tag, or remote mode over Wi-Fi.">
+<meta name="twitter:image" content="https://devtools.biratdatta.tech/og.jpg">
+<link rel="stylesheet" href="/assets/site.css">
+<link rel="stylesheet" href="/assets/footer.css">
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@graph": [
+  {
+   "@type": "TechArticle",
+   "headline": "How to see console logs on iPhone without a Mac",
+   "description": "Three ways to read console logs and errors from Safari on iPhone without a Mac or cable: a bookmarklet, a script tag, or remote mode over Wi-Fi.",
+   "url": "https://devtools.biratdatta.tech/learn/iphone-console-without-mac/",
+   "datePublished": "2026-10-20",
+   "dateModified": "2026-10-20",
+   "inLanguage": "en",
+   "image": "https://devtools.biratdatta.tech/og.jpg",
+   "author": {
+    "@type": "Person",
+    "name": "Birat Datta",
+    "url": "https://github.com/biratdatta"
+   },
+   "publisher": {
+    "@type": "Organization",
+    "name": "Safari DevTools",
+    "logo": {
+     "@type": "ImageObject",
+     "url": "https://devtools.biratdatta.tech/logo.png"
+    }
+   },
+   "about": {
+    "@type": "SoftwareApplication",
+    "name": "Safari DevTools",
+    "url": "https://devtools.biratdatta.tech/"
+   }
+  },
+  {
+   "@type": "BreadcrumbList",
+   "itemListElement": [
+    {
+     "@type": "ListItem",
+     "position": 1,
+     "name": "Home",
+     "item": "https://devtools.biratdatta.tech/"
+    },
+    {
+     "@type": "ListItem",
+     "position": 2,
+     "name": "Learn",
+     "item": "https://devtools.biratdatta.tech/learn/"
+    },
+    {
+     "@type": "ListItem",
+     "position": 3,
+     "name": "iPhone console without a Mac",
+     "item": "https://devtools.biratdatta.tech/learn/iphone-console-without-mac/"
+    }
+   ]
+  },
+  {
+   "@type": "FAQPage",
+   "mainEntity": [
+    {
+     "@type": "Question",
+     "name": "Can I see iPhone Safari console logs on Windows?",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "Yes. Load Safari DevTools on the page to see the console on the phone, or run its relay with Node on your Windows PC and watch the phone's console in your browser."
+     }
+    },
+    {
+     "@type": "Question",
+     "name": "Do I need to jailbreak or install an app?",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "No. Safari DevTools runs inside the web page, so it works in the normal Safari app."
+     }
+    }
+   ]
+  }
+ ]
+}
+</script>
+</head>
+<body>
+<header class="nav"><div class="wrap">
+  <a class="brand" href="/"><img src="/logo.png" alt="" width="26" height="26">Safari DevTools</a>
+  <nav aria-label="Site"><a href="/#features">Features</a><a href="/compare/">Compare</a><a href="/learn/">Learn</a><a href="/guides/">Guides</a><a href="https://github.com/biratdatta/safari-devtools">GitHub</a></nav>
+  <a class="btn primary small" href="/#install">Get it free</a>
+</div></header>
+<main class="article">
+<nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> <span aria-hidden="true">›</span> <a href="/learn/">Learn</a></nav>
+<h1>How to see console logs on iPhone without a Mac</h1>
+<p class="meta">Updated 2026-10-20 · 2 min read</p>
+<p class="lead">Apple's Web Inspector needs a Mac. If you don't have one, or don't have it with you, you can still read the console straight from the page.</p>
+<h2>Option 1: a bookmarklet (any website, no install)</h2>
+<ol>
+<li>On the <a href="/#install">install section</a>, open the <b>Bookmarklet</b> tab and copy the code.</li>
+<li>In Safari on the iPhone, bookmark any page, then edit that bookmark and paste the code as its <b>address</b>.</li>
+<li>Open the page you want to debug and tap the bookmark. The panel opens at the bottom of the screen.</li>
+</ol>
+<p>It loads after the page, so messages logged before you tap aren't captured. Tap it, then reload the page if you need everything from the start.</p>
+<h2>Option 2: a script tag (your own site)</h2>
+<p>Add this as the first thing in <code>&lt;head&gt;</code> of your development build. It captures every log and request from the first line:</p>
+<pre><code>&lt;script src="https://cdn.jsdelivr.net/gh/biratdatta/safari-devtools@v1.5.2/standalone/safari-devtools.js"&gt;&lt;/script&gt;</code></pre>
+<p>A round button appears in the corner of the page. Tap it to open the console.</p>
+<h2>Option 3: remote mode (watch from any computer)</h2>
+<p>Reading logs on a phone screen is fiddly. Remote mode streams the phone's console and network to your computer over Wi-Fi, and lets you type JavaScript that runs on the phone. It works from macOS, Windows or Linux.</p>
+<pre><code>git clone https://github.com/biratdatta/safari-devtools
+cd safari-devtools
+node standalone/remote/relay.js</code></pre>
+<p>Then open <code>http://&lt;your-computer-ip&gt;:9230/demo</code> on the iPhone, and <code>http://localhost:9230</code> on the computer. The <a href="/guides/remote-iphone/">remote mode guide</a> covers using it with your own pages.</p>
+<div class="note"><p><b>HTTPS pages:</b> Safari won't let an <code>https://</code> page talk to an <code>http://</code> relay. Use remote mode with your local <code>http://</code> dev server, or serve the relay over HTTPS.</p></div>
+<h2>If you do have a Mac</h2>
+<p>Safari's Web Inspector gives you breakpoints and profiling too. See <a href="/compare/safari-web-inspector/">Safari DevTools vs Web Inspector</a> for when each is the better choice.</p>
+<h2>Questions</h2><div class="faqs"><details><summary>Can I see iPhone Safari console logs on Windows?</summary><p>Yes. Load Safari DevTools on the page to see the console on the phone, or run its relay with Node on your Windows PC and watch the phone&#x27;s console in your browser.</p></details><details><summary>Do I need to jailbreak or install an app?</summary><p>No. Safari DevTools runs inside the web page, so it works in the normal Safari app.</p></details></div>
+<div class="cta"><div><b>Try Safari DevTools</b><span>Free and open source. Works in Safari, Chrome and on iPhone.</span></div>
+<div class="btns"><a class="btn primary" href="/#install">Install</a><a class="btn ghost" href="/#demo">Live demo</a></div></div>
+<section class="related"><h2>Related</h2><ul><li><a href="/guides/remote-iphone/">Remote mode: debug an iPhone from your computer over Wi-Fi<small>Stream an iPhone page&#x27;s console and network to your computer and run JavaScript on the…</small></a></li><li><a href="/learn/debug-safari-on-iphone/">How to debug Safari on iPhone: every method compared<small>All the ways to debug a web page in Safari on iPhone and iPad: Web Inspector, an in-page…</small></a></li><li><a href="/compare/safari-web-inspector/">Safari DevTools vs Safari Web Inspector<small>Safari&#x27;s Web Inspector needs a Mac and a cable or pairing. Safari DevTools runs inside…</small></a></li></ul></section>
+</main>
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="fgrid">
+      <div class="fbrand">
+        <a class="brand" href="/"><img src="/logo.png" alt="" width="30" height="30">Safari DevTools</a>
+        <p>Chrome-style DevTools inside any page, for Safari, Chrome and iPhone. Free and open source.</p>
+        <a class="fstar" href="https://github.com/biratdatta/safari-devtools"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.2l2 4.3 4.7.6-3.4 3.2.9 4.6L8 11.6l-4.2 2.3.9-4.6L1.3 6.1 6 5.5z"/></svg>Star on GitHub</a>
+      </div>
+      <nav class="fcol" aria-label="Product"><h2>Product</h2><ul><li><a href="/#demo">Live demo</a></li><li><a href="/#features">Features</a></li><li><a href="/#install">Install</a></li><li><a href="/#faq">FAQ</a></li><li><a href="https://github.com/biratdatta/safari-devtools#whats-new">Changelog</a></li></ul></nav>
+      <nav class="fcol" aria-label="Compare"><h2>Compare</h2><ul><li><a href="/compare/safari-web-inspector/">vs Safari Web Inspector</a></li><li><a href="/compare/eruda/">vs Eruda</a></li><li><a href="/compare/vconsole/">vs vConsole</a></li><li><a href="/compare/chrome-devtools/">vs Chrome DevTools</a></li><li><a href="/compare/eruda-alternatives/">Eruda alternatives</a></li></ul></nav>
+      <nav class="fcol" aria-label="Learn"><h2>Learn</h2><ul><li><a href="/learn/iphone-console-without-mac/">iPhone console without a Mac</a></li><li><a href="/learn/debug-safari-on-iphone/">Debug Safari on iPhone</a></li><li><a href="/learn/debug-ios-webviews/">Debug iOS WebViews</a></li><li><a href="/learn/mock-api-in-browser/">Mock APIs in the browser</a></li><li><a href="/learn/safari-accessibility-testing/">Accessibility testing in Safari</a></li><li><a href="/learn/redux-devtools-safari/">Redux DevTools in Safari</a></li><li><a href="/learn/safari-css-bugs/">Safari-only CSS bugs</a></li><li><a href="/learn/debug-shadow-dom-safari/">Shadow DOM in Safari</a></li></ul></nav>
+      <nav class="fcol" aria-label="Support"><h2>Support</h2><ul><li><a href="/guides/install-chrome/">Install on Chrome</a></li><li><a href="/guides/install-safari/">Install on Safari</a></li><li><a href="/guides/remote-iphone/">iPhone remote mode</a></li><li><a href="/guides/claude-and-jira/">Claude &amp; Jira setup</a></li><li><a href="https://github.com/biratdatta/safari-devtools/issues">Report an issue</a></li><li><a href="/privacy/">Privacy</a></li></ul></nav>
+    </div>
+    <div class="fbottom"><span>Safari DevTools · MIT licence · Made by Birat Datta</span><span><a href="/">English</a> · <a href="/zh/">简体中文</a> · <a href="/ja/">日本語</a></span></div>
+  </div>
+</footer>
+</body>
+</html>

@@ -10,6 +10,7 @@
 <link rel="icon" type="image/png" href="/favicon.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="alternate" type="text/markdown" title="LLM-friendly summary" href="/llms.txt">
+<link rel="stylesheet" href="/assets/footer.css">
 <link rel="canonical" href="https://devtools.biratdatta.tech/zh/">
 <link rel="alternate" hreflang="en" href="https://devtools.biratdatta.tech/">
 <link rel="alternate" hreflang="zh-Hans" href="https://devtools.biratdatta.tech/zh/">
@@ -305,10 +306,6 @@ summary::after{content:"+";font-weight:400;color:var(--ink3);font-size:22px;line
 details[open] summary::after{content:"−"}
 details p{color:var(--ink2);margin:12px 0 0}
 
-/* footer */
-footer{padding-block:40px 60px;border-top:1px solid var(--hair);font-size:13px;color:var(--ink3)}
-footer .wrap{display:flex;gap:18px;flex-wrap:wrap;justify-content:space-between;align-items:center}
-footer a{color:var(--ink2)}
 
 /* Chinese and Japanese: native fonts, no negative tracking, roomier line height, phrase-aware line breaks */
 :lang(zh) body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans CJK SC","Noto Sans SC",sans-serif;letter-spacing:0}
@@ -379,7 +376,7 @@ footer a{color:var(--ink2)}
     </div>
   </section>
 
-  <section class="show" aria-labelledby="show-title">
+  <section class="show" id="demo" aria-labelledby="show-title">
     <div class="wrap">
       <h2 id="show-title" class="center" style="font-size:clamp(22px,3vw,28px);font-weight:600;margin-bottom:22px">这就是真实的面板，随便点点看。</h2>
       <div class="chips" role="group" aria-label="查看功能">
@@ -609,7 +606,7 @@ test(<span class="s">'checkout has no errors'</span>, <span class="k">async</spa
     </div>
   </section>
 
-  <section aria-labelledby="faq-title">
+  <section id="faq" aria-labelledby="faq-title">
     <div class="wrap">
       <h2 id="faq-title" class="center">常见问题</h2>
       <div class="faq">
@@ -626,12 +623,22 @@ test(<span class="s">'checkout has no errors'</span>, <span class="k">async</spa
   </section>
 </main>
 
-<footer>
+<!--footer:start--><footer class="site-footer">
   <div class="wrap">
-    <span>Safari DevTools · MIT 许可证 · 由 Birat Datta 制作</span>
-    <span><a href="https://github.com/biratdatta/safari-devtools">GitHub</a> · <a href="https://github.com/biratdatta/safari-devtools/issues">反馈问题</a></span>
+    <div class="fgrid">
+      <div class="fbrand">
+        <a class="brand" href="/"><img src="/logo.png" alt="" width="30" height="30">Safari DevTools</a>
+        <p>在任意网页中运行的 Chrome 风格开发者工具，适用于 Safari、Chrome 和 iPhone。免费开源。</p>
+        <a class="fstar" href="https://github.com/biratdatta/safari-devtools"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.2l2 4.3 4.7.6-3.4 3.2.9 4.6L8 11.6l-4.2 2.3.9-4.6L1.3 6.1 6 5.5z"/></svg>在 GitHub 上加星</a>
+      </div>
+      <nav class="fcol" aria-label="产品"><h2>产品</h2><ul><li><a href="/#demo">实时演示</a></li><li><a href="/#features">功能</a></li><li><a href="/#install">安装</a></li><li><a href="/#faq">常见问题</a></li><li><a href="https://github.com/biratdatta/safari-devtools#whats-new">更新日志</a></li></ul></nav>
+      <nav class="fcol" aria-label="对比"><h2>对比</h2><ul><li><a href="/compare/safari-web-inspector/">对比 Safari Web 检查器</a></li><li><a href="/compare/eruda/">对比 Eruda</a></li><li><a href="/compare/vconsole/">对比 vConsole</a></li><li><a href="/compare/chrome-devtools/">对比 Chrome 开发者工具</a></li><li><a href="/compare/eruda-alternatives/">Eruda 替代方案</a></li></ul></nav>
+      <nav class="fcol" aria-label="学习"><h2>学习</h2><ul><li><a href="/learn/iphone-console-without-mac/">无需 Mac 查看 iPhone 控制台</a></li><li><a href="/learn/debug-safari-on-iphone/">在 iPhone 上调试 Safari</a></li><li><a href="/learn/debug-ios-webviews/">调试 iOS WebView</a></li><li><a href="/learn/mock-api-in-browser/">在浏览器中模拟 API</a></li><li><a href="/learn/safari-accessibility-testing/">在 Safari 中测试无障碍</a></li><li><a href="/learn/redux-devtools-safari/">Safari 中的 Redux DevTools</a></li><li><a href="/learn/safari-css-bugs/">Safari 特有的 CSS 问题</a></li><li><a href="/learn/debug-shadow-dom-safari/">Safari 中的 Shadow DOM</a></li></ul></nav>
+      <nav class="fcol" aria-label="支持"><h2>支持</h2><ul><li><a href="/guides/install-chrome/">在 Chrome 中安装</a></li><li><a href="/guides/install-safari/">在 Safari 中安装</a></li><li><a href="/guides/remote-iphone/">iPhone 远程模式</a></li><li><a href="/guides/claude-and-jira/">Claude 与 Jira 设置</a></li><li><a href="https://github.com/biratdatta/safari-devtools/issues">反馈问题</a></li><li><a href="/privacy/">隐私</a></li></ul></nav>
+    </div>
+    <div class="fbottom"><span>Safari DevTools · MIT 许可证 · 由 Birat Datta 制作</span><span><a href="/">English</a> · <a href="/zh/">简体中文</a> · <a href="/ja/">日本語</a></span></div>
   </div>
-</footer>
+</footer><!--footer:end-->
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 

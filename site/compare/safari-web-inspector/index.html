@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Safari DevTools vs Safari Web Inspector · Safari DevTools</title>
+<meta name="description" content="Safari&#x27;s Web Inspector needs a Mac and a cable or pairing. Safari DevTools runs inside the page. When to use each, and what each can&#x27;t do.">
+<link rel="canonical" href="https://devtools.biratdatta.tech/compare/safari-web-inspector/">
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="alternate" type="text/markdown" title="LLM-friendly summary" href="/llms.txt">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Safari DevTools">
+<meta property="og:title" content="Safari DevTools vs Safari Web Inspector">
+<meta property="og:description" content="Safari&#x27;s Web Inspector needs a Mac and a cable or pairing. Safari DevTools runs inside the page. When to use each, and what each can&#x27;t do.">
+<meta property="og:url" content="https://devtools.biratdatta.tech/compare/safari-web-inspector/">
+<meta property="og:image" content="https://devtools.biratdatta.tech/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Safari DevTools vs Safari Web Inspector">
+<meta name="twitter:description" content="Safari&#x27;s Web Inspector needs a Mac and a cable or pairing. Safari DevTools runs inside the page. When to use each, and what each can&#x27;t do.">
+<meta name="twitter:image" content="https://devtools.biratdatta.tech/og.jpg">
+<link rel="stylesheet" href="/assets/site.css">
+<link rel="stylesheet" href="/assets/footer.css">
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@graph": [
+  {
+   "@type": "TechArticle",
+   "headline": "Safari DevTools vs Safari Web Inspector",
+   "description": "Safari's Web Inspector needs a Mac and a cable or pairing. Safari DevTools runs inside the page. When to use each, and what each can't do.",
+   "url": "https://devtools.biratdatta.tech/compare/safari-web-inspector/",
+   "datePublished": "2026-10-20",
+   "dateModified": "2026-10-20",
+   "inLanguage": "en",
+   "image": "https://devtools.biratdatta.tech/og.jpg",
+   "author": {
+    "@type": "Person",
+    "name": "Birat Datta",
+    "url": "https://github.com/biratdatta"
+   },
+   "publisher": {
+    "@type": "Organization",
+    "name": "Safari DevTools",
+    "logo": {
+     "@type": "ImageObject",
+     "url": "https://devtools.biratdatta.tech/logo.png"
+    }
+   },
+   "about": {
+    "@type": "SoftwareApplication",
+    "name": "Safari DevTools",
+    "url": "https://devtools.biratdatta.tech/"
+   }
+  },
+  {
+   "@type": "BreadcrumbList",
+   "itemListElement": [
+    {
+     "@type": "ListItem",
+     "position": 1,
+     "name": "Home",
+     "item": "https://devtools.biratdatta.tech/"
+    },
+    {
+     "@type": "ListItem",
+     "position": 2,
+     "name": "Compare",
+     "item": "https://devtools.biratdatta.tech/compare/"
+    },
+    {
+     "@type": "ListItem",
+     "position": 3,
+     "name": "vs Safari Web Inspector",
+     "item": "https://devtools.biratdatta.tech/compare/safari-web-inspector/"
+    }
+   ]
+  }
+ ]
+}
+</script>
+</head>
+<body>
+<header class="nav"><div class="wrap">
+  <a class="brand" href="/"><img src="/logo.png" alt="" width="26" height="26">Safari DevTools</a>
+  <nav aria-label="Site"><a href="/#features">Features</a><a href="/compare/">Compare</a><a href="/learn/">Learn</a><a href="/guides/">Guides</a><a href="https://github.com/biratdatta/safari-devtools">GitHub</a></nav>
+  <a class="btn primary small" href="/#install">Get it free</a>
+</div></header>
+<main class="article">
+<nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> <span aria-hidden="true">›</span> <a href="/compare/">Compare</a></nav>
+<h1>Safari DevTools vs Safari Web Inspector</h1>
+<p class="meta">Updated 2026-10-20 · 2 min read</p>
+<p class="lead">Web Inspector is Safari's built-in debugger. Safari DevTools is a panel that runs inside the page. They come at the same problem from opposite ends, and many developers use both.</p>
+<h2>The short version</h2>
+<div class="tw"><table><thead><tr><th scope="col"></th><th scope="col">Safari Web Inspector</th><th scope="col">Safari DevTools</th></tr></thead><tbody><tr><td>Needs a Mac</td><td>✓ Yes</td><td>✕ No</td></tr><tr><td>Needs a cable or network pairing for iPhone</td><td>✓ Yes</td><td>✕ No</td></tr><tr><td>Works in in-app WebViews</td><td>Only if the app makes them inspectable</td><td>Yes, if you can load one script</td></tr><tr><td>Breakpoints and step-through debugging</td><td>✓ Yes</td><td>✕ No</td></tr><tr><td>Performance timelines and memory profiling</td><td>✓ Yes</td><td>Basic: FPS, long tasks, DOM size, leak check</td></tr><tr><td>Source-mapped console stack traces</td><td>✓ Yes</td><td>✓ Yes</td></tr><tr><td>Mock, block or delay requests</td><td>Yes, with local overrides</td><td>Yes, with rules or one right-click</td></tr><tr><td>Accessibility tree, tab-order overlay, contrast fixer</td><td>Accessibility details per element</td><td>✓ Yes</td></tr><tr><td>Redux / NgRx time travel</td><td>✕ No</td><td>✓ Yes</td></tr><tr><td>Explain errors with Claude, Jira bug reports</td><td>✕ No</td><td>✓ Yes</td></tr><tr><td>Same panel in Chrome and Edge</td><td>✕ No</td><td>✓ Yes</td></tr><tr><td>Price</td><td>Free</td><td>Free (MIT)</td></tr></tbody></table></div>
+<h2>When Web Inspector is the right tool</h2>
+<ul>
+<li>You need to <b>pause JavaScript</b>: breakpoints, stepping, watching variables.</li>
+<li>You're profiling: <b>timelines, rendering, memory</b>.</li>
+<li>You need things a page can't see: <b>HttpOnly cookies</b>, browser-added request headers, exact network timing.</li>
+</ul>
+<h2>When Safari DevTools is the right tool</h2>
+<ul>
+<li><b>You don't have a Mac</b>, or the person testing doesn't (QA, designers, Windows and Linux developers).</li>
+<li>The bug is inside an <b>in-app WebView</b> that the app doesn't mark as inspectable.</li>
+<li>You want a quick look <b>on the phone itself</b>, without cables or pairing.</li>
+<li>You want the extras: request mocking from a right-click, an accessibility toolkit, Redux time travel, design-token editing, AI error explanations and one-click Jira reports.</li>
+</ul>
+<h2>Using both together</h2>
+<p>Load Safari DevTools for the everyday work, and open Web Inspector when you need to step through code. DOM breakpoints in Safari DevTools log the call stack, and can also trigger a <code>debugger</code> pause that Web Inspector picks up when it's open.</p>
+<h2>Turning on Web Inspector, for reference</h2>
+<ol>
+<li>On the iPhone: <b>Settings → Apps → Safari → Advanced → Web Inspector</b> (on older iOS: Settings → Safari → Advanced).</li>
+<li>On the Mac: <b>Safari → Settings → Advanced → Show features for web developers</b>.</li>
+<li>Connect the iPhone, then choose it from Safari's <b>Develop</b> menu and pick the page.</li>
+</ol>
+
+<div class="cta"><div><b>Try Safari DevTools</b><span>Free and open source. Works in Safari, Chrome and on iPhone.</span></div>
+<div class="btns"><a class="btn primary" href="/#install">Install</a><a class="btn ghost" href="/#demo">Live demo</a></div></div>
+<section class="related"><h2>Related</h2><ul><li><a href="/learn/debug-safari-on-iphone/">How to debug Safari on iPhone: every method compared<small>All the ways to debug a web page in Safari on iPhone and iPad: Web Inspector, an in-page…</small></a></li><li><a href="/learn/iphone-console-without-mac/">How to see console logs on iPhone without a Mac<small>Three ways to read console logs and errors from Safari on iPhone without a Mac or cable:…</small></a></li><li><a href="/learn/debug-ios-webviews/">How to debug WKWebView and in-app browsers on iOS<small>Debug web content inside iOS apps: make WKWebView inspectable, or inject an in-page…</small></a></li></ul></section>
+</main>
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="fgrid">
+      <div class="fbrand">
+        <a class="brand" href="/"><img src="/logo.png" alt="" width="30" height="30">Safari DevTools</a>
+        <p>Chrome-style DevTools inside any page, for Safari, Chrome and iPhone. Free and open source.</p>
+        <a class="fstar" href="https://github.com/biratdatta/safari-devtools"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.2l2 4.3 4.7.6-3.4 3.2.9 4.6L8 11.6l-4.2 2.3.9-4.6L1.3 6.1 6 5.5z"/></svg>Star on GitHub</a>
+      </div>
+      <nav class="fcol" aria-label="Product"><h2>Product</h2><ul><li><a href="/#demo">Live demo</a></li><li><a href="/#features">Features</a></li><li><a href="/#install">Install</a></li><li><a href="/#faq">FAQ</a></li><li><a href="https://github.com/biratdatta/safari-devtools#whats-new">Changelog</a></li></ul></nav>
+      <nav class="fcol" aria-label="Compare"><h2>Compare</h2><ul><li><a href="/compare/safari-web-inspector/">vs Safari Web Inspector</a></li><li><a href="/compare/eruda/">vs Eruda</a></li><li><a href="/compare/vconsole/">vs vConsole</a></li><li><a href="/compare/chrome-devtools/">vs Chrome DevTools</a></li><li><a href="/compare/eruda-alternatives/">Eruda alternatives</a></li></ul></nav>
+      <nav class="fcol" aria-label="Learn"><h2>Learn</h2><ul><li><a href="/learn/iphone-console-without-mac/">iPhone console without a Mac</a></li><li><a href="/learn/debug-safari-on-iphone/">Debug Safari on iPhone</a></li><li><a href="/learn/debug-ios-webviews/">Debug iOS WebViews</a></li><li><a href="/learn/mock-api-in-browser/">Mock APIs in the browser</a></li><li><a href="/learn/safari-accessibility-testing/">Accessibility testing in Safari</a></li><li><a href="/learn/redux-devtools-safari/">Redux DevTools in Safari</a></li><li><a href="/learn/safari-css-bugs/">Safari-only CSS bugs</a></li><li><a href="/learn/debug-shadow-dom-safari/">Shadow DOM in Safari</a></li></ul></nav>
+      <nav class="fcol" aria-label="Support"><h2>Support</h2><ul><li><a href="/guides/install-chrome/">Install on Chrome</a></li><li><a href="/guides/install-safari/">Install on Safari</a></li><li><a href="/guides/remote-iphone/">iPhone remote mode</a></li><li><a href="/guides/claude-and-jira/">Claude &amp; Jira setup</a></li><li><a href="https://github.com/biratdatta/safari-devtools/issues">Report an issue</a></li><li><a href="/privacy/">Privacy</a></li></ul></nav>
+    </div>
+    <div class="fbottom"><span>Safari DevTools · MIT licence · Made by Birat Datta</span><span><a href="/">English</a> · <a href="/zh/">简体中文</a> · <a href="/ja/">日本語</a></span></div>
+  </div>
+</footer>
+</body>
+</html>

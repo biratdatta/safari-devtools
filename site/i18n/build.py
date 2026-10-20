@@ -21,6 +21,8 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SITE = os.path.dirname(HERE)
+sys.path.insert(0, os.path.join(SITE, 'content'))
+import pages  # noqa: E402  articles, guides and the shared footer
 
 LANGS = {
     'zh': {'html': 'zh-Hans', 'label': '简体中文', 'dir': 'zh'},
@@ -279,7 +281,38 @@ STRINGS = [
      '通常可以。书签小工具和 script 标签都不是扩展，扩展相关的策略对它们不适用。',
      'たいていは使えます。ブックマークレットと script タグは拡張機能ではないため、拡張機能のポリシーは適用されません。'),
 
-    # ---- footer
+
+    # ---- site footer (links go to the English articles)
+    ('<nav class="fcol" aria-label="Product"><h2>Product</h2>', '<nav class="fcol" aria-label="产品"><h2>产品</h2>', '<nav class="fcol" aria-label="製品"><h2>製品</h2>'),
+    ('<nav class="fcol" aria-label="Compare"><h2>Compare</h2>', '<nav class="fcol" aria-label="对比"><h2>对比</h2>', '<nav class="fcol" aria-label="比較"><h2>比較</h2>'),
+    ('<nav class="fcol" aria-label="Learn"><h2>Learn</h2>', '<nav class="fcol" aria-label="学习"><h2>学习</h2>', '<nav class="fcol" aria-label="学ぶ"><h2>学ぶ</h2>'),
+    ('<nav class="fcol" aria-label="Support"><h2>Support</h2>', '<nav class="fcol" aria-label="支持"><h2>支持</h2>', '<nav class="fcol" aria-label="サポート"><h2>サポート</h2>'),
+    ('<a href="/#demo">Live demo</a>', '<a href="/#demo">实时演示</a>', '<a href="/#demo">ライブデモ</a>'),
+    ('<a href="/#features">Features</a>', '<a href="/#features">功能</a>', '<a href="/#features">機能</a>'),
+    ('<a href="/#install">Install</a>', '<a href="/#install">安装</a>', '<a href="/#install">インストール</a>'),
+    ('<a href="/#faq">FAQ</a>', '<a href="/#faq">常见问题</a>', '<a href="/#faq">よくある質問</a>'),
+    ('#whats-new">Changelog</a>', '#whats-new">更新日志</a>', '#whats-new">変更履歴</a>'),
+    ('>vs Safari Web Inspector</a>', '>对比 Safari Web 检查器</a>', '>Safari Web インスペクタとの比較</a>'),
+    ('>vs Eruda</a>', '>对比 Eruda</a>', '>Eruda との比較</a>'),
+    ('>vs vConsole</a>', '>对比 vConsole</a>', '>vConsole との比較</a>'),
+    ('>vs Chrome DevTools</a>', '>对比 Chrome 开发者工具</a>', '>Chrome DevTools との比較</a>'),
+    ('>Eruda alternatives</a>', '>Eruda 替代方案</a>', '>Eruda の代替ツール</a>'),
+    ('>iPhone console without a Mac</a>', '>无需 Mac 查看 iPhone 控制台</a>', '>Mac なしで iPhone のコンソール</a>'),
+    ('>Debug Safari on iPhone</a>', '>在 iPhone 上调试 Safari</a>', '>iPhone の Safari をデバッグ</a>'),
+    ('>Debug iOS WebViews</a>', '>调试 iOS WebView</a>', '>iOS の WebView をデバッグ</a>'),
+    ('>Mock APIs in the browser</a>', '>在浏览器中模拟 API</a>', '>ブラウザで API をモック</a>'),
+    ('>Accessibility testing in Safari</a>', '>在 Safari 中测试无障碍</a>', '>Safari でアクセシビリティテスト</a>'),
+    ('>Redux DevTools in Safari</a>', '>Safari 中的 Redux DevTools</a>', '>Safari で Redux DevTools</a>'),
+    ('>Safari-only CSS bugs</a>', '>Safari 特有的 CSS 问题</a>', '>Safari 特有の CSS バグ</a>'),
+    ('>Shadow DOM in Safari</a>', '>Safari 中的 Shadow DOM</a>', '>Safari で Shadow DOM</a>'),
+    ('>Install on Chrome</a>', '>在 Chrome 中安装</a>', '>Chrome にインストール</a>'),
+    ('>Install on Safari</a>', '>在 Safari 中安装</a>', '>Safari にインストール</a>'),
+    ('>iPhone remote mode</a>', '>iPhone 远程模式</a>', '>iPhone のリモートモード</a>'),
+    ('>Claude &amp; Jira setup</a>', '>Claude 与 Jira 设置</a>', '>Claude と Jira の設定</a>'),
+    ('>Privacy</a>', '>隐私</a>', '>プライバシー</a>'),
+    ('<p>Chrome-style DevTools inside any page, for Safari, Chrome and iPhone. Free and open source.</p>', '<p>在任意网页中运行的 Chrome 风格开发者工具，适用于 Safari、Chrome 和 iPhone。免费开源。</p>', '<p>Safari、Chrome、iPhone のどんなページでも動く Chrome 風 DevTools。無料のオープンソース。</p>'),
+    ('</svg>Star on GitHub</a>', '</svg>在 GitHub 上加星</a>', '</svg>GitHub でスター</a>'),
+    # ---- footer bottom line
     ('Safari DevTools · MIT licence · Made by Birat Datta', 'Safari DevTools · MIT 许可证 · 由 Birat Datta 制作', 'Safari DevTools · MIT ライセンス · 制作：Birat Datta'),
     ('>Report an issue</a>', '>反馈问题</a>', '>問題を報告</a>'),
 
@@ -357,6 +390,7 @@ def build():
         new = sys.argv[sys.argv.index('--site-url') + 1].rstrip('/')
         src = src.replace(site_url(src), new)
     base = site_url(src)
+    src = re.sub(r'<!--footer:start-->[\s\S]*?<!--footer:end-->', lambda m: '<!--footer:start-->' + pages.FOOTER + '<!--footer:end-->', src)
 
     missing = [en for en, _, _ in STRINGS if en not in src]
     if missing:
@@ -389,19 +423,24 @@ def build():
         left = [w for w in ('Get it free', 'Install', 'Features', 'Questions') if ('>' + w + '<') in out]
         print('Built %-22s %s' % (os.path.relpath(target, os.path.dirname(SITE)), ('(still English: ' + ', '.join(left) + ')') if left else ''))
 
+    # Articles, comparisons and guides (English).
+    articles = pages.write_all(SITE, base)
+    print('Wrote %d article and hub pages' % len(articles))
+
     # Sitemap with language alternates, and robots.txt pointing to it.
     today = datetime.date.today().isoformat()
-    pages = [('en', base + '/'), ('zh-Hans', base + '/zh/'), ('ja', base + '/ja/')]
-    alts = ''.join('    <xhtml:link rel="alternate" hreflang="%s" href="%s"/>\n' % (h, u) for h, u in pages) + \
+    langs = [('en', base + '/'), ('zh-Hans', base + '/zh/'), ('ja', base + '/ja/')]
+    alts = ''.join('    <xhtml:link rel="alternate" hreflang="%s" href="%s"/>\n' % (h, u) for h, u in langs) + \
         '    <xhtml:link rel="alternate" hreflang="x-default" href="%s/"/>\n' % base
-    urls = ''.join('  <url>\n    <loc>%s</loc>\n    <lastmod>%s</lastmod>\n%s  </url>\n' % (u, today, alts) for _, u in pages)
+    urls = ''.join('  <url>\n    <loc>%s</loc>\n    <lastmod>%s</lastmod>\n%s  </url>\n' % (u, today, alts) for _, u in langs)
+    urls += ''.join('  <url>\n    <loc>%s</loc>\n    <lastmod>%s</lastmod>\n  </url>\n' % (a[0], pages.UPDATED) for a in articles)
     with open(os.path.join(SITE, 'sitemap.xml'), 'w', encoding='utf-8') as f:
         f.write('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" '
                 'xmlns:xhtml="http://www.w3.org/1999/xhtml">\n' + urls + '</urlset>\n')
     with open(os.path.join(SITE, 'robots.txt'), 'w', encoding='utf-8') as f:
         f.write('User-agent: *\nAllow: /\nDisallow: /demo/\n\nSitemap: %s/sitemap.xml\n' % base)
     print('Wrote site/sitemap.xml and site/robots.txt')
-    write_llms(base)
+    write_llms(base, articles)
 
 
 LLMS = """# Safari DevTools
@@ -452,10 +491,15 @@ FULL_SOURCES = [
 ]
 
 
-def write_llms(base):
+def write_llms(base, articles=()):
     """llms.txt (a map for AI assistants) and llms-full.txt (all docs in one file), see llmstxt.org."""
     repo_root = os.path.dirname(SITE)
     llms = LLMS.format(base=base, repo=REPO, version=VERSION)
+    names = {'compare': 'Comparisons', 'learn': 'Guides and how-tos', 'guides': 'Setup'}
+    for key, title in names.items():
+        rows = [a for a in articles if a[3] == key]
+        if rows:
+            llms = llms.replace('\n## Optional\n', '\n## %s\n\n%s\n\n## Optional\n' % (title, '\n'.join('- [%s](%s): %s' % (t, u, d) for u, t, d, _ in rows)), 1)
     with open(os.path.join(SITE, 'llms.txt'), 'w', encoding='utf-8') as f:
         f.write(llms)
     parts = [llms.split('\n## Docs')[0].rstrip() + '\n']
