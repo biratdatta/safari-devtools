@@ -263,7 +263,9 @@ pre,code{font-family:var(--mono)}
 .code{position:relative;background:var(--code-bg);border:1px solid var(--hair);border-radius:14px;padding:18px 20px;font-size:13.5px;line-height:1.6;overflow-x:auto;min-width:0;margin:0}
 .code .c{color:var(--ink3)}.code .k{color:#af52de}.code .s{color:#c41a16}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .code .s{color:#ff9f8a}}
-.copy{position:absolute;top:10px;right:10px;font:600 12px/1 var(--font);padding:6px 10px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink2);cursor:pointer}
+.codebox{position:relative;min-width:0}
+.codebox .code{padding-right:84px;white-space:pre-wrap;overflow-wrap:anywhere}
+.copy{position:absolute;top:10px;right:10px;z-index:1;font:600 12px/1 var(--font);padding:6px 10px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink2);cursor:pointer;box-shadow:-14px 0 12px -2px var(--code-bg)}
 .copy:hover{color:var(--ink)}
 
 /* comparison */
@@ -476,27 +478,27 @@ details p{color:var(--ink2);margin:12px 0 0}
           <li>On the phone itself, the full panel opens with one tap</li>
         </ul>
       </div>
-      <pre class="code"><button class="copy" type="button">Copy</button><span class="c"># on your Mac, in the cloned repo (Node 18+, nothing to install)</span>
+      <div class="codebox"><button class="copy" type="button">Copy</button><pre class="code"><span class="c"># on your Mac, in the cloned repo (Node 18+, nothing to install)</span>
 node standalone/remote/relay.js
 
 <span class="c"># then open on the iPhone</span>
 http://&lt;your-mac-ip&gt;:9230/demo
 
 <span class="c"># and watch on the Mac</span>
-http://localhost:9230</pre>
+http://localhost:9230</pre></div>
     </div>
   </section>
 
   <section class="band" id="agents" aria-labelledby="agents-title">
     <div class="wrap split">
-      <pre class="code"><button class="copy" type="button">Copy</button><span class="k">import</span> { test, expect } <span class="k">from</span> <span class="s">'./safari-devtools.fixture'</span>;
+      <div class="codebox"><button class="copy" type="button">Copy</button><pre class="code"><span class="k">import</span> { test, expect } <span class="k">from</span> <span class="s">'./safari-devtools.fixture'</span>;
 
 test(<span class="s">'checkout has no errors'</span>, <span class="k">async</span> ({ page, devtools }) =&gt; {
   <span class="k">await</span> devtools.mockBeforeLoad(<span class="s">'/api/coupon'</span>, { status: 410 });
   <span class="k">await</span> page.goto(<span class="s">'/checkout'</span>);
   expect(<span class="k">await</span> devtools.errors()).toEqual([]);
   expect(<span class="k">await</span> devtools.tabOrder()).not.toHaveLength(0);
-});</pre>
+});</pre></div>
       <div>
         <div class="eyebrow">Tests &amp; AI agents</div>
         <h2 id="agents-title" style="margin-top:10px">Built for Playwright and AI agents, too.</h2>
@@ -573,11 +575,11 @@ test(<span class="s">'checkout has no errors'</span>, <span class="k">async</spa
         <p class="muted" style="margin:0 0 18px">No install, and it works where extensions aren't allowed. Drag this to your bookmarks bar, then click it on any page.</p>
         <a class="bm" id="bookmarklet" href="#install" title="Drag me to your bookmarks bar">⇱ Safari DevTools</a>
         <p class="small muted" style="margin:18px 0 0">On iPhone: bookmark any page, then edit the bookmark and paste the code below as its address.</p>
-        <pre class="code" style="margin-top:12px"><button class="copy" type="button">Copy</button><span id="bmCode"></span></pre>
+        <div class="codebox" style="margin-top:12px"><button class="copy" type="button">Copy</button><pre class="code"><span id="bmCode"></span></pre></div>
       </div>
       <div class="panel" role="tabpanel" id="p-script" aria-labelledby="t-script" hidden>
         <p class="muted" style="margin:0 0 16px">Add one line as the first thing in <code>&lt;head&gt;</code> of your development build. It captures every log and request from the first line.</p>
-        <pre class="code"><button class="copy" type="button">Copy</button>&lt;script src=<span class="s">"https://cdn.jsdelivr.net/gh/biratdatta/safari-devtools@v1.5.2/standalone/safari-devtools.js"</span>&gt;&lt;/script&gt;</pre>
+        <div class="codebox"><button class="copy" type="button">Copy</button><pre class="code">&lt;script src=<span class="s">"https://cdn.jsdelivr.net/gh/biratdatta/safari-devtools@v1.5.2/standalone/safari-devtools.js"</span>&gt;&lt;/script&gt;</pre></div>
       </div>
     </div>
   </section>
@@ -739,9 +741,9 @@ test(<span class="s">'checkout has no errors'</span>, <span class="k">async</spa
   /* ---- copy buttons ---- */
   document.querySelectorAll('.copy').forEach(function (b) {
     b.addEventListener('click', function () {
-      var text = b.parentElement.textContent.slice(b.textContent.length).trim();
+      var pre = b.nextElementSibling, text = pre.textContent.trim();
       (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(function () { say('Copied'); }, function () {
-        var r = document.createRange(); r.selectNodeContents(b.parentElement); var sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); say('Press ⌘C to copy');
+        var r = document.createRange(); r.selectNodeContents(pre); var sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); say('Press ⌘C to copy');
       });
     });
   });
