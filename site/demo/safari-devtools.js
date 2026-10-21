@@ -1178,7 +1178,7 @@ mark{background:#fff4c2;color:#1f1f1f;border-radius:2px}\n\
 .issue-main{flex:1;min-width:0}\n\
 .snip-run{color:var(--accent);cursor:pointer;padding:0 2px}\n\
 .snip-run:hover{color:#1e8e3e}\n\
-.snippet-ed{width:100%;height:100%;border:0;outline:none;resize:none;padding:10px 12px;background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:12.5px;line-height:1.5;tab-size:2}\n\
+.src-file.us-off{opacity:.55}\n.us-on{margin:0 2px 0 0;vertical-align:-2px}\n.ibtn.us-add{font-size:16px;line-height:1;font-weight:400}\n.snippet-ed{width:100%;height:100%;border:0;outline:none;resize:none;padding:10px 12px;background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:12.5px;line-height:1.5;tab-size:2}\n\
 .pal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.18);z-index:2147483646}\n\
 .palette{position:fixed;left:50%;top:12vh;transform:translateX(-50%);width:min(620px,calc(100vw - 32px));background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:10px;box-shadow:0 16px 48px rgba(0,0,0,.3);z-index:2147483647;overflow:hidden}\n\
 .pal-input{width:100%;border:0;border-bottom:1px solid var(--line);outline:none;padding:12px 14px;font:14px -apple-system,system-ui,sans-serif;background:var(--bg);color:var(--fg)}\n\
@@ -1832,7 +1832,7 @@ mark{background:#fff4c2;color:#1f1f1f;border-radius:2px}\n\
       t.addEventListener('click', function () { state.sideTab = n; Array.prototype.forEach.call(ui.sideTabs.children, function (c) { c.classList.toggle('on', c === t); }); renderSide(); });
       ui.sideTabs.append(t);
     });
-    ui.sideTabs.append(h('div', { class: 'grow' }), h('button', { class: 'ibtn', title: 'Refresh', onclick: function () { renderTree(); renderSide(); } }, icon('refresh')));
+    ui.sideTabs.append(h('div', { class: 'grow' }), h('button', { class: 'ibtn us-add', title: 'New style rule (saved to your Inspector stylesheet)', onclick: addRuleForSelected }, '+'), h('button', { class: 'ibtn', title: 'Refresh', onclick: function () { renderTree(); renderSide(); } }, icon('refresh')));
     ui.side = h('div', { class: 'styles' });
     var right = h('div', { class: 'right' }, ui.sideTabs, ui.side);
     v.append(h('div', { class: 'split' }, left, right));
@@ -3293,6 +3293,18 @@ mark{background:#fff4c2;color:#1f1f1f;border-radius:2px}\n\
     addSnip.addEventListener('click', newSnippet);
     snipRows.push(addSnip);
     group('snippets', 'Snippets (this site)', snipRows);
+    var styleRows = prefs.userStyles.map(function (us, i) {
+      var box = h('input', { type: 'checkbox', class: 'us-on', title: 'Apply to the page' }); box.checked = us.on !== false;
+      var r = h('div', { class: 'src-file' + (o && o.userStyle === i ? ' on' : '') + (us.on === false ? ' us-off' : ''), title: (us.type === 'url' ? us.url : 'Inline CSS') + ' \u00b7 click to edit' }, box, ' ', us.type === 'url' ? '\ud83d\udd17 ' : '', us.name);
+      r.addEventListener('click', function (e) { if (e.target === box) { toggleUserStyle(i, box.checked); return; } openUserStyle(i); });
+      return r;
+    });
+    var addCss = h('div', { class: 'src-file muted' }, '+ New stylesheet');
+    addCss.addEventListener('click', function () { newUserStyle(); });
+    var addUrl = h('div', { class: 'src-file muted' }, '+ Link stylesheet URL');
+    addUrl.addEventListener('click', function () { linkUserStyle(); });
+    styleRows.push(addCss, addUrl);
+    group('userstyles', 'Stylesheets (this site)', styleRows);
     SM.list.forEach(function (m) {
       var rows = m.files.filter(function (f) {
         if (!srcState.showVendor && /node_modules|\(webpack\)|webpack\/bootstrap|webpack\/runtime/.test(f.url)) return false;
@@ -4201,6 +4213,8 @@ mark{background:#fff4c2;color:#1f1f1f;border-radius:2px}\n\
   var changes = { map: new Map(), seq: 0 };
   function sheetLabel(sh) {
     if (!sh) return '';
+    if (sh.__sdtName) return sh.__sdtName + ' (your stylesheet)';
+    if (sh.ownerNode && sh.ownerNode.getAttribute && sh.ownerNode.getAttribute('data-sdt-user')) return sh.ownerNode.getAttribute('data-sdt-user') + ' (your stylesheet)';
     if (sh.href) return shortName(sh.href);
     var owner = sh.ownerNode, rn = owner && owner.getRootNode ? owner.getRootNode() : null;
     if (rn && rn.host) return '<' + rn.host.localName + '> shadow style';
@@ -5113,6 +5127,131 @@ mark{background:#fff4c2;color:#1f1f1f;border-radius:2px}\n\
     ta.focus();
   }
 
+  /* ===================================================== USER STYLESHEETS */
+  // Your own CSS for this site: inline sheets or linked URLs, applied live and re-applied on every visit.
+  if (!Array.isArray(prefs.userStyles)) prefs.userStyles = [];
+  var userCss = { nodes: [], adopted: [] };
+  var canAdopt = (function () { try { return 'adoptedStyleSheets' in Document.prototype && typeof CSSStyleSheet === 'function' && 'replaceSync' in CSSStyleSheet.prototype && !!new CSSStyleSheet(); } catch (e) { return false; } })();
+  function userStyleUrlOk(u) { try { var x = new URL(String(u || ''), location.href); return /^https?:$/.test(x.protocol) ? x.href : ''; } catch (e) { return ''; } }
+  function applyUserStyles() {
+    var list = prefs.userStyles, parent = document.head || document.documentElement;
+    if (!parent) return;
+    // Remove what we added last time, then add the current set (order = list order, later wins).
+    userCss.nodes.forEach(function (n) { try { n.remove(); } catch (e) {} });
+    userCss.nodes = [];
+    if (canAdopt) {
+      try { var keep = document.adoptedStyleSheets.filter(function (s) { return userCss.adopted.indexOf(s) === -1; }); document.adoptedStyleSheets = keep; } catch (e) {}
+      userCss.adopted = [];
+    }
+    list.forEach(function (s) {
+      if (!s || s.on === false) return;
+      if (s.type === 'url') {
+        var href = userStyleUrlOk(s.url); if (!href) return;
+        var l = document.createElement('link'); l.__sdt = 1; l.rel = 'stylesheet';
+        l.href = href + (s.bust ? (href.indexOf('?') === -1 ? '?' : '&') + '_sdt=' + s.bust : '');
+        l.setAttribute('data-sdt-user', s.name);
+        l.addEventListener('error', function () { addLog('warn', ['User stylesheet “' + s.name + '” could not load: ' + href + ' (blocked by the site’s CSP or not reachable)'], { site: null }); });
+        parent.appendChild(l); userCss.nodes.push(l);
+        return;
+      }
+      if (canAdopt) {
+        try { var sh = new CSSStyleSheet(); sh.replaceSync(s.css || ''); sh.__sdtName = s.name; userCss.adopted.push(sh); return; } catch (e) {}
+      }
+      var st = document.createElement('style'); st.__sdt = 1; st.setAttribute('data-sdt-user', s.name);
+      st.textContent = s.css || '';
+      parent.appendChild(st); userCss.nodes.push(st);
+    });
+    if (canAdopt && userCss.adopted.length) { try { document.adoptedStyleSheets = document.adoptedStyleSheets.concat(userCss.adopted); } catch (e) {} }
+  }
+  function userStylesMissing() {
+    if (userCss.nodes.some(function (n) { return !n.isConnected; })) return true;
+    if (canAdopt && userCss.adopted.length) { try { var cur = document.adoptedStyleSheets; return userCss.adopted.some(function (s) { return cur.indexOf(s) === -1; }); } catch (e) {} }
+    return false;
+  }
+  var applyUserStylesSoon = debounce(applyUserStyles, 120);
+  var saveUserStylesSoon = debounce(savePrefs, 400);
+  function uniqueStyleName(base) { var n = 1; while (prefs.userStyles.some(function (s) { return s.name === base + ' #' + n; })) n++; return base + ' #' + n; }
+  function newUserStyle(css, name) {
+    prefs.userStyles.push({ name: name || uniqueStyleName('Stylesheet'), type: 'css', on: true, css: css != null ? css : '/* Your CSS for this site. Applied live as you type. */\nbody {\n  \n}\n' });
+    savePrefs(); applyUserStyles(); openUserStyle(prefs.userStyles.length - 1);
+  }
+  function linkUserStyle(url) {
+    if (url == null) url = prompt('Stylesheet URL (https://…)', 'https://');
+    if (url == null) return;
+    var href = userStyleUrlOk(url.trim());
+    if (!href) { flash('That is not an http(s) URL'); return; }
+    prefs.userStyles.push({ name: shortName(href) || uniqueStyleName('Linked sheet'), type: 'url', on: true, url: href });
+    savePrefs(); applyUserStyles(); openUserStyle(prefs.userStyles.length - 1);
+  }
+  function toggleUserStyle(i, on) {
+    var s = prefs.userStyles[i]; if (!s) return;
+    s.on = on == null ? s.on === false : !!on;
+    savePrefs(); applyUserStyles(); renderSourcesNav();
+    if (srcState.open && srcState.open.userStyle === i) openUserStyle(i);
+    flash((s.on ? 'Enabled “' : 'Disabled “') + s.name + '”');
+  }
+  function removeUserStyleAt(i) {
+    prefs.userStyles.splice(i, 1); savePrefs(); applyUserStyles();
+    if (srcState.open && srcState.open.userStyle != null) { srcState.open = null; clear(ui.srcCode); ui.srcTitle.textContent = 'Stylesheet deleted.'; }
+    renderSourcesNav();
+  }
+  // "+" in the Styles pane: add a rule for the selected element to the Inspector stylesheet.
+  function addRuleForSelected() {
+    var el = state.selected;
+    if (!el || el.nodeType !== 1) { flash('Select an element first'); return; }
+    var name = 'Inspector stylesheet';
+    var i = prefs.userStyles.map(function (s) { return s.name; }).indexOf(name);
+    if (i < 0) { prefs.userStyles.push({ name: name, type: 'css', on: true, css: '' }); i = prefs.userStyles.length - 1; }
+    var s = prefs.userStyles[i]; s.on = true;
+    var sel = cssPath(el);
+    s.css = (s.css ? s.css.replace(/\s*$/, '\n\n') : '') + sel + ' {\n  \n}\n';
+    savePrefs(); applyUserStyles(); openUserStyle(i, sel.length + s.css.lastIndexOf(sel) + 5);
+  }
+  function openUserStyle(i, caret) {
+    var s = prefs.userStyles[i]; if (!s) return;
+    if (!state.open) show();
+    switchTab('sources');
+    srcState.open = { userStyle: i };
+    renderSourcesNav();
+    var name = h('span', { class: 'mono', title: 'Click to rename' }, s.name);
+    name.addEventListener('click', function () { inlineEdit(name, s.name, function (t) { t = t.trim(); if (t) { s.name = t; savePrefs(); applyUserStyles(); renderSourcesNav(); } }); });
+    var onBox = h('input', { type: 'checkbox' }); onBox.checked = s.on !== false;
+    onBox.addEventListener('change', function () { toggleUserStyle(i, onBox.checked); });
+    var chips = [
+      h('label', { class: 'chip', title: 'Apply this stylesheet to the page' }, onBox, ' Applied'),
+      h('button', { class: 'chip', onclick: function () { copyText(s.type === 'url' ? '@import url("' + s.url + '");' : (s.css || '')); flash('Copied'); } }, 'Copy'),
+    ];
+    if (s.type === 'url') chips.push(h('button', { class: 'chip', title: 'Fetch the file again (skips the cache)', onclick: function () { s.bust = Date.now(); applyUserStyles(); flash('Reloaded'); } }, '↻ Reload'));
+    chips.push(h('button', { class: 'chip', onclick: function () { if (confirm('Delete stylesheet “' + s.name + '”?')) removeUserStyleAt(i); } }, 'Delete'));
+    clear(ui.srcTitle).append(name, '  ');
+    chips.forEach(function (c) { ui.srcTitle.append(c); });
+    ui.srcTitle.append(h('span', { class: 'muted' }, '  saved per site · applied on every visit'));
+    if (s.type === 'url') {
+      var inp = h('input', { class: 'filter', type: 'text', spellcheck: 'false', autocomplete: 'off', style: { width: '100%' } });
+      inp.value = s.url || '';
+      var note = h('div', { class: 'muted', style: { padding: '8px 2px' } }, 'Linked with <link rel="stylesheet">. Press Enter to apply a new URL. If nothing changes, the site’s Content-Security-Policy may block other origins — paste the CSS into an inline stylesheet instead.');
+      inp.addEventListener('keydown', function (e) {
+        if (e.key !== 'Enter') return;
+        var href = userStyleUrlOk(inp.value.trim()); if (!href) { flash('That is not an http(s) URL'); return; }
+        s.url = href; savePrefs(); applyUserStyles(); flash('Applied');
+      });
+      clear(ui.srcCode).append(h('div', { style: { padding: '10px 12px' } }, inp, note));
+      return;
+    }
+    var ta = h('textarea', { class: 'snippet-ed', spellcheck: 'false', autocapitalize: 'off', autocomplete: 'off' });
+    ta.value = s.css || '';
+    ta.addEventListener('input', function () { s.css = ta.value; saveUserStylesSoon(); applyUserStylesSoon(); });
+    ta.addEventListener('keydown', function (e) {
+      if (e.key === 's' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); s.css = ta.value; savePrefs(); applyUserStyles(); flash('Saved'); }
+      if (e.key === 'Tab') { e.preventDefault(); var s0 = ta.selectionStart; ta.value = ta.value.slice(0, s0) + '  ' + ta.value.slice(ta.selectionEnd); ta.selectionStart = ta.selectionEnd = s0 + 2; s.css = ta.value; saveUserStylesSoon(); applyUserStylesSoon(); }
+    });
+    clear(ui.srcCode).append(ta);
+    ta.focus();
+    if (caret != null) { try { ta.selectionStart = ta.selectionEnd = Math.min(caret, ta.value.length); } catch (e) {} }
+  }
+  try { applyUserStyles(); } catch (e) {}
+  if (!document.head) origAdd.call(document, 'DOMContentLoaded', function () { try { applyUserStyles(); } catch (e) {} });
+
   /* ======================================================== COMMAND PALETTE */
   var palette = { el: null, items: [], idx: 0 };
   function fuzzyScore(text, q) {
@@ -5159,6 +5298,9 @@ mark{background:#fff4c2;color:#1f1f1f;border-radius:2px}\n\
     A('Toggle safe-area & viewport overlay', function () { dev.overlay = !dev.overlay; setViewportOverlay(dev.overlay); });
     A('Hide all grid / flex overlays', function () { layout.set.clear(); toggleLayout(document.body, false); });
     A('New snippet', newSnippet);
+    A('New stylesheet (custom CSS for this site)', function () { newUserStyle(); });
+    A('Link stylesheet URL\u2026', function () { linkUserStyle(); });
+    A('New style rule for selected element', addRuleForSelected);
     A('Report a bug (Jira)', openBugReport);
     A('Explain the last error with Claude', function () { var errs = state.logs.filter(function (e) { return e.level === 'error'; }); if (errs.length) explainError(errs[errs.length - 1]); else flash('No errors in the console'); });
     A('Responsive preview (iPhone / iPad side by side)', openResponsive);
@@ -5172,6 +5314,10 @@ mark{background:#fff4c2;color:#1f1f1f;border-radius:2px}\n\
     A('Pseudo-localisation (toggle)', function () { emulate({ pseudo: !emu.pseudo }); });
     [125, 150, 200, 100].forEach(function (n) { A('Text size ' + n + '%', function () { emulate({ textScale: n }); }); });
     A(remote.on ? 'Stop remote mode' : 'Start remote mode\u2026', function () { remote.on ? stopRemote() : promptRemote(); });
+    prefs.userStyles.forEach(function (s, i) {
+      acts.push({ label: 'Edit stylesheet: ' + s.name, group: 'Stylesheet', run: function () { openUserStyle(i); } });
+      acts.push({ label: (s.on === false ? 'Enable' : 'Disable') + ' stylesheet: ' + s.name, group: 'Stylesheet', run: function () { toggleUserStyle(i); } });
+    });
     prefs.snippets.forEach(function (s, i) {
       acts.push({ label: 'Run snippet: ' + s.name, group: 'Snippet', run: function () { runSnippet(i); } });
       acts.push({ label: 'Edit snippet: ' + s.name, group: 'Snippet', run: function () { openSnippet(i); } });
@@ -6394,6 +6540,18 @@ mark{background:#fff4c2;color:#1f1f1f;border-radius:2px}\n\
     },
     storeJump: function (index, which) { var inst = storeLog.instances[which || 0]; if (!inst) throw new Error('No store connected'); inst.jumpTo(index); return true; },
     storeDispatch: function (action, which) { var inst = storeLog.instances[which || 0]; if (!inst) throw new Error('No store connected'); inst.dispatch(action); return true; },
+    userStyles: function () { return prefs.userStyles.map(function (s) { return { name: s.name, type: s.type, on: s.on !== false, css: s.css, url: s.url }; }); },
+    addUserStyle: function (name, cssOrUrl, opts) {
+      var isUrl = (opts && opts.type === 'url') || /^https?:\/\/\S+$/.test(String(cssOrUrl || '').trim());
+      var ex = prefs.userStyles.filter(function (s) { return s.name === name; })[0];
+      var rec = ex || { name: name, on: true };
+      if (isUrl) { var href = userStyleUrlOk(String(cssOrUrl).trim()); if (!href) throw new Error('Not an http(s) URL'); rec.type = 'url'; rec.url = href; delete rec.css; }
+      else { rec.type = 'css'; rec.css = String(cssOrUrl || ''); delete rec.url; }
+      if (!ex) prefs.userStyles.push(rec);
+      savePrefs(); applyUserStyles(); if (ui.srcNav) renderSourcesNav(); return true;
+    },
+    setUserStyle: function (name, on) { var i = prefs.userStyles.map(function (s) { return s.name; }).indexOf(name); if (i < 0) throw new Error('No stylesheet named ' + name); prefs.userStyles[i].on = !!on; savePrefs(); applyUserStyles(); if (ui.srcNav) renderSourcesNav(); return true; },
+    removeUserStyle: function (name) { var i = prefs.userStyles.map(function (s) { return s.name; }).indexOf(name); if (i < 0) return false; removeUserStyleAt(i); return true; },
     snippets: function () { return prefs.snippets.map(function (s) { return { name: s.name, code: s.code }; }); },
     saveSnippet: function (name, code) { var ex = prefs.snippets.filter(function (s) { return s.name === name; })[0]; if (ex) ex.code = code; else prefs.snippets.push({ name: name, code: code }); savePrefs(); return true; },
     runSnippet: function (name) { var i = prefs.snippets.map(function (s) { return s.name; }).indexOf(name); if (i < 0) throw new Error('No snippet named ' + name); return (0, eval)(trustScript(prefs.snippets[i].code)); },
@@ -6434,7 +6592,7 @@ mark{background:#fff4c2;color:#1f1f1f;border-radius:2px}\n\
     clear: clearConsole,
     automation: automation,
     ready: function () { return ui.ready; },
-    version: '1.5.2'
+    version: '1.5.3'
   };
   window.__SDT__ = api;
   window.SafariDevTools = api;
@@ -6483,6 +6641,6 @@ mark{background:#fff4c2;color:#1f1f1f;border-radius:2px}\n\
         };
       }
     } catch (e) {}
-    setInterval(function () { if ((host && !host.isConnected) || (!ui.ready && document.body)) remount(); }, 400);
+    setInterval(function () { if ((host && !host.isConnected) || (!ui.ready && document.body)) remount(); try { if (userStylesMissing()) applyUserStyles(); } catch (e) {} }, 400);
   })();
 })();
